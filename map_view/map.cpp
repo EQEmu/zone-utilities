@@ -126,6 +126,57 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 	return true;
 }
 
+bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices) {
+	verts.clear();
+	indices.clear();
+	uint32_t vert_count;
+	uint32_t ind_count;
+	uint32_t flag_count;
+
+	if (fread(&vert_count, sizeof(vert_count), 1, f) != 1) {
+		return false;
+	}
+
+	if (fread(&ind_count, sizeof(ind_count), 1, f) != 1) {
+		return false;
+	}
+
+	if (fread(&flag_count, sizeof(flag_count), 1, f) != 1) {
+		return false;
+	}
+
+	for(uint32_t i = 0; i < vert_count; ++i) {
+		float x;
+		float y;
+		float z;
+		if (fread(&x, sizeof(x), 1, f) != 1) {
+			return false;
+		}
+
+		if (fread(&y, sizeof(y), 1, f) != 1) {
+			return false;
+		}
+
+		if (fread(&z, sizeof(z), 1, f) != 1) {
+			return false;
+		}
+
+		glm::vec3 vert(x, y, z);
+		verts.push_back(vert);
+	}
+
+	for (uint32_t i = 0; i < ind_count; ++i) {
+		uint32_t index;
+		if (fread(&index, sizeof(index), 1, f) != 1) {
+			return false;
+		}
+
+		indices.push_back(index);
+	}
+
+	return true;
+}
+
 void LoadMap(std::string filename, Model **collision, Model **liquid, Model **vision) {
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
@@ -147,6 +198,7 @@ void LoadMap(std::string filename, Model **collision, Model **liquid, Model **vi
 				gen.seed(time(0));
 				size_t color_count = new_model->GetPositions().size();
 				for(size_t i = 0; i < color_count; ++i) {
+					printf("%f %f %f\n", new_model->GetPositions()[i].x, new_model->GetPositions()[i].y, new_model->GetPositions()[i].z);
 					float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
 					new_model->GetColors().push_back(glm::vec3(color, color, color));
 				}
@@ -156,6 +208,33 @@ void LoadMap(std::string filename, Model **collision, Model **liquid, Model **vi
 				*liquid = nullptr;
 				*vision = nullptr;
 			} else {
+				delete new_model;
+				*collision = nullptr;
+				*liquid = nullptr;
+				*vision = nullptr;
+			}
+		}
+		else if (version == 0x02000000) {
+			Model *new_model = new Model();
+			bool v = LoadMapV2(f, new_model->GetPositions(), new_model->GetIndicies());
+			fclose(f);
+
+			if (v) {
+				std::mt19937 gen;
+				gen.seed(time(0));
+				size_t color_count = new_model->GetPositions().size();
+				for (size_t i = 0; i < color_count; ++i) {
+					printf("%f %f %f\n", new_model->GetPositions()[i].x, new_model->GetPositions()[i].y, new_model->GetPositions()[i].z);
+					float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
+					new_model->GetColors().push_back(glm::vec3(color, color, color));
+				}
+
+				new_model->Compile();
+				*collision = new_model;
+				*liquid = nullptr;
+				*vision = nullptr;
+			}
+			else {
 				delete new_model;
 				*collision = nullptr;
 				*liquid = nullptr;

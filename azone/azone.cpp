@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "map.h"
-#include "pfs.h"
 
 int main(int argc, char **argv) {
 

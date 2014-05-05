@@ -77,7 +77,7 @@ public:
 private:
 	bool ReadIntoBuffer(std::string filename);
 	std::vector<std::string> filenames;
-    std::vector<size_t> file_offsets;
+	std::vector<size_t> file_offsets;
 	std::vector<char> buffer;
 };
 

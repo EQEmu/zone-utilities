@@ -38,19 +38,19 @@ void Camera::UpdateInputs(GLFWwindow *win) {
 	glm::vec3 up = glm::cross(right, direction);
 
 	if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS){
-		pos += direction * delta_time * 100.0f;
+		pos += direction * delta_time * 300.0f;
 	}
 
 	if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS){
-		pos -= direction * delta_time * 100.0f;
+		pos -= direction * delta_time * 300.0f;
 	}
 	
 	if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS){
-		pos += right * delta_time * 100.0f;
+		pos += right * delta_time * 300.0f;
 	}
 	
 	if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS){
-		pos -= right * delta_time * 100.0f;
+		pos -= right * delta_time * 300.0f;
 	}
 
 	proj = glm::perspective(fov, (float)width / (float)height, near_clip, far_clip);

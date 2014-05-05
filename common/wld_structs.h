@@ -130,14 +130,14 @@ struct wld_fragment36
 	uint16_t polygon_tex_count;
 	uint16_t vertex_tex_count;
 	uint16_t size9;
-	uint16_t scale;
+	int16_t scale;
 };
 
 struct wld_fragment36_vert
 {
-	uint16_t x;
-	uint16_t y;
-	uint16_t z;
+	int16_t x;
+	int16_t y;
+	int16_t z;
 };
 
 struct wld_fragment36_tex_coords_new
