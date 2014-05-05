@@ -3,6 +3,6 @@
 
 #include "model.h"
 
-void LoadMap(std::string filename, Model **collision, Model **liquid, Model **vision);
+void LoadMap(std::string filename, Model **collision, Model **vision);
 
 #endif

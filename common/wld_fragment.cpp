@@ -67,7 +67,7 @@ WLDFragment15::WLDFragment15(S3DLoader *loader, std::vector<WLDFragment> &out, c
 	frag_buffer += sizeof(wld_fragment_reference);
 
 	wld_fragment15 *header = (wld_fragment15*)frag_buffer;
-	if(header->flags == 0x32E) {
+	if(header->flags != 0x2E) {
 		std::shared_ptr<Placeable> plac(new Placeable());
 		plac->SetLocation(header->x, header->y, header->z);
 		plac->SetRotation(

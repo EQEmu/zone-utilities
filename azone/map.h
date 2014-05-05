@@ -24,9 +24,15 @@ private:
 		std::vector<WLDFragment> &character_frags
 		);
 
-	std::vector<glm::vec3> verts;
-	std::vector<uint32_t> indices;
-	std::vector<uint32_t> polygon_flags;
+	void RotateVertex(Geometry::Vertex &v, float rx, float ry, float rz);
+	void ScaleVertex(Geometry::Vertex &v, float sx, float sy, float sz);
+	void TranslateVertex(Geometry::Vertex &v, float tx, float ty, float tz);
+
+	std::vector<glm::vec3> collide_verts;
+	std::vector<uint32_t> collide_indices;
+
+	std::vector<glm::vec3> non_collide_verts;
+	std::vector<uint32_t> non_collide_indices;
 };
 
 #endif

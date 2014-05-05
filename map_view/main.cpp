@@ -50,9 +50,8 @@ int main(int argc, char **argv)
 	ShaderUniform tint = shader.GetUniformLocation("Tint");
 
 	Model *collide = nullptr;
-	Model *liquid = nullptr;
 	Model *invis = nullptr;
-	LoadMap(filename, &collide, &liquid, &invis);
+	LoadMap(filename, &collide, &invis);
 
 	Camera cam(1280, 720, 45.0f, 0.1f, 10000.0f);
 
@@ -76,13 +75,7 @@ int main(int argc, char **argv)
 		
 		tnt[0] = 0.0f;
 		tnt[1] = 0.0f;
-		tint.SetValuePtr3(1, &tnt[0]);
-
-		if (liquid)
-			liquid->Draw();
-
-		tnt[1] = 1.0f;
-		tnt[2] = 0.0f;
+		tnt[2] = 0.7f;
 		tint.SetValuePtr3(1, &tnt[0]);
 
 		if (invis)
@@ -97,9 +90,6 @@ int main(int argc, char **argv)
 
 	if(collide)
 		delete collide;
-
-	if (liquid)
-		delete liquid;
 
 	if (invis)
 		delete invis;
