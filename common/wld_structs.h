@@ -46,9 +46,9 @@ struct wld_fragment15
 	float x;
 	float y;
 	float z;
-	float rotate_x;
-	float rotate_y;
 	float rotate_z;
+	float rotate_y;
+	float rotate_x;
 	float unk;
 	float scale_y;
 	float scale_x;

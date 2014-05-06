@@ -1,6 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(common_sources
+	compression.cpp
 	pfs.cpp
 	s3d_loader.cpp
 	wld_fragment.cpp
@@ -10,6 +11,7 @@ SET(common_headers
 	any.h
 	archive.h
 	bsp.h
+	compression.h
 	geometry.h
 	endian.h
 	light.h

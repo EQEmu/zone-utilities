@@ -5,6 +5,7 @@
 #include <random>
 #include <tuple>
 #include <map>
+#include "compression.h"
 
 bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices) {
 	uint32_t face_count;
@@ -54,7 +55,7 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			size_t sz = verts.size();
 			verts.push_back(a);
 			indices.push_back((uint32_t)sz);
-			cur_verts[t] = sz;
+			cur_verts[t] = (uint32_t)sz;
 		}
 
 		t = std::make_tuple(b.x, b.y, b.z);
@@ -66,7 +67,7 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			size_t sz = verts.size();
 			verts.push_back(b);
 			indices.push_back((uint32_t)sz);
-			cur_verts[t] = sz;
+			cur_verts[t] = (uint32_t)sz;
 		}
 
 		t = std::make_tuple(c.x, c.y, c.z);
@@ -78,7 +79,7 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			size_t sz = verts.size();
 			verts.push_back(c);
 			indices.push_back((uint32_t)sz);
-			cur_verts[t] = sz;
+			cur_verts[t] = (uint32_t)sz;
 		}
 	}
 
@@ -129,84 +130,171 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices, std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
 	verts.clear();
 	indices.clear();
+	nc_verts.clear();
+	nc_indices.clear();
+
+	uint32_t data_size;
+	if (fread(&data_size, sizeof(data_size), 1, f) != 1) {
+		return false;
+	}
+
+	uint32_t buffer_size;
+	if (fread(&buffer_size, sizeof(buffer_size), 1, f) != 1) {
+		return false;
+	}
+
+	std::vector<char> data;
+	data.resize(data_size);
+	if (fread(&data[0], data_size, 1, f) != 1) {
+		return false;
+	}
+
+	std::vector<char> buffer;
+	buffer.resize(buffer_size);
+	uint32_t v = InflateData(&data[0], data_size, &buffer[0], buffer_size);
+
+	char *buf = &buffer[0];
 	uint32_t vert_count;
 	uint32_t ind_count;
 	uint32_t nc_vert_count;
 	uint32_t nc_ind_count;
+	
+	vert_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
 
-	if (fread(&vert_count, sizeof(vert_count), 1, f) != 1) {
-		return false;
-	}
+	ind_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
 
-	if (fread(&ind_count, sizeof(ind_count), 1, f) != 1) {
-		return false;
-	}
+	nc_vert_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
 
-	if (fread(&nc_vert_count, sizeof(nc_vert_count), 1, f) != 1) {
-		return false;
-	}
-
-	if (fread(&nc_ind_count, sizeof(nc_ind_count), 1, f) != 1) {
-		return false;
-	}
+	nc_ind_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
 
 	for(uint32_t i = 0; i < vert_count; ++i) {
 		float x;
 		float y;
 		float z;
-		if (fread(&x, sizeof(x), 1, f) != 1) {
-			return false;
-		}
 
-		if (fread(&y, sizeof(y), 1, f) != 1) {
-			return false;
-		}
+		x = *(float*)buf;
+		buf += sizeof(float);
 
-		if (fread(&z, sizeof(z), 1, f) != 1) {
-			return false;
-		}
+		y = *(float*)buf;
+		buf += sizeof(float);
 
+		z = *(float*)buf;
+		buf += sizeof(float);
+	
 		glm::vec3 vert(x, y, z);
 		verts.push_back(vert);
 	}
-
+	
 	for (uint32_t i = 0; i < ind_count; ++i) {
 		uint32_t index;
-		if (fread(&index, sizeof(index), 1, f) != 1) {
-			return false;
-		}
-
+		index = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+	
 		indices.push_back(index);
 	}
-
+	
 	for (uint32_t i = 0; i < nc_vert_count; ++i) {
 		float x;
 		float y;
 		float z;
-		if (fread(&x, sizeof(x), 1, f) != 1) {
-			return false;
-		}
+		x = *(float*)buf;
+		buf += sizeof(float);
 
-		if (fread(&y, sizeof(y), 1, f) != 1) {
-			return false;
-		}
+		y = *(float*)buf;
+		buf += sizeof(float);
 
-		if (fread(&z, sizeof(z), 1, f) != 1) {
-			return false;
-		}
-
+		z = *(float*)buf;
+		buf += sizeof(float);
+	
 		glm::vec3 vert(x, y, z);
 		nc_verts.push_back(vert);
 	}
-
+	
 	for (uint32_t i = 0; i < nc_ind_count; ++i) {
 		uint32_t index;
-		if (fread(&index, sizeof(index), 1, f) != 1) {
-			return false;
-		}
-
+		index = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+	
 		nc_indices.push_back(index);
 	}
+
+	//if (fread(&vert_count, sizeof(vert_count), 1, f) != 1) {
+	//	return false;
+	//}
+	//
+	//if (fread(&ind_count, sizeof(ind_count), 1, f) != 1) {
+	//	return false;
+	//}
+	//
+	//if (fread(&nc_vert_count, sizeof(nc_vert_count), 1, f) != 1) {
+	//	return false;
+	//}
+	//
+	//if (fread(&nc_ind_count, sizeof(nc_ind_count), 1, f) != 1) {
+	//	return false;
+	//}
+	//
+	//for(uint32_t i = 0; i < vert_count; ++i) {
+	//	float x;
+	//	float y;
+	//	float z;
+	//	if (fread(&x, sizeof(x), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	if (fread(&y, sizeof(y), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	if (fread(&z, sizeof(z), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	glm::vec3 vert(x, y, z);
+	//	verts.push_back(vert);
+	//}
+	//
+	//for (uint32_t i = 0; i < ind_count; ++i) {
+	//	uint32_t index;
+	//	if (fread(&index, sizeof(index), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	indices.push_back(index);
+	//}
+	//
+	//for (uint32_t i = 0; i < nc_vert_count; ++i) {
+	//	float x;
+	//	float y;
+	//	float z;
+	//	if (fread(&x, sizeof(x), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	if (fread(&y, sizeof(y), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	if (fread(&z, sizeof(z), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	glm::vec3 vert(x, y, z);
+	//	nc_verts.push_back(vert);
+	//}
+	//
+	//for (uint32_t i = 0; i < nc_ind_count; ++i) {
+	//	uint32_t index;
+	//	if (fread(&index, sizeof(index), 1, f) != 1) {
+	//		return false;
+	//	}
+	//
+	//	nc_indices.push_back(index);
+	//}
 
 	return true;
 }
@@ -228,7 +316,7 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 
 			if(v) {
 				std::mt19937 gen;
-				gen.seed(time(0));
+				gen.seed((unsigned long)time(0));
 				size_t color_count = new_model->GetPositions().size();
 				for(size_t i = 0; i < color_count; ++i) {
 					printf("%f %f %f\n", new_model->GetPositions()[i].x, new_model->GetPositions()[i].y, new_model->GetPositions()[i].z);
@@ -253,7 +341,7 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 
 			if (v) {
 				std::mt19937 gen;
-				gen.seed(time(0));
+				gen.seed((unsigned long)time(0));
 				size_t color_count = new_model->GetPositions().size();
 				for (size_t i = 0; i < color_count; ++i) {
 					float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));

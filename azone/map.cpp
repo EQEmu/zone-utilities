@@ -2,6 +2,8 @@
 #include "s3d_loader.h"
 #include <map>
 #include <tuple>
+#include <sstream>
+#include "compression.h"
 
 Map::Map() {
 }
@@ -37,88 +39,67 @@ bool Map::Write(std::string filename) {
 		return false;
 	}
 	
+	std::stringstream ss(std::stringstream::in | std::stringstream::out | std::stringstream::binary);
 	uint32_t collide_vert_count = (uint32_t)collide_verts.size();
 	uint32_t collide_ind_count = (uint32_t)collide_indices.size();
 	uint32_t non_collide_vert_count = (uint32_t)non_collide_verts.size();
 	uint32_t non_collide_ind_count = (uint32_t)non_collide_indices.size();
-
 	
-	if (fwrite(&collide_vert_count, sizeof(uint32_t), 1, f) != 1) {
-		fclose(f);
-		return false;
-	}
+	ss.write((const char*)&collide_vert_count, sizeof(uint32_t));
+	ss.write((const char*)&collide_ind_count, sizeof(uint32_t));
+	ss.write((const char*)&non_collide_vert_count, sizeof(uint32_t));
+	ss.write((const char*)&non_collide_ind_count, sizeof(uint32_t));
 	
-	if (fwrite(&collide_ind_count, sizeof(uint32_t), 1, f) != 1) {
-		fclose(f);
-		return false;
-	}
-	if (fwrite(&non_collide_vert_count, sizeof(uint32_t), 1, f) != 1) {
-		fclose(f);
-		return false;
-	}
-	
-	if (fwrite(&non_collide_ind_count, sizeof(uint32_t), 1, f) != 1) {
-		fclose(f);
-		return false;
-	}
-
 	for(uint32_t i = 0; i < collide_vert_count; ++i) {
 		auto vert = collide_verts[i];
 	
-		if (fwrite(&(vert.x), sizeof(float), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
-	
-		if (fwrite(&(vert.y), sizeof(float), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
-	
-		if (fwrite(&(vert.z), sizeof(float), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
+		ss.write((const char*)&vert.x, sizeof(float));
+		ss.write((const char*)&vert.y, sizeof(float));
+		ss.write((const char*)&vert.z, sizeof(float));
 	}
 	
 	for (uint32_t i = 0; i < collide_ind_count; ++i) {
 		uint32_t ind = collide_indices[i];
 	
-		if (fwrite(&ind, sizeof(uint32_t), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
+		ss.write((const char*)&ind, sizeof(uint32_t));
 	}
 	
-
 	for(uint32_t i = 0; i < non_collide_vert_count; ++i) {
 		auto vert = non_collide_verts[i];
 	
-		if (fwrite(&(vert.x), sizeof(float), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
-	
-		if (fwrite(&(vert.y), sizeof(float), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
-	
-		if (fwrite(&(vert.z), sizeof(float), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
+		ss.write((const char*)&vert.x, sizeof(float));
+		ss.write((const char*)&vert.y, sizeof(float));
+		ss.write((const char*)&vert.z, sizeof(float));
 	}
 	
 	for (uint32_t i = 0; i < non_collide_ind_count; ++i) {
 		uint32_t ind = non_collide_indices[i];
 	
-		if (fwrite(&ind, sizeof(uint32_t), 1, f) != 1) {
-			fclose(f);
-			return false;
-		}
+		ss.write((const char*)&ind, sizeof(uint32_t));
 	}
 	
+	std::vector<char> buffer;
+	uint32_t buffer_len = (uint32_t)(ss.str().length() + 128);
+	buffer.resize(buffer_len);
+
+	uint32_t out_size = DeflateData(ss.str().c_str(), (uint32_t)ss.str().length(), &buffer[0], buffer_len);
+	if (fwrite(&out_size, sizeof(uint32_t), 1, f) != 1) {
+		fclose(f);
+		return false;
+	}
+	
+	uint32_t uncompressed_size = (uint32_t)ss.str().length();
+	if (fwrite(&uncompressed_size, sizeof(uint32_t), 1, f) != 1) {
+		fclose(f);
+		return false;
+	}
+
+
+	if (fwrite(&buffer[0], out_size, 1, f) != 1) {
+		fclose(f);
+		return false;
+	}
+
 	fclose(f);
 	return true;
 }
@@ -262,6 +243,7 @@ bool Map::CompileS3D(
 			if (plac->GetName().size() > 9) {
 				std::string placable_model_name = plac->GetName().substr(0, plac->GetName().length() - 9);
 				
+				bool found = false;
 				for (uint32_t o = 0; o < object_frags.size(); ++o) {
 					if (object_frags[o].type == 0x36) {
 						WLDFragment36 &obj_frag = reinterpret_cast<WLDFragment36&>(object_frags[o]);
@@ -270,11 +252,14 @@ bool Map::CompileS3D(
 							std::string model_name = mod->GetName().substr(0, mod->GetName().length() - 12);
 							if(model_name.compare(placable_model_name) == 0) {
 								placables.push_back(std::make_pair(plac, mod));
+								found = true;
 								break;
 							}
 						}
 					}
 				}
+				if(!found)
+					printf("Couldn't find placable: %s\n", placable_model_name.c_str());
 			}
 		}
 	}
@@ -425,15 +410,22 @@ bool Map::CompileS3D(
 }
 
 void Map::RotateVertex(Geometry::Vertex &v, float rx, float ry, float rz) {
-	Geometry::Vertex nv = v;
+	glm::vec3 nv = v.pos;
 
-	nv.pos.y = (cos(rx) * v.pos.y) - (sin(rx) * v.pos.z);
-	nv.pos.z = (sin(rx) * v.pos.y) + (cos(rx) * v.pos.z);
-	nv.pos.x = (cos(ry) * v.pos.x) + (sin(ry) * v.pos.z);
-	nv.pos.z = -(sin(ry) * v.pos.x) + (cos(ry) * v.pos.z);
-	nv.pos.x = (cos(rz) * v.pos.x) - (sin(rz) * v.pos.y);
-	nv.pos.y = (sin(rz) * v.pos.x) + (cos(rz) * v.pos.y);
-	v = nv;
+	nv.y = (cos(rx) * v.pos.y) - (sin(rx) * v.pos.z);
+	nv.z = (sin(rx) * v.pos.y) + (cos(rx) * v.pos.z);
+
+	v.pos = nv;
+	
+	nv.x = (cos(ry) * v.pos.x) + (sin(ry) * v.pos.z);
+	nv.z = -(sin(ry) * v.pos.x) + (cos(ry) * v.pos.z);
+
+	v.pos = nv;
+
+	nv.x = (cos(rz) * v.pos.x) - (sin(rz) * v.pos.y);
+	nv.y = (sin(rz) * v.pos.x) + (cos(rz) * v.pos.y);
+
+	v.pos = nv;
 }
 
 void Map::ScaleVertex(Geometry::Vertex &v, float sx, float sy, float sz) {
