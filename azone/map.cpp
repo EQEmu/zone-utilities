@@ -243,7 +243,6 @@ bool Map::CompileS3D(
 			if (plac->GetName().size() > 9) {
 				std::string placable_model_name = plac->GetName().substr(0, plac->GetName().length() - 9);
 				
-				bool found = false;
 				for (uint32_t o = 0; o < object_frags.size(); ++o) {
 					if (object_frags[o].type == 0x36) {
 						WLDFragment36 &obj_frag = reinterpret_cast<WLDFragment36&>(object_frags[o]);
@@ -252,14 +251,11 @@ bool Map::CompileS3D(
 							std::string model_name = mod->GetName().substr(0, mod->GetName().length() - 12);
 							if(model_name.compare(placable_model_name) == 0) {
 								placables.push_back(std::make_pair(plac, mod));
-								found = true;
 								break;
 							}
 						}
 					}
 				}
-				if(!found)
-					printf("Couldn't find placable: %s\n", placable_model_name.c_str());
 			}
 		}
 	}
@@ -404,8 +400,6 @@ bool Map::CompileS3D(
 		}
 	}
 
-	printf("Collide: %u %u\n", collide_verts.size(), collide_indices.size());
-	printf("Non-Collide: %u %u\n", non_collide_verts.size(), non_collide_indices.size());
 	return true;
 }
 

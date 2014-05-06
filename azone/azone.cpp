@@ -8,10 +8,11 @@ int main(int argc, char **argv) {
 		if(!m.Build(argv[i])) {
 			printf("Failed to build map for zone: %s\n", argv[i]);
 		} else {
-			m.Write(std::string(argv[i]) + std::string(".map"));
+			if(!m.Write(std::string(argv[i]) + std::string(".map"))) {
+				printf("Failed to write map for zone %s\n", argv[i]);
+			}
 		}
 	}
 
-	getchar();
 	return 0;
 }
