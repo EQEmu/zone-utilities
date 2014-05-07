@@ -12,7 +12,7 @@ public:
 	~Texture() { }
 
 	void AddTextureFrame(std::string file_name) { frames.push_back(file_name); }
-
+	
 	std::vector<std::string> &GetTextureFrames();
 private:
 	std::vector<std::string> frames;
