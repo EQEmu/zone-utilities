@@ -1,5 +1,6 @@
 #include "map.h"
 #include "s3d_loader.h"
+#include "eqg_loader.h"
 #include <map>
 #include <tuple>
 #include <sstream>
@@ -12,6 +13,15 @@ Map::~Map() {
 }
 
 bool Map::Build(std::string zone_name) {
+	//try to load a v1-3 eqg here
+	EQGLoader eqg;
+	if(eqg.Load(zone_name)) {
+		return true;
+	}
+
+	//if that fails try to load a v4 eqg here
+	
+	//if that fails try to load a s3d here
 	S3DLoader s3d;
 	std::vector<WLDFragment> zone_frags;
 	std::vector<WLDFragment> zone_object_frags;
@@ -21,10 +31,6 @@ bool Map::Build(std::string zone_name) {
 	if(s3d.Load(zone_name, zone_frags, zone_object_frags, zone_light_frags, object_frags, character_frags)) {
 		return CompileS3D(zone_frags, zone_object_frags, zone_light_frags, object_frags, character_frags);
 	}
-
-	//try to load a v1-3 eqg here
-
-	//if that fails try to load a v4 eqg here
 
 	//all hath failed
 	return false;

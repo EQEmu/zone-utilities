@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 		glm::mat4 model = glm::mat4(1.0);
 		glm::mat4 mvp = cam.GetProjMat() * cam.GetViewMat() * model;
 		uniform.SetValueMatrix4(1, false, &mvp[0][0]);
-		
+
 		glm::vec3 tnt(1.0f, 1.0f, 1.0f);
 		tint.SetValuePtr3(1, &tnt[0]);
 

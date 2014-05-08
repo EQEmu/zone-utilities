@@ -245,7 +245,6 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 				gen.seed((unsigned long)time(0));
 				size_t color_count = new_model->GetPositions().size();
 				for(size_t i = 0; i < color_count; ++i) {
-					printf("%f %f %f\n", new_model->GetPositions()[i].x, new_model->GetPositions()[i].y, new_model->GetPositions()[i].z);
 					float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
 					new_model->GetColors().push_back(glm::vec3(color, color, color));
 				}
