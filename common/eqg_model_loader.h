@@ -3,15 +3,16 @@
 
 #include <vector>
 #include <stdint.h>
+#include <memory>
 #include "pfs.h"
-#include "eqg_material.h"
+#include "eqg_geometry.h"
 
 class EQGModelLoader
 {
 public:
 	EQGModelLoader();
 	~EQGModelLoader();
-	bool Load(EQEmu::PFS::Archive &archive, std::string model);
+	bool Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out);
 };
 
 #endif

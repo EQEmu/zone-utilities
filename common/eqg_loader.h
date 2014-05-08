@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdint.h>
 #include <string>
+#include <memory>
 #include "eqg_geometry.h"
 #include "placeable.h"
 #include "eqg_region.h"
@@ -15,10 +16,12 @@ class EQGLoader
 public:
 	EQGLoader();
 	~EQGLoader();
-	bool Load(std::string file, std::vector<Placeable> &placeables, std::vector<EQG::Region> &regions, std::vector<Light> &lights);
+	bool Load(std::string file, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
+		std::vector<std::shared_ptr<EQG::Region>> &regions, std::vector<std::shared_ptr<Light>> &lights);
 private:
 	bool GetZon(std::string file, std::vector<char> &buffer);
-	bool ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, std::vector<Placeable> &placeables, std::vector<EQG::Region> &regions, std::vector<Light> &lights);
+	bool ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
+		std::vector<std::shared_ptr<EQG::Region>> &regions, std::vector<std::shared_ptr<Light>> &lights);
 };
 
 #endif

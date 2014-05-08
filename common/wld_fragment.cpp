@@ -267,16 +267,16 @@ WLDFragment36::WLDFragment36(S3DLoader *loader, std::vector<WLDFragment> &out, c
 	}
 	catch (EQEmu::bad_any_cast&) {}
 
+	auto &verts = model->GetVertices();
+	verts.resize(header->vertex_count);
 	for(uint32_t i = 0; i < header->vertex_count; ++i) {
 		wld_fragment36_vert *in = (wld_fragment36_vert*)frag_buffer;
 		frag_buffer += sizeof(wld_fragment36_vert);
 
-		Geometry::Vertex v;
+		auto &v = verts[i];
 		v.pos.x = header->center_x + in->x * scale;
 		v.pos.y = header->center_y + in->y * scale;
 		v.pos.z = header->center_z + in->z * scale;
-
-		model->AddVertex(v);
 	}
 
 	if(old) {
@@ -318,16 +318,16 @@ WLDFragment36::WLDFragment36(S3DLoader *loader, std::vector<WLDFragment> &out, c
 
 	frag_buffer += sizeof(uint32_t) * header->color_count;
 
+	auto &polys = model->GetPolygons();
+	polys.resize(header->polygon_count);
 	for(uint32_t i = 0; i < header->polygon_count; ++i) {
 		wld_fragment36_poly *in = (wld_fragment36_poly*)frag_buffer;
 
-		Geometry::Polygon p;
+		auto &p = polys[i];
 		p.flags = in->flags;
 		p.verts[0] = in->index[0];
 		p.verts[1] = in->index[1];
 		p.verts[2] = in->index[2];
-
-		model->AddPolygon(p);
 		frag_buffer += sizeof(wld_fragment36_poly);
 	}
 

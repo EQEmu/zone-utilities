@@ -13,11 +13,12 @@ Map::~Map() {
 bool Map::Build(std::string zone_name) {
 	//try to load a v1-3 eqg here
 	EQGLoader eqg;
-	std::vector<Placeable> eqg_placables;
-	std::vector<EQG::Region> eqg_regions;
-	std::vector<Light> eqg_lights;
-	if (eqg.Load(zone_name, eqg_placables, eqg_regions, eqg_lights)) {
-		return CompileEQG(eqg_placables, eqg_regions, eqg_lights);
+	std::vector<std::shared_ptr<EQG::Geometry>> eqg_models;
+	std::vector<std::shared_ptr<Placeable>> eqg_placables;
+	std::vector<std::shared_ptr<EQG::Region>> eqg_regions;
+	std::vector<std::shared_ptr<Light>> eqg_lights;
+	if (eqg.Load(zone_name, eqg_models, eqg_placables, eqg_regions, eqg_lights)) {
+		return CompileEQG(eqg_models, eqg_placables, eqg_regions, eqg_lights);
 	}
 
 	//if that fails try to load a v4 eqg here
@@ -411,9 +412,10 @@ bool Map::CompileS3D(
 }
 
 bool Map::CompileEQG(
-	std::vector<Placeable> &placeables,
-	std::vector<EQG::Region> &regions,
-	std::vector<Light> &lights
+	std::vector<std::shared_ptr<EQG::Geometry>> &models,
+	std::vector<std::shared_ptr<Placeable>> &placeables,
+	std::vector<std::shared_ptr<EQG::Region>> &regions,
+	std::vector<std::shared_ptr<Light>> &lights
 	)
 {
 	return false;

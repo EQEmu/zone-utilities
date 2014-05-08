@@ -84,6 +84,42 @@ struct mod_material_property
 	};
 };
 
+struct mod_vertex
+{
+	float x;
+	float y;
+	float z;
+	float i;
+	float j;
+	float k;
+	float u;
+	float v;
+};
+
+struct mod_vertex3
+{
+	float x;
+	float y;
+	float z;
+	float i;
+	float j;
+	float k;
+	uint32_t color;
+	float unknown036;
+	float unknown040;
+	float u;
+	float v;
+};
+
+struct mod_polygon
+{
+	uint32_t v1;
+	uint32_t v2;
+	uint32_t v3;
+	int32_t material;
+	uint32_t flags;
+};
+
 #pragma pack()
 
 #endif

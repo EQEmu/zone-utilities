@@ -25,9 +25,10 @@ private:
 		std::vector<WLDFragment> &character_frags
 		);
 	bool CompileEQG(
-		std::vector<Placeable> &placeables,
-		std::vector<EQG::Region> &regions,
-		std::vector<Light> &lights
+		std::vector<std::shared_ptr<EQG::Geometry>> &models,
+		std::vector<std::shared_ptr<Placeable>> &placeables,
+		std::vector<std::shared_ptr<EQG::Region>> &regions,
+		std::vector<std::shared_ptr<Light>> &lights
 		);
 
 	void RotateVertex(Geometry::Vertex &v, float rx, float ry, float rz);

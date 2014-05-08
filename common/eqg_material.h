@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 namespace EQG
 {
@@ -24,7 +25,7 @@ public:
 
 	void SetName(std::string n) { name = n; }
 	void SetShader(std::string s) { shader = s; }
-	void AddProperty(Property p) { properties.push_back(p); }
+	void AddProperty(Property &p) { properties.push_back(p); }
 	
 	std::string &GetName() { return name; }
 	std::string &GetShader() { return shader; }
