@@ -18,7 +18,7 @@ struct zon_header
 
 struct zon_placable
 {
-	uint32_t id;
+	int32_t id;
 	uint32_t loc;
 	float x;
 	float y;
@@ -46,13 +46,42 @@ struct zon_region
 struct zon_light
 {
 	uint32_t loc;
-	float unknown004;
-	float unknown008;
-	float unknown012;
-	float unknown016;
-	float unknown020;
-	float unknown024;
-	float unknown028;
+	float x;
+	float y;
+	float z;
+	float r;
+	float g;
+	float b;
+	float radius;
+};
+
+struct mod_header
+{
+	char magic[4];
+	uint32_t version;
+	uint32_t list_length;
+	uint32_t material_count;
+	uint32_t vert_count;
+	uint32_t tri_count;
+};
+
+struct mod_material
+{
+	uint32_t index;
+	uint32_t name_offset;
+	uint32_t shader_offset;
+	uint32_t property_count;
+};
+
+struct mod_material_property
+{
+	uint32_t name_offset;
+	uint32_t type;
+	union
+	{
+		uint32_t i_value;
+		float f_value;
+	};
 };
 
 #pragma pack()

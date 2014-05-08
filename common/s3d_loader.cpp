@@ -1,6 +1,7 @@
 #include "s3d_loader.h"
 #include "pfs.h"
 #include "wld_structs.h"
+#include "safe_alloc.h"
 
 void decode_string_hash(char *str, size_t len) {
 	uint8_t encarr[] = { 0x95, 0x3A, 0xC5, 0x2A, 0x95, 0x7A, 0x95, 0x6A };
@@ -44,17 +45,9 @@ bool S3DLoader::Load(std::string zone_name,
 	return true;
 }
 
-#define SafeStructAllocParse(type, var_name) if(idx + sizeof(type) > current_wld.size()) { return false; } \
-	type *var_name = (type*)&current_wld[idx]; \
-	idx += sizeof(type); 
-
-#define SafeBufferAllocParse(var_name, length) if(idx + length > current_wld.size()) { return false; } \
-	var_name = (char*)&current_wld[idx]; \
-	idx += length;
-
 bool S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name, std::vector<WLDFragment> &out) {
 	out.clear();
-	std::vector<char> current_wld;
+	std::vector<char> buffer;
 	char *current_hash;
 	bool old = false;
 
@@ -63,7 +56,7 @@ bool S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name, std::v
 		return false;
 	}
 
-	if (!archive.Get(wld_name, current_wld)) {
+	if (!archive.Get(wld_name, buffer)) {
 		return false;
 	}
 
@@ -87,91 +80,91 @@ bool S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name, std::v
 
 		switch (frag_header->id) {
 			case 0x03: {
-				WLDFragment03 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment03 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x04: {
-				WLDFragment04 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment04 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				  break;
 			}
 			case 0x05: {
-				WLDFragment05 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment05 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x15: {
-				WLDFragment15 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment15 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x1B: {
-				WLDFragment1B f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment1B f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x1C: {
-				WLDFragment1C f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment1C f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x21: {
-				WLDFragment21 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment21 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x22: {
-				WLDFragment22 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment22 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x28: {
-				WLDFragment28 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment28 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x29: {
-				WLDFragment29 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment29 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x30: {
-				WLDFragment30 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment30 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);
 				break;
 			}
 			case 0x31: {
-				 WLDFragment31 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				 WLDFragment31 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				 f.type = frag_header->id;
 				 f.name = frag_header->name_ref;
 				 out.push_back(f);
 				 break;
 			}
 			case 0x36: {
-				WLDFragment36 f(this, out, &current_wld[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				WLDFragment36 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);

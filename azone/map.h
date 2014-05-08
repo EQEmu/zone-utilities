@@ -6,6 +6,7 @@
 #include <string>
 #include <glm.hpp>
 #include "s3d_loader.h"
+#include "eqg_loader.h"
 
 class Map
 {
@@ -22,6 +23,11 @@ private:
 		std::vector<WLDFragment> &zone_light_frags,
 		std::vector<WLDFragment> &object_frags,
 		std::vector<WLDFragment> &character_frags
+		);
+	bool CompileEQG(
+		std::vector<Placeable> &placeables,
+		std::vector<EQG::Region> &regions,
+		std::vector<Light> &lights
 		);
 
 	void RotateVertex(Geometry::Vertex &v, float rx, float ry, float rz);

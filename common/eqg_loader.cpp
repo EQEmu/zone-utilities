@@ -1,7 +1,8 @@
 #include "eqg_loader.h"
 #include <stdio.h>
-#include "pfs.h"
 #include "eqg_structs.h"
+#include "safe_alloc.h"
+#include "eqg_model_loader.h"
 
 EQGLoader::EQGLoader() {
 }
@@ -9,7 +10,7 @@ EQGLoader::EQGLoader() {
 EQGLoader::~EQGLoader() {
 }
 
-bool EQGLoader::Load(std::string file) {
+bool EQGLoader::Load(std::string file, std::vector<Placeable> &placeables, std::vector<EQG::Region> &regions, std::vector<Light> &lights) {
 	// find zon file
 	EQEmu::PFS::Archive archive;
 	if(!archive.Open(file + ".eqg")) {
@@ -37,7 +38,7 @@ bool EQGLoader::Load(std::string file) {
 	if (!zon_found)
 		return false;
 
-	if(!ParseZon(zon)) {
+	if (!ParseZon(archive, zon, placeables, regions, lights)) {
 		//if we couldn't parse the zon file then it's probably eqg4
 		return false;
 	}
@@ -72,15 +73,7 @@ bool EQGLoader::GetZon(std::string file, std::vector<char> &buffer) {
 	return false;
 }
 
-#define SafeStructAllocParse(type, var_name) if(idx + sizeof(type) > buffer.size()) { return false; } \
-	type *var_name = (type*)&buffer[idx]; \
-	idx += sizeof(type);
-
-#define SafeBufferAllocParse(var_name, length) if(idx + length > buffer.size()) { return false; } \
-	var_name = (char*)&buffer[idx]; \
-	idx += length;
-
-bool EQGLoader::ParseZon(std::vector<char> &buffer) {
+bool EQGLoader::ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, std::vector<Placeable> &placeables, std::vector<EQG::Region> &regions, std::vector<Light> &lights) {
 	uint32_t idx = 0;
 	SafeStructAllocParse(zon_header, header);
 
@@ -92,9 +85,9 @@ bool EQGLoader::ParseZon(std::vector<char> &buffer) {
 	idx += header->list_length;
 	std::vector<std::string> models;
 	for(uint32_t i = 0; i < header->model_count; ++i) {
-		SafeStructAllocParse(uint32_t, model);
+		SafeVarAllocParse(uint32_t, model);
 
-		std::string mod = &buffer[sizeof(zon_header)+*model];
+		std::string mod = &buffer[sizeof(zon_header) + model];
 		for(size_t j = 0; j < mod.length(); ++j) {
 			if(mod[j] == ')')
 				mod[j] = '_';
@@ -103,25 +96,60 @@ bool EQGLoader::ParseZon(std::vector<char> &buffer) {
 	}
 
 	//Need to load all the models
-
-	//load placables
-	for (uint32_t i = 0; i < header->object_count; ++i) {
-		SafeStructAllocParse(zon_placable, plac);
-		std::string name = &buffer[sizeof(zon_header) + plac->loc];
-
-		if(header->version > 1) {
-			SafeStructAllocParse(uint32_t, unk_size);
-			idx += (*unk_size) * sizeof(uint32_t); //don't know what this is but it relates to the underlying model
+	EQGModelLoader model_loader;
+	for(size_t i = 0; i < models.size(); ++i) {
+		std::string mod = models[i];
+		if(!model_loader.Load(archive, mod)) {
+			return false;
 		}
 	}
 
-	for(uint32_t i = 0; i < header->region_count; ++i) {
-		SafeStructAllocParse(zon_region, azp);
+	//load placables
+	float rot_change = 180.0f / 3.14159f;
+	for (uint32_t i = 0; i < header->object_count; ++i) {
+		SafeStructAllocParse(zon_placable, plac);
+
+		Placeable p;
+		p.SetName(&buffer[sizeof(zon_header) + plac->loc]);
+		if (plac->id >= 0 && plac->id < models.size()) {
+			p.SetFileName(models[plac->id]);
+		}
+
+		p.SetLocation(plac->x, plac->y, plac->z);
+		p.SetRotation(plac->rx * rot_change, plac->ry * rot_change, plac->rz * rot_change);
+		p.SetScale(plac->scale, plac->scale, plac->scale);
+
+		if(header->version > 1) {
+			//don't know what this is but it relates to the underlying model
+			SafeVarAllocParse(uint32_t, unk_size);
+			idx += (unk_size) * sizeof(uint32_t);
+		}
+
+		placeables.push_back(p);
 	}
 
-	return false;
-}
+	for(uint32_t i = 0; i < header->region_count; ++i) {
+		SafeStructAllocParse(zon_region, reg);
 
-bool EQGLoader::LoadModel(std::string file) {
-	return false;
+		EQG::Region region;
+		region.SetName(&buffer[sizeof(zon_header) + reg->loc]);
+		region.SetLocation(reg->center_x, reg->center_y, reg->center_z);
+		region.SetExtents(reg->extend_x, reg->extend_y, reg->extend_z);
+		region.SetFlags(reg->flag_unknown020, reg->flag_unknown024);
+
+		regions.push_back(region);
+	}
+
+	for(uint32_t i = 0; i < header->light_count; ++i) {
+		SafeStructAllocParse(zon_light, light);
+		Light l;
+		l.SetName(&buffer[sizeof(zon_header) + light->loc]);
+		l.SetLocation(light->x, light->y, light->z);
+		l.SetColor(light->r, light->g, light->b);
+		l.SetRadius(light->radius);
+
+		lights.push_back(l);
+	}
+
+	return true;
 }

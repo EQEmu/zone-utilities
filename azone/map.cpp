@@ -1,6 +1,4 @@
 #include "map.h"
-#include "s3d_loader.h"
-#include "eqg_loader.h"
 #include <map>
 #include <tuple>
 #include <sstream>
@@ -15,8 +13,11 @@ Map::~Map() {
 bool Map::Build(std::string zone_name) {
 	//try to load a v1-3 eqg here
 	EQGLoader eqg;
-	if(eqg.Load(zone_name)) {
-		return true;
+	std::vector<Placeable> eqg_placables;
+	std::vector<EQG::Region> eqg_regions;
+	std::vector<Light> eqg_lights;
+	if (eqg.Load(zone_name, eqg_placables, eqg_regions, eqg_lights)) {
+		return CompileEQG(eqg_placables, eqg_regions, eqg_lights);
 	}
 
 	//if that fails try to load a v4 eqg here
@@ -407,6 +408,15 @@ bool Map::CompileS3D(
 	}
 
 	return true;
+}
+
+bool Map::CompileEQG(
+	std::vector<Placeable> &placeables,
+	std::vector<EQG::Region> &regions,
+	std::vector<Light> &lights
+	)
+{
+	return false;
 }
 
 void Map::RotateVertex(Geometry::Vertex &v, float rx, float ry, float rz) {
