@@ -26,8 +26,8 @@
 
 // EQEmu::Any is a modified version of Boost::Any and as such retains the Boost licensing.
 
-#ifndef EQEMU_ANY_H
-#define EQEMU_ANY_H
+#ifndef EQEMU_COMMON_ANY_H
+#define EQEMU_COMMON_ANY_H
 
 #include <algorithm>
 #include <typeinfo>

@@ -1,5 +1,5 @@
-#ifndef EQEMU_SAFE_ALLOC_H
-#define EQEMU_SAFE_ALLOC_H
+#ifndef EQEMU_COMMON_SAFE_ALLOC_H
+#define EQEMU_COMMON_SAFE_ALLOC_H
 
 #define SafeVarAllocParse(type, var_name) if(idx + sizeof(type) > buffer.size()) { return false; } \
 	type var_name = *(type*)&buffer[idx]; \

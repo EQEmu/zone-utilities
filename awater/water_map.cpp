@@ -1,6 +1,6 @@
 #include "water_map.h"
 
-void BSPMarkRegion(std::shared_ptr<BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
+void BSPMarkRegion(std::shared_ptr<EQEmu::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
 
 WaterMap::WaterMap() {
 }
@@ -20,27 +20,27 @@ bool WaterMap::BuildAndWrite(std::string zone_name) {
 }
 
 bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
-	S3DLoader s3d;
-	std::vector<WLDFragment> zone_frags;
-	std::vector<WLDFragment> zone_object_frags;
-	std::vector<WLDFragment> zone_light_frags;
-	std::vector<WLDFragment> object_frags;
-	std::vector<WLDFragment> character_frags;
+	EQEmu::S3DLoader s3d;
+	std::vector<EQEmu::WLDFragment> zone_frags;
+	std::vector<EQEmu::WLDFragment> zone_object_frags;
+	std::vector<EQEmu::WLDFragment> zone_light_frags;
+	std::vector<EQEmu::WLDFragment> object_frags;
+	std::vector<EQEmu::WLDFragment> character_frags;
 	if (!s3d.Load(zone_name, zone_frags, zone_object_frags, zone_light_frags, object_frags, character_frags)) {
 		return false;
 	}
 
-	std::shared_ptr<BSPTree> tree;
+	std::shared_ptr<EQEmu::BSPTree> tree;
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x21) {
-			WLDFragment21 &frag = reinterpret_cast<WLDFragment21&>(zone_frags[i]);
+			EQEmu::WLDFragment21 &frag = reinterpret_cast<EQEmu::WLDFragment21&>(zone_frags[i]);
 			tree = frag.GetData();
 		}
 		else if (zone_frags[i].type == 0x29) {
 			if(!tree)
 				continue;
 
-			WLDFragment29 &frag = reinterpret_cast<WLDFragment29&>(zone_frags[i]);
+			EQEmu::WLDFragment29 &frag = reinterpret_cast<EQEmu::WLDFragment29&>(zone_frags[i]);
 			auto region = frag.GetData();
 
 			auto regions = region->GetRegions();
@@ -167,7 +167,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 	return false;
 }
 
-void BSPMarkRegion(std::shared_ptr<BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
+void BSPMarkRegion(std::shared_ptr<EQEmu::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
 	if (node_number < 1) {
 		return;
 	}

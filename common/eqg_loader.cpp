@@ -4,13 +4,13 @@
 #include "safe_alloc.h"
 #include "eqg_model_loader.h"
 
-EQGLoader::EQGLoader() {
+EQEmu::EQGLoader::EQGLoader() {
 }
 
-EQGLoader::~EQGLoader() {
+EQEmu::EQGLoader::~EQGLoader() {
 }
 
-bool EQGLoader::Load(std::string file, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
+bool EQEmu::EQGLoader::Load(std::string file, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
 	std::vector<std::shared_ptr<EQG::Region>> &regions, std::vector<std::shared_ptr<Light>> &lights) {
 	// find zon file
 	EQEmu::PFS::Archive archive;
@@ -47,7 +47,7 @@ bool EQGLoader::Load(std::string file, std::vector<std::shared_ptr<EQG::Geometry
 	return true;
 }
 
-bool EQGLoader::GetZon(std::string file, std::vector<char> &buffer) {
+bool EQEmu::EQGLoader::GetZon(std::string file, std::vector<char> &buffer) {
 	buffer.clear();
 	FILE *f = fopen(file.c_str(), "rb");
 	if(f) {
@@ -74,7 +74,7 @@ bool EQGLoader::GetZon(std::string file, std::vector<char> &buffer) {
 	return false;
 }
 
-bool EQGLoader::ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
+bool EQEmu::EQGLoader::ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
 	std::vector<std::shared_ptr<EQG::Region>> &regions, std::vector<std::shared_ptr<Light>> &lights) {
 	uint32_t idx = 0;
 	SafeStructAllocParse(zon_header, header);
@@ -126,7 +126,7 @@ bool EQGLoader::ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer
 		}
 
 		p->SetLocation(plac->x, plac->y, plac->z);
-		p->SetRotation(plac->rx * rot_change, plac->ry * rot_change, plac->rz * rot_change);
+		p->SetRotation(plac->rz * rot_change, plac->ry * rot_change, plac->rx * rot_change);
 		p->SetScale(plac->scale, plac->scale, plac->scale);
 
 		if(header->version > 1) {

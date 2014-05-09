@@ -5,13 +5,13 @@
 #include <functional>
 #include <cctype> 
 
-EQGModelLoader::EQGModelLoader() {
+EQEmu::EQGModelLoader::EQGModelLoader() {
 }
 
-EQGModelLoader::~EQGModelLoader() {
+EQEmu::EQGModelLoader::~EQGModelLoader() {
 }
 
-bool EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out) {
+bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out) {
 	std::transform(model.begin(), model.end(), model.begin(), std::tolower);
 
 	std::vector<char> buffer;
@@ -47,9 +47,11 @@ bool EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model, std::
 		m.SetName(&buffer[list_loc + mat->name_offset]);
 		m.SetShader(&buffer[list_loc + mat->shader_offset]);
 
+		auto &props = m.GetProperties();
+		props.resize(mat->property_count);
 		for(uint32_t j = 0; j < mat->property_count; ++j) {
 			SafeStructAllocParse(mod_material_property, prop);
-			EQG::Material::Property p;
+			auto &p = props[j];
 			p.name = &buffer[list_loc + prop->name_offset];
 
 			if (prop->type == 2) {
@@ -63,8 +65,6 @@ bool EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model, std::
 				p.value_i = prop->i_value;
 				p.value_f = 0.0f;
 			}
-
-			m.AddProperty(p);
 		}
 	}
 

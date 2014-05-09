@@ -1,9 +1,12 @@
-#ifndef EQEMU_EQG_STRUCTS_H
-#define EQEMU_EQG_STRUCTS_H
+#ifndef EQEMU_COMMON_EQG_STRUCTS_H
+#define EQEMU_COMMON_EQG_STRUCTS_H
 
 #include <stdint.h>
 
 #pragma pack(1)
+
+namespace EQEmu
+{
 
 struct zon_header
 {
@@ -119,6 +122,8 @@ struct mod_polygon
 	int32_t material;
 	uint32_t flags;
 };
+
+}
 
 #pragma pack()
 

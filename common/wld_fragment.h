@@ -1,5 +1,5 @@
-#ifndef EQEMU_WLD_FRAGMENT_H
-#define EQEMU_WLD_FRAGMENT_H
+#ifndef EQEMU_COMMON_WLD_FRAGMENT_H
+#define EQEMU_COMMON_WLD_FRAGMENT_H
 
 #include <stdint.h>
 #include "texture_brush_set.h"
@@ -8,6 +8,9 @@
 #include "bsp.h"
 #include "light.h"
 #include "any.h"
+
+namespace EQEmu
+{
 
 class S3DLoader;
 class WLDFragment
@@ -133,5 +136,7 @@ public:
 
 	std::shared_ptr<Geometry> GetData() { try { return EQEmu::any_cast<std::shared_ptr<Geometry>>(data); } catch (EQEmu::bad_any_cast&) { return std::shared_ptr<Geometry>(); } }
 };
+
+}
 
 #endif

@@ -1,7 +1,8 @@
-#ifndef EQEMU_BSP_H
-#define EQEMU_BSP_H
+#ifndef EQEMU_COMMON_BSP_H
+#define EQEMU_COMMON_BSP_H
 
-#include <vector>
+namespace EQEmu
+{
 
 class BSPRegion
 {
@@ -42,10 +43,11 @@ public:
 	BSPTree() { }
 	~BSPTree() { }
 
-	void AddNode(BSPNode n) { nodes.push_back(n); }
 	std::vector<BSPNode> &GetNodes() { return nodes; }
 private:
 	std::vector<BSPNode> nodes;
 };
+
+}
 
 #endif

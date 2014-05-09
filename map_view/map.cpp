@@ -151,7 +151,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 
 	std::vector<char> buffer;
 	buffer.resize(buffer_size);
-	uint32_t v = InflateData(&data[0], data_size, &buffer[0], buffer_size);
+	uint32_t v = EQEmu::InflateData(&data[0], data_size, &buffer[0], buffer_size);
 
 	char *buf = &buffer[0];
 	uint32_t vert_count;

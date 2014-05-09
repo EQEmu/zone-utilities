@@ -1,5 +1,8 @@
-#ifndef EQEMU_EQG_REGION_H
-#define EQEMU_EQG_REGION_H
+#ifndef EQEMU_COMMON_EQG_REGION_H
+#define EQEMU_COMMON_EQG_REGION_H
+
+namespace EQEmu
+{
 
 namespace EQG
 {
@@ -30,6 +33,8 @@ private:
 	uint32_t flag[2];
 	std::string name;
 };
+
+}
 
 }
 

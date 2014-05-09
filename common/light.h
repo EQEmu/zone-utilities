@@ -1,7 +1,10 @@
-#ifndef EQEMU_LIGHT_H
-#define EQEMU_LIGHT_H
+#ifndef EQEMU_COMMON_LIGHT_H
+#define EQEMU_COMMON_LIGHT_H
 
 #include <string>
+
+namespace EQEmu
+{
 
 class Light
 {
@@ -32,5 +35,7 @@ private:
 	float rad;
 	std::string name;
 };
+
+}
 
 #endif

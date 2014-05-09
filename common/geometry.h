@@ -1,9 +1,12 @@
-#ifndef EQEMU_GEOMETRY_H
-#define EQEMU_GEOMETRY_H
+#ifndef EQEMU_COMMON_GEOMETRY_H
+#define EQEMU_COMMON_GEOMETRY_H
 
 #include "glm.hpp"
 #include <vector>
 #include "texture_brush_set.h"
+
+namespace EQEmu
+{
 
 class Geometry
 {
@@ -25,8 +28,6 @@ public:
 	Geometry() { }
 	~Geometry() { }
 
-	void AddVertex(Vertex v) { verts.push_back(v); }
-	void AddPolygon(Polygon p) { polys.push_back(p); }
 	void SetName(std::string nname) { name = nname; }
 	void SetTextureBrushSet(std::shared_ptr<TextureBrushSet> tbs) { tex = tbs; }
 
@@ -40,5 +41,7 @@ private:
 	std::string name;
 	std::shared_ptr<TextureBrushSet> tex;
 };
+
+}
 
 #endif

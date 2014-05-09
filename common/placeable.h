@@ -1,5 +1,8 @@
-#ifndef EQEMU_PLACEABLE_H
-#define EQEMU_PLACEABLE_H
+#ifndef EQEMU_COMMON_PLACEABLE_H
+#define EQEMU_COMMON_PLACEABLE_H
+
+namespace EQEmu
+{
 
 class Placeable
 {
@@ -31,5 +34,7 @@ private:
 	std::string model_name;
 	std::string model_file;
 };
+
+}
 
 #endif

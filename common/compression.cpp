@@ -2,7 +2,7 @@
 #include <zlib.h>
 #include <string.h>
 
-uint32_t DeflateData(const char *buffer, uint32_t len, char *out_buffer, uint32_t out_len_max) {
+uint32_t EQEmu::DeflateData(const char *buffer, uint32_t len, char *out_buffer, uint32_t out_len_max) {
 	z_stream zstream;
 	memset(&zstream, 0, sizeof(zstream));
 	int zerror;
@@ -30,7 +30,7 @@ uint32_t DeflateData(const char *buffer, uint32_t len, char *out_buffer, uint32_
 	}
 }
 
-uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
+uint32_t EQEmu::InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
 	z_stream zstream;
 	int zerror = 0;
 	int i;

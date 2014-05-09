@@ -1,11 +1,13 @@
-#ifndef EQEMU_EQG_MODEL_LOADER_H
-#define EQEMU_EQG_MODEL_LOADER_H
+#ifndef EQEMU_COMMON_EQG_MODEL_LOADER_H
+#define EQEMU_COMMON_EQG_MODEL_LOADER_H
 
-#include <vector>
 #include <stdint.h>
 #include <memory>
 #include "pfs.h"
 #include "eqg_geometry.h"
+
+namespace EQEmu
+{
 
 class EQGModelLoader
 {
@@ -14,5 +16,7 @@ public:
 	~EQGModelLoader();
 	bool Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out);
 };
+
+}
 
 #endif

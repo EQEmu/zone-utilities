@@ -18,22 +18,22 @@ public:
 	bool Write(std::string filename);
 private:
 	bool CompileS3D(
-		std::vector<WLDFragment> &zone_frags,
-		std::vector<WLDFragment> &zone_object_frags,
-		std::vector<WLDFragment> &zone_light_frags,
-		std::vector<WLDFragment> &object_frags,
-		std::vector<WLDFragment> &character_frags
+		std::vector<EQEmu::WLDFragment> &zone_frags,
+		std::vector<EQEmu::WLDFragment> &zone_object_frags,
+		std::vector<EQEmu::WLDFragment> &zone_light_frags,
+		std::vector<EQEmu::WLDFragment> &object_frags,
+		std::vector<EQEmu::WLDFragment> &character_frags
 		);
 	bool CompileEQG(
-		std::vector<std::shared_ptr<EQG::Geometry>> &models,
-		std::vector<std::shared_ptr<Placeable>> &placeables,
-		std::vector<std::shared_ptr<EQG::Region>> &regions,
-		std::vector<std::shared_ptr<Light>> &lights
+		std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> &models,
+		std::vector<std::shared_ptr<EQEmu::Placeable>> &placeables,
+		std::vector<std::shared_ptr<EQEmu::EQG::Region>> &regions,
+		std::vector<std::shared_ptr<EQEmu::Light>> &lights
 		);
 
-	void RotateVertex(Geometry::Vertex &v, float rx, float ry, float rz);
-	void ScaleVertex(Geometry::Vertex &v, float sx, float sy, float sz);
-	void TranslateVertex(Geometry::Vertex &v, float tx, float ty, float tz);
+	void RotateVertex(glm::vec3 &v, float rx, float ry, float rz);
+	void ScaleVertex(glm::vec3 &v, float sx, float sy, float sz);
+	void TranslateVertex(glm::vec3 &v, float tx, float ty, float tz);
 
 	std::vector<glm::vec3> collide_verts;
 	std::vector<uint32_t> collide_indices;

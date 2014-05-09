@@ -10,13 +10,13 @@ void decode_string_hash(char *str, size_t len) {
 	}
 }
 
-S3DLoader::S3DLoader() {
+EQEmu::S3DLoader::S3DLoader() {
 }
 
-S3DLoader::~S3DLoader() {
+EQEmu::S3DLoader::~S3DLoader() {
 }
 
-bool S3DLoader::Load(std::string zone_name,
+bool EQEmu::S3DLoader::Load(std::string zone_name,
 	std::vector<WLDFragment> &zone_frags,
 	std::vector<WLDFragment> &zone_object_frags, 
 	std::vector<WLDFragment> &zone_light_frags,
@@ -45,7 +45,7 @@ bool S3DLoader::Load(std::string zone_name,
 	return true;
 }
 
-bool S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name, std::vector<WLDFragment> &out) {
+bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name, std::vector<WLDFragment> &out) {
 	out.clear();
 	std::vector<char> buffer;
 	char *current_hash;

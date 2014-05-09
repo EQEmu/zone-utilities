@@ -1,9 +1,12 @@
-#ifndef EQEMU_WLD_STRUCTS_H
-#define EQEMU_WLD_STRUCTS_H
+#ifndef EQEMU_COMMON_WLD_STRUCTS_H
+#define EQEMU_COMMON_WLD_STRUCTS_H
 
 #include <stdint.h>
 
 #pragma pack(1)
+
+namespace EQEmu
+{
 
 struct wld_header
 {
@@ -170,6 +173,8 @@ struct wld_fragment36_tex_map
 	uint16_t poly_count;
 	uint16_t tex;
 };
+
+}
 
 #pragma pack()
 

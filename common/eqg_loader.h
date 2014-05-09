@@ -1,5 +1,5 @@
-#ifndef EQEMU_EQG_LOADER_H
-#define EQEMU_EQG_LOADER_H
+#ifndef EQEMU_COMMON_EQG_LOADER_H
+#define EQEMU_COMMON_EQG_LOADER_H
 
 #include <vector>
 #include <stdint.h>
@@ -10,6 +10,9 @@
 #include "eqg_region.h"
 #include "light.h"
 #include "pfs.h"
+
+namespace EQEmu
+{
 
 class EQGLoader
 {
@@ -23,5 +26,7 @@ private:
 	bool ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
 		std::vector<std::shared_ptr<EQG::Region>> &regions, std::vector<std::shared_ptr<Light>> &lights);
 };
+
+}
 
 #endif

@@ -8,6 +8,9 @@
 
 void decode_string_hash(char *str, size_t len);
 
+namespace EQEmu
+{
+
 class S3DLoader
 {
 public:
@@ -22,5 +25,7 @@ public:
 private:
 	bool ParseWLDFile(std::string file_name, std::string wld_name, std::vector<WLDFragment> &out);
 };
+
+}
 
 #endif

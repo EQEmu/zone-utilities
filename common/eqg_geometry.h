@@ -5,6 +5,9 @@
 #include <vector>
 #include "eqg_material.h"
 
+namespace EQEmu
+{
+
 namespace EQG
 {
 
@@ -45,6 +48,8 @@ private:
 	std::vector<Polygon> polys;
 	std::string name;
 };
+
+}
 
 }
 

@@ -1,9 +1,12 @@
-#ifndef EQEMU_EQG_MATERIAL_H
-#define EQEMU_EQG_MATERIAL_H
+#ifndef EQEMU_COMMON_EQG_MATERIAL_H
+#define EQEMU_COMMON_EQG_MATERIAL_H
 
 #include <string>
 #include <vector>
 #include <stdint.h>
+
+namespace EQEmu
+{
 
 namespace EQG
 {
@@ -25,7 +28,6 @@ public:
 
 	void SetName(std::string n) { name = n; }
 	void SetShader(std::string s) { shader = s; }
-	void AddProperty(Property &p) { properties.push_back(p); }
 	
 	std::string &GetName() { return name; }
 	std::string &GetShader() { return shader; }
@@ -35,6 +37,8 @@ private:
 	std::string shader;
 	std::vector<Property> properties;
 };
+
+}
 
 }
 
