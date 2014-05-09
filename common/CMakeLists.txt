@@ -16,7 +16,7 @@ SET(common_headers
 	bsp.h
 	compression.h
 	geometry.h
-	endian.h
+	eqemu_endian.h
 	eqg_geometry.h
 	eqg_loader.h
 	eqg_material.h

@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <zlib.h>
 #include "pfs.h"
-#include "endian.h"
+#include "eqemu_endian.h"
 
 #define BufferRead(x, y) x = (y*)&buffer[position]; position += sizeof(y);
 #define BufferReadLength(x, y) memcpy(x, &buffer[position], y); position += y;

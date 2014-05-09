@@ -1,4 +1,5 @@
 #include "water_map.h"
+#include <string.h>
 
 void BSPMarkRegion(std::shared_ptr<EQEmu::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
 

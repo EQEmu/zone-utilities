@@ -12,7 +12,7 @@ EQEmu::EQGModelLoader::~EQGModelLoader() {
 }
 
 bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out) {
-	std::transform(model.begin(), model.end(), model.begin(), std::tolower);
+	std::transform(model.begin(), model.end(), model.begin(), ::tolower);
 
 	std::vector<char> buffer;
 	if(!archive.Get(model, buffer)) {

@@ -8,6 +8,7 @@
 class ShaderUniform
 {
 public:
+	ShaderUniform() { }
 	~ShaderUniform();
 
 	inline void SetValue(float v) { glUniform1f(location_id, v); }

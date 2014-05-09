@@ -22,8 +22,9 @@ int main(int argc, char **argv)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_RESIZABLE, 0);
 
-	GLFWwindow *win = glfwCreateWindow(1280, 720, "Zone View", nullptr, nullptr);
+	GLFWwindow *win = glfwCreateWindow(1280, 720, "Map View", nullptr, nullptr);
 	if(!win) {
 		glfwTerminate();
 		return -1;
@@ -45,7 +46,7 @@ int main(int argc, char **argv)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	ShaderProgram shader("basic.vert", "basic.frag");
+	ShaderProgram shader("shaders/basic.vert", "shaders/basic.frag");
 	ShaderUniform uniform = shader.GetUniformLocation("MVP");
 	ShaderUniform tint = shader.GetUniformLocation("Tint");
 
@@ -93,6 +94,7 @@ int main(int argc, char **argv)
 
 	if (invis)
 		delete invis;
+
 	glfwTerminate();
 	return 0;
 }
