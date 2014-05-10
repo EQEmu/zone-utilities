@@ -34,8 +34,6 @@ bool EQEmu::EQGLoader::Load(std::string file, std::vector<std::shared_ptr<EQG::G
 		}
 	}
 
-	//If no zon file existed then this is probably a model we don't handle that yet
-	//Need to reverse the model layout file sometime but atm not important.
 	if (!zon_found)
 		return false;
 

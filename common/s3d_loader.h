@@ -21,6 +21,7 @@ public:
 		std::vector<WLDFragment> &zone_object_frags,
 		std::vector<WLDFragment> &zone_light_frags,
 		std::vector<WLDFragment> &object_frags,
+		std::vector<WLDFragment> &object2_frags,
 		std::vector<WLDFragment> &character_frags);
 private:
 	bool ParseWLDFile(std::string file_name, std::string wld_name, std::vector<WLDFragment> &out);

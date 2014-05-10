@@ -7,6 +7,7 @@
 #include <glm.hpp>
 #include "s3d_loader.h"
 #include "eqg_loader.h"
+#include "eqg_v4_loader.h"
 
 class Map
 {
@@ -22,6 +23,7 @@ private:
 		std::vector<EQEmu::WLDFragment> &zone_object_frags,
 		std::vector<EQEmu::WLDFragment> &zone_light_frags,
 		std::vector<EQEmu::WLDFragment> &object_frags,
+		std::vector<EQEmu::WLDFragment> &object2_frags,
 		std::vector<EQEmu::WLDFragment> &character_frags
 		);
 	bool CompileEQG(

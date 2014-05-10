@@ -42,6 +42,15 @@ struct wld_fragment04
 	uint32_t texture_count;
 };
 
+struct wld_fragment14
+{
+	uint32_t flag;
+	int32_t ref;
+	uint32_t entries;
+	uint32_t entries2;
+	int32_t ref2;
+};
+
 struct wld_fragment15
 {
 	uint32_t flags;

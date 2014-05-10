@@ -8,6 +8,7 @@
 #include "bsp.h"
 #include "light.h"
 #include "any.h"
+#include "wld_fragment_reference.h"
 
 namespace EQEmu
 {
@@ -49,6 +50,15 @@ public:
 	~WLDFragment05() { }
 
 	uint32_t GetData() { try { return EQEmu::any_cast<uint32_t>(data); } catch (EQEmu::bad_any_cast&) { return 0; } }
+};
+
+class WLDFragment14 : public WLDFragment
+{
+public:
+	WLDFragment14(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old);
+	~WLDFragment14() { }
+
+	std::shared_ptr<WLDFragmentReference> GetData() { try { return EQEmu::any_cast<std::shared_ptr<WLDFragmentReference>>(data); } catch (EQEmu::bad_any_cast&) { return std::shared_ptr<WLDFragmentReference>(); } }
 };
 
 class WLDFragment15 : public WLDFragment
@@ -108,6 +118,15 @@ public:
 	~WLDFragment29() { }
 
 	std::shared_ptr<BSPRegion> GetData() { try { return EQEmu::any_cast<std::shared_ptr<BSPRegion>>(data); } catch (EQEmu::bad_any_cast&) { return std::shared_ptr<BSPRegion>(); } }
+};
+
+class WLDFragment2D : public WLDFragment
+{
+public:
+	WLDFragment2D(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old);
+	~WLDFragment2D() { }
+
+	uint32_t GetData() { try { return EQEmu::any_cast<uint32_t>(data); } catch (EQEmu::bad_any_cast&) { return 0; } }
 };
 
 class WLDFragment30 : public WLDFragment

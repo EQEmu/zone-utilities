@@ -7,6 +7,7 @@ SET(common_sources
 	eqg_v4_loader.cpp
 	pfs.cpp
 	s3d_loader.cpp
+	string_util.cpp
 	wld_fragment.cpp
 )
 
@@ -29,9 +30,11 @@ SET(common_headers
 	placeable.h
 	safe_alloc.h
 	s3d_loader.h
+	string_util.h
 	texture.h
 	texture_brush.h
 	texture_brush_set.h
+	wld_fragment_reference.h
 	wld_fragment.h
 	wld_structs.h
 )

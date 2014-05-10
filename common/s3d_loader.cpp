@@ -21,6 +21,7 @@ bool EQEmu::S3DLoader::Load(std::string zone_name,
 	std::vector<WLDFragment> &zone_object_frags, 
 	std::vector<WLDFragment> &zone_light_frags,
 	std::vector<WLDFragment> &object_frags,
+	std::vector<WLDFragment> &object2_frags,
 	std::vector<WLDFragment> &character_frags) {
 	if (!ParseWLDFile(zone_name + ".s3d", zone_name + ".wld", zone_frags)) {
 		return false;
@@ -37,6 +38,8 @@ bool EQEmu::S3DLoader::Load(std::string zone_name,
 	if (!ParseWLDFile(zone_name + "_obj.s3d", zone_name + "_obj.wld", object_frags)) {
 		return false;
 	}
+
+	ParseWLDFile(zone_name + "_2_obj.s3d", zone_name + "_2_obj.wld", object2_frags);
 
 	//not every zone will have a _chr.s3d so we can't fail them for it
 	ParseWLDFile(zone_name + "_chr.s3d", zone_name + "_chr.wld", character_frags);
@@ -99,6 +102,13 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 				out.push_back(f);
 				break;
 			}
+			case 0x14: {
+				 WLDFragment14 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				 f.type = frag_header->id;
+				 f.name = frag_header->name_ref;
+				 out.push_back(f);
+				 break;
+			}
 			case 0x15: {
 				WLDFragment15 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
@@ -148,6 +158,13 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 				out.push_back(f);
 				break;
 			}
+			case 0x2D: {
+				WLDFragment2D f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				f.type = frag_header->id;
+				f.name = frag_header->name_ref;
+				out.push_back(f);
+				break;
+			}
 			case 0x30: {
 				WLDFragment30 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
@@ -166,6 +183,7 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 				WLDFragment36 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
+
 				out.push_back(f);
 				break;
 			}

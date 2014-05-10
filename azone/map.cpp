@@ -22,6 +22,10 @@ bool Map::Build(std::string zone_name) {
 	}
 
 	//if that fails try to load a v4 eqg here
+	EQEmu::EQG4Loader eqg4;
+	if (eqg4.Load(zone_name)) {
+		return false;
+	}
 	
 	//if that fails try to load a s3d here
 	EQEmu::S3DLoader s3d;
@@ -29,9 +33,10 @@ bool Map::Build(std::string zone_name) {
 	std::vector<EQEmu::WLDFragment> zone_object_frags;
 	std::vector<EQEmu::WLDFragment> zone_light_frags;
 	std::vector<EQEmu::WLDFragment> object_frags;
+	std::vector<EQEmu::WLDFragment> object2_frags;
 	std::vector<EQEmu::WLDFragment> character_frags;
-	if(s3d.Load(zone_name, zone_frags, zone_object_frags, zone_light_frags, object_frags, character_frags)) {
-		return CompileS3D(zone_frags, zone_object_frags, zone_light_frags, object_frags, character_frags);
+	if(s3d.Load(zone_name, zone_frags, zone_object_frags, zone_light_frags, object_frags, object2_frags, character_frags)) {
+		return CompileS3D(zone_frags, zone_object_frags, zone_light_frags, object_frags, object2_frags, character_frags);
 	}
 
 	//all hath failed
@@ -39,7 +44,13 @@ bool Map::Build(std::string zone_name) {
 }
 
 bool Map::Write(std::string filename) {
+	if (collide_verts.size() == 0 || collide_indices.size() == 0 || non_collide_verts.size() == 0 || non_collide_indices.size() == 0)
+		return false;
+
 	FILE *f = fopen(filename.c_str(), "wb");
+
+	if(!f)
+		return false;
 	
 	uint32_t version = 0x02000000;
 	if (fwrite(&version, sizeof(uint32_t), 1, f) != 1) {
@@ -117,6 +128,7 @@ bool Map::CompileS3D(
 	std::vector<EQEmu::WLDFragment> &zone_object_frags,
 	std::vector<EQEmu::WLDFragment> &zone_light_frags,
 	std::vector<EQEmu::WLDFragment> &object_frags,
+	std::vector<EQEmu::WLDFragment> &object2_frags,
 	std::vector<EQEmu::WLDFragment> &character_frags
 	)
 {
@@ -248,22 +260,44 @@ bool Map::CompileS3D(
 		if (zone_object_frags[i].type == 0x15) {
 			EQEmu::WLDFragment15 &frag = reinterpret_cast<EQEmu::WLDFragment15&>(zone_object_frags[i]);
 			auto plac = frag.GetData();
-			if (plac->GetName().size() > 9) {
-				std::string placable_model_name = plac->GetName().substr(0, plac->GetName().length() - 9);
-				
-				for (uint32_t o = 0; o < object_frags.size(); ++o) {
-					if (object_frags[o].type == 0x36) {
-						EQEmu::WLDFragment36 &obj_frag = reinterpret_cast<EQEmu::WLDFragment36&>(object_frags[o]);
-						auto mod = obj_frag.GetData();
-						if(mod->GetName().size() > 12) {
-							std::string model_name = mod->GetName().substr(0, mod->GetName().length() - 12);
-							if(model_name.compare(placable_model_name) == 0) {
+
+			if(!plac)
+			{
+				printf("Warning: Placeable entry was not found...\n");
+				continue;
+			}
+
+			bool found = false;
+			for (uint32_t o = 0; o < object_frags.size(); ++o) {
+				if (object_frags[o].type == 0x14) {
+					EQEmu::WLDFragment14 &obj_frag = reinterpret_cast<EQEmu::WLDFragment14&>(object_frags[o]);
+					auto mod_ref = obj_frag.GetData();
+
+					if(mod_ref->GetName().compare(plac->GetName()) == 0) {
+						found = true;
+
+						auto &frag_refs = mod_ref->GetFrags();
+						for (uint32_t m = 0; m < frag_refs.size(); ++m) {
+							if (object_frags[frag_refs[m] - 1].type == 0x2D) {
+								EQEmu::WLDFragment2D &r_frag = reinterpret_cast<EQEmu::WLDFragment2D&>(object_frags[frag_refs[m] - 1]);
+								auto m_ref = r_frag.GetData();
+
+								EQEmu::WLDFragment36 &mod_frag = reinterpret_cast<EQEmu::WLDFragment36&>(object_frags[m_ref]);
+								auto mod = mod_frag.GetData();
 								placables.push_back(std::make_pair(plac, mod));
-								break;
+							}
+							else if (object_frags[frag_refs[m] - 1].type == 0x11) {
+								printf("Warning: could not add model for olaceable %s because we don't yet support animated mesh fragments.\n", plac->GetName().c_str());
 							}
 						}
+
+						break;
 					}
 				}
+			}
+
+			if(!found) {
+				printf("Warning: could not find the model for placeable %s\n", plac->GetName().c_str());
 			}
 		}
 	}

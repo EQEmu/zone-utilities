@@ -63,12 +63,49 @@ EQEmu::WLDFragment05::WLDFragment05(S3DLoader *loader, std::vector<WLDFragment> 
 	data = frag_id;
 }
 
+EQEmu::WLDFragment14::WLDFragment14(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
+	wld_fragment14 *header = (wld_fragment14*)frag_buffer;
+	frag_buffer += sizeof(wld_fragment14);
+
+	std::shared_ptr<WLDFragmentReference> ref(new WLDFragmentReference());
+	ref->SetName(&hash[-(int32_t)frag_name]);
+	ref->SetMagicString(&hash[-header->ref]);
+
+	if(header->flag & 1) {
+		frag_buffer += sizeof(int32_t);
+	}
+
+	if (header->flag & 2) {
+		frag_buffer += sizeof(int32_t);
+	}
+	
+	for(uint32_t i = 0; i < header->entries; ++i) {
+		uint32_t sz = *(uint32_t*)frag_buffer;
+		frag_buffer += sizeof(uint32_t);
+		for(uint32_t j = 0; j < sz; ++j) {
+			frag_buffer += sizeof(int32_t);
+			frag_buffer += sizeof(float);
+		}
+	}
+
+	for(uint32_t i = 0; i < header->entries2; ++i) {
+		uint32_t f_ref = *(uint32_t*)frag_buffer;
+		frag_buffer += sizeof(uint32_t);
+
+		ref->GetFrags().push_back(f_ref);
+	}
+
+	//Encoded string length + string here, purpose unknown.
+
+	data = ref;
+}
+
 EQEmu::WLDFragment15::WLDFragment15(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
 	wld_fragment_reference *ref = (wld_fragment_reference*)frag_buffer;
 	frag_buffer += sizeof(wld_fragment_reference);
 
 	wld_fragment15 *header = (wld_fragment15*)frag_buffer;
-	if(header->flags != 0x2E) {
+	if(ref->id <= 0) {
 		std::shared_ptr<Placeable> plac(new Placeable());
 		plac->SetLocation(header->x, header->y, header->z);
 		plac->SetRotation(
@@ -185,6 +222,12 @@ EQEmu::WLDFragment29::WLDFragment29(S3DLoader *loader, std::vector<WLDFragment> 
 	}
 
 	data = region;
+}
+
+EQEmu::WLDFragment2D::WLDFragment2D(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
+	wld_fragment_reference *ref = (wld_fragment_reference*)frag_buffer;
+	uint32_t frag_id = ref->id - 1;
+	data = frag_id;
 }
 
 EQEmu::WLDFragment30::WLDFragment30(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
