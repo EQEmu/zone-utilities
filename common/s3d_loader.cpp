@@ -38,9 +38,8 @@ bool EQEmu::S3DLoader::Load(std::string zone_name,
 		return false;
 	}
 
-	if (!ParseWLDFile(zone_name + "_chr.s3d", zone_name + "_chr.wld", character_frags)) {
-		return false;
-	}
+	//not every zone will have a _chr.s3d so we can't fail them for it
+	ParseWLDFile(zone_name + "_chr.s3d", zone_name + "_chr.wld", character_frags);
 
 	return true;
 }
