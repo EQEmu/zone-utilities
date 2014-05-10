@@ -19,10 +19,16 @@ int main(int argc, char **argv)
 	}
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
+#ifndef EQEMU_GL_DEP
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, 0);
+#else
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_RESIZABLE, 0);
+#endif
 
 	GLFWwindow *win = glfwCreateWindow(1280, 720, "Map View", nullptr, nullptr);
 	if(!win) {
@@ -46,7 +52,11 @@ int main(int argc, char **argv)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
+#ifndef EQEMU_GL_DEP
 	ShaderProgram shader("shaders/basic.vert", "shaders/basic.frag");
+#else
+	ShaderProgram shader("shaders/basic150.vert", "shaders/basic150.frag");
+#endif
 	ShaderUniform uniform = shader.GetUniformLocation("MVP");
 	ShaderUniform tint = shader.GetUniformLocation("Tint");
 
