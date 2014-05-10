@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 #ifndef EQEMU_GL_DEP
 	ShaderProgram shader("shaders/basic.vert", "shaders/basic.frag");
 #else
-	ShaderProgram shader("shaders/basic150.vert", "shaders/basic150.frag");
+	ShaderProgram shader("shaders/basic130.vert", "shaders/basic130.frag");
 #endif
 	ShaderUniform uniform = shader.GetUniformLocation("MVP");
 	ShaderUniform tint = shader.GetUniformLocation("Tint");

@@ -99,7 +99,11 @@ bool OverlayManager::Init(std::string atlas_file, std::string atlas_config) {
 		return false;
 	}
 
+#ifndef EQEMU_GL_DEP
 	overlay_shader = ShaderProgram("shaders/overlay.vert", "shaders/overlay.frag");
+#else
+	overlay_shader = ShaderProgram("shaders/overlay130.vert", "shaders/overlay130.frag");
+#endif
 	overlay_mvp = overlay_shader.GetUniformLocation("mvp");
 	overlay_tex_sampler = overlay_shader.GetUniformLocation("tex_sample");
 	return true;
