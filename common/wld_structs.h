@@ -58,6 +58,20 @@ struct wld_fragment10_track_ref_entry
 	uint32_t tree_piece_count;
 };
 
+struct wld_fragment12
+{
+	uint32_t flag;
+	uint32_t size;
+	int16_t rot_denom;
+	int16_t rot_x_num;
+	int16_t rot_y_num;
+	int16_t rot_z_num;
+	int16_t shift_x_num;
+	int16_t shift_y_num;
+	int16_t shift_z_num;
+	int16_t shift_denom;
+};
+
 struct wld_fragment14
 {
 	uint32_t flag;

@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	Model *invis = nullptr;
 	LoadMap(filename, &collide, &invis);
 
-	Camera cam(1280, 720, 45.0f, 0.1f, 10000.0f);
+	Camera cam(1280, 720, 45.0f, 0.1f, 15000.0f);
 
 	bool rendering = true;
 	do {

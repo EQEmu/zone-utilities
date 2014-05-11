@@ -104,7 +104,7 @@ EQEmu::WLDFragment10::WLDFragment10(S3DLoader *loader, std::vector<WLDFragment> 
 				WLDFragment13 &f_oref = reinterpret_cast<WLDFragment13&>(out[ent->frag_ref - 1]);
 				auto or_ref = f_oref.GetData();
 
-				WLDFragment12 &fori = reinterpret_cast<WLDFragment12&>(out[m_ref]);
+				WLDFragment12 &fori = reinterpret_cast<WLDFragment12&>(out[or_ref]);
 				auto orient = fori.GetData();
 
 				bone->orientation = orient;
@@ -166,7 +166,19 @@ EQEmu::WLDFragment11::WLDFragment11(S3DLoader *loader, std::vector<WLDFragment> 
 }
 
 EQEmu::WLDFragment12::WLDFragment12(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
-	
+	std::shared_ptr<SkeletonTrack::BoneOrientation> orientation(new SkeletonTrack::BoneOrientation);
+	wld_fragment12 *header = (wld_fragment12*)frag_buffer;
+
+	orientation->rotate_denom = header->rot_denom;
+	orientation->rotate_x_num = header->rot_x_num;
+	orientation->rotate_y_num = header->rot_y_num;
+	orientation->rotate_z_num = header->rot_z_num;
+	orientation->shift_denom = header->shift_denom;
+	orientation->shift_x_num = header->shift_x_num;
+	orientation->shift_y_num = header->shift_y_num;
+	orientation->shift_z_num = header->shift_z_num;
+
+	data = orientation;
 }
 
 EQEmu::WLDFragment13::WLDFragment13(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {

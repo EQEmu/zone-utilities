@@ -2,6 +2,8 @@
 #include <sstream>
 #include "compression.h"
 
+#include <gtc/matrix_transform.hpp>
+
 Map::Map() {
 }
 
@@ -123,6 +125,93 @@ bool Map::Write(std::string filename) {
 
 	fclose(f);
 	return true;
+}
+
+void Map::TraverseBone(std::shared_ptr<EQEmu::SkeletonTrack::Bone> bone, glm::vec3 parent_trans, glm::vec3 parent_rot, glm::vec3 parent_scale)
+{
+	float offset_x = 0.0f;
+	float offset_y = 0.0f;
+	float offset_z = 0.0f;
+
+	float rot_x = 0.0f;
+	float rot_y = 0.0f;
+	float rot_z = 0.0f;
+
+	float scale_x = parent_scale.x;
+	float scale_y = parent_scale.y;
+	float scale_z = parent_scale.z;
+
+	if(bone->orientation) {
+		if (bone->orientation->shift_denom != 0) {
+			offset_x = (float)bone->orientation->shift_x_num / (float)bone->orientation->shift_denom;
+			offset_y = (float)bone->orientation->shift_y_num / (float)bone->orientation->shift_denom;
+			offset_z = (float)bone->orientation->shift_z_num / (float)bone->orientation->shift_denom;
+		}
+
+		if(bone->orientation->rotate_denom != 0) {
+			rot_x = (float)bone->orientation->rotate_x_num / (float)bone->orientation->rotate_denom;
+			rot_y = (float)bone->orientation->rotate_y_num / (float)bone->orientation->rotate_denom;
+			rot_z = (float)bone->orientation->rotate_z_num / (float)bone->orientation->rotate_denom;
+
+			rot_x = rot_x *3.14159f / 180.0f;
+			rot_y = rot_y *3.14159f / 180.0f;
+			rot_z = rot_z *3.14159f / 180.0f;
+		}
+	}
+
+	glm::vec3 pos(offset_x, offset_y, offset_z);
+	glm::vec3 rot(rot_x, rot_y, rot_z);
+
+	RotateVertex(pos, parent_rot.x, parent_rot.y, parent_rot.z);
+	pos += parent_trans;
+	
+	rot += parent_rot;
+
+	if(bone->model) {
+		auto &mod_polys = bone->model->GetPolygons();
+		auto &mod_verts = bone->model->GetVertices();
+
+		for (uint32_t j = 0; j < mod_polys.size(); ++j) {
+			auto &current_poly = mod_polys[j];
+			auto v1 = mod_verts[current_poly.verts[0]];
+			auto v2 = mod_verts[current_poly.verts[1]];
+			auto v3 = mod_verts[current_poly.verts[2]];
+
+			RotateVertex(v1.pos, rot.x, rot.y, rot.z);
+			RotateVertex(v2.pos, rot.x, rot.y, rot.z);
+			RotateVertex(v3.pos, rot.x, rot.y, rot.z);
+
+			ScaleVertex(v1.pos, scale_x, scale_y, scale_z);
+			ScaleVertex(v2.pos, scale_x, scale_y, scale_z);
+			ScaleVertex(v3.pos, scale_x, scale_y, scale_z);
+
+			TranslateVertex(v1.pos, pos.x, pos.y, pos.z);
+			TranslateVertex(v2.pos, pos.x, pos.y, pos.z);
+			TranslateVertex(v3.pos, pos.x, pos.y, pos.z);
+
+#ifdef INVERSEXY
+			float t = v1.pos.x;
+			v1.pos.x = v1.pos.y;
+			v1.pos.y = t;
+
+			t = v2.pos.x;
+			v2.pos.x = v2.pos.y;
+			v2.pos.y = t;
+
+			t = v3.pos.x;
+			v3.pos.x = v3.pos.y;
+			v3.pos.y = t;
+#endif
+			if (current_poly.flags == 0x10)
+				AddFace(v1.pos, v2.pos, v3.pos, false);
+			else
+				AddFace(v1.pos, v2.pos, v3.pos, true);
+		}
+	}
+
+	for(auto &c : bone->children) {
+		TraverseBone(c, pos, rot, parent_scale);
+	}
 }
 
 bool Map::CompileS3D(
@@ -288,6 +377,25 @@ bool Map::CompileS3D(
 
 	pl_sz = placables_skeleton.size();
 	for (size_t i = 0; i < pl_sz; ++i) {
+		auto &plac = placables_skeleton[i].first;
+		
+		auto &bones = placables_skeleton[i].second->GetBones();
+
+		if(bones.size() > 0) 
+		{
+			float offset_x = plac->GetX();
+			float offset_y = plac->GetY();
+			float offset_z = plac->GetZ();
+
+			float rot_x = plac->GetRotateX() * 3.14159f / 180.0f;
+			float rot_y = plac->GetRotateY() * 3.14159f / 180.0f;
+			float rot_z = plac->GetRotateZ() * 3.14159f / 180.0f;
+
+			float scale_x = plac->GetScaleX();
+			float scale_y = plac->GetScaleY();
+			float scale_z = plac->GetScaleZ();
+			TraverseBone(bones[0], glm::vec3(offset_x, offset_y, offset_z), glm::vec3(rot_x, rot_y, rot_z), glm::vec3(scale_x, scale_y, scale_z));
+		}
 	}
 
 	return true;

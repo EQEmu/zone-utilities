@@ -33,7 +33,7 @@ void Camera::UpdateInputs(GLFWwindow *win) {
 	hor_angle += 0.005f * float(width / 2 - x_pos);
 	ver_angle += 0.005f * float(height / 2 - y_pos);
 
-	glm::vec3 direction(cos(ver_angle) * sin(hor_angle), sin(ver_angle),	cos(ver_angle) * cos(hor_angle));
+	glm::vec3 direction(cos(ver_angle) * sin(hor_angle), sin(ver_angle), cos(ver_angle) * cos(hor_angle));
 	glm::vec3 right = glm::vec3(sin(hor_angle - 3.14f / 2.0f), 0, cos(hor_angle - 3.14f / 2.0f));
 	glm::vec3 up = glm::cross(right, direction);
 

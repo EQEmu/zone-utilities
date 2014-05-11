@@ -20,6 +20,8 @@ public:
 	bool Build(std::string zone_name);
 	bool Write(std::string filename);
 private:
+	void TraverseBone(std::shared_ptr<EQEmu::SkeletonTrack::Bone> bone, glm::vec3 parent_trans, glm::vec3 parent_rot, glm::vec3 parent_scale);
+
 	bool CompileS3D(
 		std::vector<EQEmu::WLDFragment> &zone_frags,
 		std::vector<EQEmu::WLDFragment> &zone_object_frags,
