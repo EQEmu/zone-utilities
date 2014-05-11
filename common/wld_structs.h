@@ -42,6 +42,22 @@ struct wld_fragment04
 	uint32_t texture_count;
 };
 
+struct wld_fragment10
+{
+	uint32_t flag;
+	uint32_t track_ref_count;
+	uint32_t polygon_anim_frag;
+};
+
+struct wld_fragment10_track_ref_entry
+{
+	int32_t name_ref;
+	uint32_t flag;
+	int32_t frag_ref;
+	int32_t frag_ref2;
+	uint32_t tree_piece_count;
+};
+
 struct wld_fragment14
 {
 	uint32_t flag;

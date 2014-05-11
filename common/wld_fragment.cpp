@@ -63,6 +63,118 @@ EQEmu::WLDFragment05::WLDFragment05(S3DLoader *loader, std::vector<WLDFragment> 
 	data = frag_id;
 }
 
+EQEmu::WLDFragment10::WLDFragment10(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
+	wld_fragment10 *header = (wld_fragment10*)frag_buffer;
+	frag_buffer += sizeof(wld_fragment10);
+
+	std::shared_ptr<EQEmu::SkeletonTrack> track(new EQEmu::SkeletonTrack());
+	track->SetName(&hash[-(int32_t)frag_name]);
+
+	if(header->flag & 1) {
+		int32_t param0 = *(int32_t*)frag_buffer;
+		frag_buffer += sizeof(int32_t);
+		int32_t param1 = *(int32_t*)frag_buffer;
+		frag_buffer += sizeof(int32_t);
+		int32_t param2 = *(int32_t*)frag_buffer;
+		frag_buffer += sizeof(int32_t);
+	}
+
+	if (header->flag & 2) {
+		float params2 = *(float*)frag_buffer;
+		frag_buffer += sizeof(float);
+	}
+
+	auto &bones = track->GetBones();
+	std::vector<std::pair<int, int>> tree;
+	for(uint32_t i = 0; i < header->track_ref_count; ++i) {
+		wld_fragment10_track_ref_entry *ent = (wld_fragment10_track_ref_entry*)frag_buffer;
+		frag_buffer += sizeof(wld_fragment10_track_ref_entry);
+
+		std::shared_ptr<SkeletonTrack::Bone> bone(new SkeletonTrack::Bone);
+		if (ent->frag_ref2 != 0 && out[ent->frag_ref2 - 1].type == 0x2d) {
+			WLDFragment2D &f = reinterpret_cast<WLDFragment2D&>(out[ent->frag_ref2 - 1]);
+			auto m_ref = f.GetData();
+
+			WLDFragment36 &fmod = reinterpret_cast<WLDFragment36&>(out[m_ref]);
+			auto mod = fmod.GetData();
+
+			bone->model = mod;
+
+			if (ent->frag_ref != 0) {
+				WLDFragment13 &f_oref = reinterpret_cast<WLDFragment13&>(out[ent->frag_ref - 1]);
+				auto or_ref = f_oref.GetData();
+
+				WLDFragment12 &fori = reinterpret_cast<WLDFragment12&>(out[m_ref]);
+				auto orient = fori.GetData();
+
+				bone->orientation = orient;
+			}
+		}
+
+		bones.push_back(bone);
+
+		for(uint32_t j = 0; j < ent->tree_piece_count; ++j) {
+			int32_t tree_piece_ref = *(int32_t*)frag_buffer;
+			frag_buffer += sizeof(int32_t);
+
+			tree.push_back(std::make_pair(i, tree_piece_ref));
+		}
+	}
+
+	for (size_t i = 0; i < tree.size(); ++i) {
+		int &bone_src = tree[i].first;
+		int &bone_dest = tree[i].second;
+
+		bones[bone_src]->children.push_back(bones[bone_dest]);
+	}
+
+	if (header->flag & 512) {
+		uint32_t sz = *(uint32_t*)frag_buffer;
+		frag_buffer += sizeof(uint32_t);
+		for (uint32_t i = 0; i < sz; ++i) {
+			int32_t ref = *(int32_t*)frag_buffer;
+
+			if(out[ref - 1].type = 0x2d) {
+				WLDFragment2D &f = reinterpret_cast<WLDFragment2D&>(out[ref - 1]);
+				auto mod_ref = f.GetData();
+
+				if (out[mod_ref].type == 0x36) {
+					WLDFragment36 &f = reinterpret_cast<WLDFragment36&>(out[mod_ref]);
+					auto mod = f.GetData();
+
+					printf("Skeletal piece: %s\n", mod->GetName().c_str());
+				}
+			}
+
+			frag_buffer += sizeof(int32_t);
+		}
+		printf("\n");
+
+		for (uint32_t i = 0; i < sz; ++i) {
+			int32_t data = *(int32_t*)frag_buffer;
+			frag_buffer += sizeof(int32_t);
+		}
+	}
+
+	data = track;
+}
+
+EQEmu::WLDFragment11::WLDFragment11(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
+	wld_fragment_reference *ref = (wld_fragment_reference*)frag_buffer;
+	uint32_t frag_id = ref->id - 1;
+	data = frag_id;
+}
+
+EQEmu::WLDFragment12::WLDFragment12(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
+	
+}
+
+EQEmu::WLDFragment13::WLDFragment13(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
+	wld_fragment_reference *ref = (wld_fragment_reference*)frag_buffer;
+	uint32_t frag_id = ref->id - 1;
+	data = frag_id;
+}
+
 EQEmu::WLDFragment14::WLDFragment14(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
 	wld_fragment14 *header = (wld_fragment14*)frag_buffer;
 	frag_buffer += sizeof(wld_fragment14);

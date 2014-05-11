@@ -16,37 +16,6 @@ EQEmu::S3DLoader::S3DLoader() {
 EQEmu::S3DLoader::~S3DLoader() {
 }
 
-bool EQEmu::S3DLoader::Load(std::string zone_name,
-	std::vector<WLDFragment> &zone_frags,
-	std::vector<WLDFragment> &zone_object_frags, 
-	std::vector<WLDFragment> &zone_light_frags,
-	std::vector<WLDFragment> &object_frags,
-	std::vector<WLDFragment> &object2_frags,
-	std::vector<WLDFragment> &character_frags) {
-	if (!ParseWLDFile(zone_name + ".s3d", zone_name + ".wld", zone_frags)) {
-		return false;
-	}
-
-	if (!ParseWLDFile(zone_name + ".s3d", "objects.wld", zone_object_frags)) {
-		return false;
-	}
-
-	if (!ParseWLDFile(zone_name + ".s3d", "lights.wld", zone_light_frags)) {
-		return false;
-	}
-
-	if (!ParseWLDFile(zone_name + "_obj.s3d", zone_name + "_obj.wld", object_frags)) {
-		return false;
-	}
-
-	ParseWLDFile(zone_name + "_2_obj.s3d", zone_name + "_2_obj.wld", object2_frags);
-
-	//not every zone will have a _chr.s3d so we can't fail them for it
-	ParseWLDFile(zone_name + "_chr.s3d", zone_name + "_chr.wld", character_frags);
-
-	return true;
-}
-
 bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name, std::vector<WLDFragment> &out) {
 	out.clear();
 	std::vector<char> buffer;
@@ -97,6 +66,34 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 			}
 			case 0x05: {
 				WLDFragment05 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				f.type = frag_header->id;
+				f.name = frag_header->name_ref;
+				out.push_back(f);
+				break;
+			}
+			case 0x10: {
+				WLDFragment10 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				f.type = frag_header->id;
+				f.name = frag_header->name_ref;
+				out.push_back(f);
+				break;
+			}
+			case 0x11: {
+				WLDFragment11 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				f.type = frag_header->id;
+				f.name = frag_header->name_ref;
+				out.push_back(f);
+				break;
+			}
+			case 0x12: {
+				WLDFragment12 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+				f.type = frag_header->id;
+				f.name = frag_header->name_ref;
+				out.push_back(f);
+				break;
+			}
+			case 0x13: {
+				WLDFragment13 f(this, out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
 				f.type = frag_header->id;
 				f.name = frag_header->name_ref;
 				out.push_back(f);

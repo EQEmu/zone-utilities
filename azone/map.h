@@ -1,9 +1,11 @@
 #ifndef EQEMU_MAP_H
 #define EQEMU_MAP_H
 
-#include <vector>
 #include <stdint.h>
+#include <vector>
 #include <string>
+#include <map>
+#include <tuple>
 #include <glm.hpp>
 #include "s3d_loader.h"
 #include "eqg_loader.h"
@@ -21,10 +23,7 @@ private:
 	bool CompileS3D(
 		std::vector<EQEmu::WLDFragment> &zone_frags,
 		std::vector<EQEmu::WLDFragment> &zone_object_frags,
-		std::vector<EQEmu::WLDFragment> &zone_light_frags,
-		std::vector<EQEmu::WLDFragment> &object_frags,
-		std::vector<EQEmu::WLDFragment> &object2_frags,
-		std::vector<EQEmu::WLDFragment> &character_frags
+		std::vector<EQEmu::WLDFragment> &object_frags
 		);
 	bool CompileEQG(
 		std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> &models,
@@ -32,6 +31,8 @@ private:
 		std::vector<std::shared_ptr<EQEmu::EQG::Region>> &regions,
 		std::vector<std::shared_ptr<EQEmu::Light>> &lights
 		);
+
+	void AddFace(glm::vec3 &v1, glm::vec3 &v2, glm::vec3 &v3, bool collidable);
 
 	void RotateVertex(glm::vec3 &v, float rx, float ry, float rz);
 	void ScaleVertex(glm::vec3 &v, float sx, float sy, float sz);
@@ -42,6 +43,12 @@ private:
 
 	std::vector<glm::vec3> non_collide_verts;
 	std::vector<uint32_t> non_collide_indices;
+
+	uint32_t current_collide_index;
+	uint32_t current_non_collide_index;
+
+	std::map<std::tuple<float, float, float>, uint32_t> collide_vert_to_index;
+	std::map<std::tuple<float, float, float>, uint32_t> non_collide_vert_to_index;
 };
 
 #endif

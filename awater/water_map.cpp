@@ -23,12 +23,7 @@ bool WaterMap::BuildAndWrite(std::string zone_name) {
 bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 	EQEmu::S3DLoader s3d;
 	std::vector<EQEmu::WLDFragment> zone_frags;
-	std::vector<EQEmu::WLDFragment> zone_object_frags;
-	std::vector<EQEmu::WLDFragment> zone_light_frags;
-	std::vector<EQEmu::WLDFragment> object_frags;
-	std::vector<EQEmu::WLDFragment> object2_frags;
-	std::vector<EQEmu::WLDFragment> character_frags;
-	if (!s3d.Load(zone_name, zone_frags, zone_object_frags, zone_light_frags, object_frags, object2_frags, character_frags)) {
+	if (!s3d.ParseWLDFile(zone_name + ".s3d", zone_name + ".wld", zone_frags)) {
 		return false;
 	}
 

@@ -1,6 +1,4 @@
 #include "map.h"
-#include <map>
-#include <tuple>
 #include <sstream>
 #include "compression.h"
 
@@ -31,16 +29,20 @@ bool Map::Build(std::string zone_name) {
 	EQEmu::S3DLoader s3d;
 	std::vector<EQEmu::WLDFragment> zone_frags;
 	std::vector<EQEmu::WLDFragment> zone_object_frags;
-	std::vector<EQEmu::WLDFragment> zone_light_frags;
 	std::vector<EQEmu::WLDFragment> object_frags;
-	std::vector<EQEmu::WLDFragment> object2_frags;
-	std::vector<EQEmu::WLDFragment> character_frags;
-	if(s3d.Load(zone_name, zone_frags, zone_object_frags, zone_light_frags, object_frags, object2_frags, character_frags)) {
-		return CompileS3D(zone_frags, zone_object_frags, zone_light_frags, object_frags, object2_frags, character_frags);
+	if (!s3d.ParseWLDFile(zone_name + ".s3d", zone_name + ".wld", zone_frags)) {
+		return false;
 	}
 
-	//all hath failed
-	return false;
+	if (!s3d.ParseWLDFile(zone_name + ".s3d", "objects.wld", zone_object_frags)) {
+		return false;
+	}
+
+	if (!s3d.ParseWLDFile(zone_name + "_obj.s3d", zone_name + "_obj.wld", object_frags)) {
+		return false;
+	}
+
+	return CompileS3D(zone_frags, zone_object_frags, object_frags);
 }
 
 bool Map::Write(std::string filename) {
@@ -126,21 +128,18 @@ bool Map::Write(std::string filename) {
 bool Map::CompileS3D(
 	std::vector<EQEmu::WLDFragment> &zone_frags,
 	std::vector<EQEmu::WLDFragment> &zone_object_frags,
-	std::vector<EQEmu::WLDFragment> &zone_light_frags,
-	std::vector<EQEmu::WLDFragment> &object_frags,
-	std::vector<EQEmu::WLDFragment> &object2_frags,
-	std::vector<EQEmu::WLDFragment> &character_frags
+	std::vector<EQEmu::WLDFragment> &object_frags
 	)
 {
 	collide_verts.clear();
 	collide_indices.clear();
 	non_collide_verts.clear();
 	non_collide_indices.clear();
+	current_collide_index = 0;
+	current_non_collide_index = 0;
+	collide_vert_to_index.clear();
+	non_collide_vert_to_index.clear();
 
-	uint32_t current_collide_index = 0;
-	uint32_t current_non_collide_index = 0;
-	std::map<std::tuple<float, float, float>, uint32_t> collide_vert_to_index;
-	std::map<std::tuple<float, float, float>, uint32_t> non_collide_vert_to_index;
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x36) {
 			EQEmu::WLDFragment36 &frag = reinterpret_cast<EQEmu::WLDFragment36&>(zone_frags[i]);
@@ -167,95 +166,16 @@ bool Map::CompileS3D(
 				v3.pos.x = v3.pos.y;
 				v3.pos.y = t;
 #endif
-				if(current_poly.flags == 0x10) {
-					std::tuple<float, float, float> tt = std::make_tuple(v1.pos.x, v1.pos.y, v1.pos.z);
-					auto iter = non_collide_vert_to_index.find(tt);
-					if (iter == non_collide_vert_to_index.end()) {
-						non_collide_vert_to_index[tt] = current_non_collide_index;
-						non_collide_verts.push_back(v1.pos);
-						non_collide_indices.push_back(current_non_collide_index);
-					
-						++current_non_collide_index;
-					} else {
-						uint32_t t_idx = iter->second;
-						non_collide_indices.push_back(t_idx);
-					}
-					
-					tt = std::make_tuple(v2.pos.x, v2.pos.y, v2.pos.z);
-					iter = non_collide_vert_to_index.find(tt);
-					if (iter == non_collide_vert_to_index.end()) {
-						non_collide_vert_to_index[tt] = current_non_collide_index;
-						non_collide_verts.push_back(v2.pos);
-						non_collide_indices.push_back(current_non_collide_index);
-					
-						++current_non_collide_index;
-					}
-					else {
-						uint32_t t_idx = iter->second;
-						non_collide_indices.push_back(t_idx);
-					}
-					
-					tt = std::make_tuple(v3.pos.x, v3.pos.y, v3.pos.z);
-					iter = non_collide_vert_to_index.find(tt);
-					if (iter == non_collide_vert_to_index.end()) {
-						non_collide_vert_to_index[tt] = current_non_collide_index;
-						non_collide_verts.push_back(v3.pos);
-						non_collide_indices.push_back(current_non_collide_index);
-					
-						++current_non_collide_index;
-					}
-					else {
-						uint32_t t_idx = iter->second;
-						non_collide_indices.push_back(t_idx);
-					}
-				} else {
-					std::tuple<float, float, float> tt = std::make_tuple(v1.pos.x, v1.pos.y, v1.pos.z);
-					auto iter = collide_vert_to_index.find(tt);
-					if (iter == collide_vert_to_index.end()) {
-						collide_vert_to_index[tt] = current_collide_index;
-						collide_verts.push_back(v1.pos);
-						collide_indices.push_back(current_collide_index);
-
-						++current_collide_index;
-					}
-					else {
-						uint32_t t_idx = iter->second;
-						collide_indices.push_back(t_idx);
-					}
-
-					tt = std::make_tuple(v2.pos.x, v2.pos.y, v2.pos.z);
-					iter = collide_vert_to_index.find(tt);
-					if (iter == collide_vert_to_index.end()) {
-						collide_vert_to_index[tt] = current_collide_index;
-						collide_verts.push_back(v2.pos);
-						collide_indices.push_back(current_collide_index);
-
-						++current_collide_index;
-					}
-					else {
-						uint32_t t_idx = iter->second;
-						collide_indices.push_back(t_idx);
-					}
-
-					tt = std::make_tuple(v3.pos.x, v3.pos.y, v3.pos.z);
-					iter = collide_vert_to_index.find(tt);
-					if (iter == collide_vert_to_index.end()) {
-						collide_vert_to_index[tt] = current_collide_index;
-						collide_verts.push_back(v3.pos);
-						collide_indices.push_back(current_collide_index);
-
-						++current_collide_index;
-					}
-					else {
-						uint32_t t_idx = iter->second;
-						collide_indices.push_back(t_idx);
-					}
-				}
+				if(current_poly.flags == 0x10)
+					AddFace(v1.pos, v2.pos, v3.pos, false);
+				else
+					AddFace(v1.pos, v2.pos, v3.pos, true);
 			}
 		}
 	}
 
 	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::Geometry>>> placables;
+	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::SkeletonTrack>>> placables_skeleton;
 	for (uint32_t i = 0; i < zone_object_frags.size(); ++i) {
 		if (zone_object_frags[i].type == 0x15) {
 			EQEmu::WLDFragment15 &frag = reinterpret_cast<EQEmu::WLDFragment15&>(zone_object_frags[i]);
@@ -287,7 +207,13 @@ bool Map::CompileS3D(
 								placables.push_back(std::make_pair(plac, mod));
 							}
 							else if (object_frags[frag_refs[m] - 1].type == 0x11) {
-								printf("Warning: could not add model for olaceable %s because we don't yet support animated mesh fragments.\n", plac->GetName().c_str());
+								EQEmu::WLDFragment11 &r_frag = reinterpret_cast<EQEmu::WLDFragment11&>(object_frags[frag_refs[m] - 1]);
+								auto s_ref = r_frag.GetData();
+
+								EQEmu::WLDFragment10 &skeleton_frag = reinterpret_cast<EQEmu::WLDFragment10&>(object_frags[s_ref]);
+								auto skele = skeleton_frag.GetData();
+								
+								placables_skeleton.push_back(std::make_pair(plac, skele));
 							}
 						}
 
@@ -353,93 +279,15 @@ bool Map::CompileS3D(
 			v3.pos.x = v3.pos.y;
 			v3.pos.y = t;
 #endif
-			if (current_poly.flags == 0x10) {
-				std::tuple<float, float, float> tt = std::make_tuple(v1.pos.x, v1.pos.y, v1.pos.z);
-				auto iter = non_collide_vert_to_index.find(tt);
-				if (iter == non_collide_vert_to_index.end()) {
-					non_collide_vert_to_index[tt] = current_non_collide_index;
-					non_collide_verts.push_back(v1.pos);
-					non_collide_indices.push_back(current_non_collide_index);
-		
-					++current_non_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					non_collide_indices.push_back(t_idx);
-				}
-		
-				tt = std::make_tuple(v2.pos.x, v2.pos.y, v2.pos.z);
-				iter = non_collide_vert_to_index.find(tt);
-				if (iter == non_collide_vert_to_index.end()) {
-					non_collide_vert_to_index[tt] = current_non_collide_index;
-					non_collide_verts.push_back(v2.pos);
-					non_collide_indices.push_back(current_non_collide_index);
-		
-					++current_non_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					non_collide_indices.push_back(t_idx);
-				}
-		
-				tt = std::make_tuple(v3.pos.x, v3.pos.y, v3.pos.z);
-				iter = non_collide_vert_to_index.find(tt);
-				if (iter == non_collide_vert_to_index.end()) {
-					non_collide_vert_to_index[tt] = current_non_collide_index;
-					non_collide_verts.push_back(v3.pos);
-					non_collide_indices.push_back(current_non_collide_index);
-		
-					++current_non_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					non_collide_indices.push_back(t_idx);
-				}
-			}
-			else {
-				std::tuple<float, float, float> tt = std::make_tuple(v1.pos.x, v1.pos.y, v1.pos.z);
-				auto iter = collide_vert_to_index.find(tt);
-				if (iter == collide_vert_to_index.end()) {
-					collide_vert_to_index[tt] = current_collide_index;
-					collide_verts.push_back(v1.pos);
-					collide_indices.push_back(current_collide_index);
-		
-					++current_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					collide_indices.push_back(t_idx);
-				}
-		
-				tt = std::make_tuple(v2.pos.x, v2.pos.y, v2.pos.z);
-				iter = collide_vert_to_index.find(tt);
-				if (iter == collide_vert_to_index.end()) {
-					collide_vert_to_index[tt] = current_collide_index;
-					collide_verts.push_back(v2.pos);
-					collide_indices.push_back(current_collide_index);
-		
-					++current_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					collide_indices.push_back(t_idx);
-				}
-		
-				tt = std::make_tuple(v3.pos.x, v3.pos.y, v3.pos.z);
-				iter = collide_vert_to_index.find(tt);
-				if (iter == collide_vert_to_index.end()) {
-					collide_vert_to_index[tt] = current_collide_index;
-					collide_verts.push_back(v3.pos);
-					collide_indices.push_back(current_collide_index);
-		
-					++current_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					collide_indices.push_back(t_idx);
-				}
-			}
+			if (current_poly.flags == 0x10)
+				AddFace(v1.pos, v2.pos, v3.pos, false);
+			else
+				AddFace(v1.pos, v2.pos, v3.pos, true);
 		}
+	}
+
+	pl_sz = placables_skeleton.size();
+	for (size_t i = 0; i < pl_sz; ++i) {
 	}
 
 	return true;
@@ -456,11 +304,11 @@ bool Map::CompileEQG(
 	collide_indices.clear();
 	non_collide_verts.clear();
 	non_collide_indices.clear();
+	current_collide_index = 0;
+	current_non_collide_index = 0;
+	collide_vert_to_index.clear();
+	non_collide_vert_to_index.clear();
 
-	uint32_t current_collide_index = 0;
-	uint32_t current_non_collide_index = 0;
-	std::map<std::tuple<float, float, float>, uint32_t> collide_vert_to_index;
-	std::map<std::tuple<float, float, float>, uint32_t> non_collide_vert_to_index;
 	for(uint32_t i = 0; i < placeables.size(); ++i) {
 		std::shared_ptr<EQEmu::Placeable> &plac = placeables[i];
 		std::shared_ptr<EQEmu::EQG::Geometry> model;
@@ -477,7 +325,7 @@ bool Map::CompileEQG(
 		}
 
 		if (!model) {
-			printf("Could not find %s\n", plac->GetFileName().c_str());
+			printf("Warning: could not find eqg placeable %s\n", plac->GetFileName().c_str());
 			continue;
 		}
 
@@ -530,96 +378,103 @@ bool Map::CompileEQG(
 			v3.pos.y = t;
 #endif
 
-			if (current_poly.flags & 0x01) {
-				std::tuple<float, float, float> tt = std::make_tuple(v1.pos.x, v1.pos.y, v1.pos.z);
-				auto iter = non_collide_vert_to_index.find(tt);
-				if (iter == non_collide_vert_to_index.end()) {
-					non_collide_vert_to_index[tt] = current_non_collide_index;
-					non_collide_verts.push_back(v1.pos);
-					non_collide_indices.push_back(current_non_collide_index);
-
-					++current_non_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					non_collide_indices.push_back(t_idx);
-				}
-
-				tt = std::make_tuple(v2.pos.x, v2.pos.y, v2.pos.z);
-				iter = non_collide_vert_to_index.find(tt);
-				if (iter == non_collide_vert_to_index.end()) {
-					non_collide_vert_to_index[tt] = current_non_collide_index;
-					non_collide_verts.push_back(v2.pos);
-					non_collide_indices.push_back(current_non_collide_index);
-
-					++current_non_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					non_collide_indices.push_back(t_idx);
-				}
-
-				tt = std::make_tuple(v3.pos.x, v3.pos.y, v3.pos.z);
-				iter = non_collide_vert_to_index.find(tt);
-				if (iter == non_collide_vert_to_index.end()) {
-					non_collide_vert_to_index[tt] = current_non_collide_index;
-					non_collide_verts.push_back(v3.pos);
-					non_collide_indices.push_back(current_non_collide_index);
-
-					++current_non_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					non_collide_indices.push_back(t_idx);
-				}
-			}
-			else {
-				std::tuple<float, float, float> tt = std::make_tuple(v1.pos.x, v1.pos.y, v1.pos.z);
-				auto iter = collide_vert_to_index.find(tt);
-				if (iter == collide_vert_to_index.end()) {
-					collide_vert_to_index[tt] = current_collide_index;
-					collide_verts.push_back(v1.pos);
-					collide_indices.push_back(current_collide_index);
-
-					++current_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					collide_indices.push_back(t_idx);
-				}
-
-				tt = std::make_tuple(v2.pos.x, v2.pos.y, v2.pos.z);
-				iter = collide_vert_to_index.find(tt);
-				if (iter == collide_vert_to_index.end()) {
-					collide_vert_to_index[tt] = current_collide_index;
-					collide_verts.push_back(v2.pos);
-					collide_indices.push_back(current_collide_index);
-
-					++current_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					collide_indices.push_back(t_idx);
-				}
-
-				tt = std::make_tuple(v3.pos.x, v3.pos.y, v3.pos.z);
-				iter = collide_vert_to_index.find(tt);
-				if (iter == collide_vert_to_index.end()) {
-					collide_vert_to_index[tt] = current_collide_index;
-					collide_verts.push_back(v3.pos);
-					collide_indices.push_back(current_collide_index);
-
-					++current_collide_index;
-				}
-				else {
-					uint32_t t_idx = iter->second;
-					collide_indices.push_back(t_idx);
-				}
-			}
+			if (current_poly.flags & 0x01)
+				AddFace(v1.pos, v2.pos, v3.pos, false);
+			else
+				AddFace(v1.pos, v2.pos, v3.pos, true);
 		}
 	}
 
 	return true;
+}
+
+void Map::AddFace(glm::vec3 &v1, glm::vec3 &v2, glm::vec3 &v3, bool collidable) {
+	if (!collidable) {
+		std::tuple<float, float, float> tt = std::make_tuple(v1.x, v1.y, v1.z);
+		auto iter = non_collide_vert_to_index.find(tt);
+		if (iter == non_collide_vert_to_index.end()) {
+			non_collide_vert_to_index[tt] = current_non_collide_index;
+			non_collide_verts.push_back(v1);
+			non_collide_indices.push_back(current_non_collide_index);
+
+			++current_non_collide_index;
+		}
+		else {
+			uint32_t t_idx = iter->second;
+			non_collide_indices.push_back(t_idx);
+		}
+
+		tt = std::make_tuple(v2.x, v2.y, v2.z);
+		iter = non_collide_vert_to_index.find(tt);
+		if (iter == non_collide_vert_to_index.end()) {
+			non_collide_vert_to_index[tt] = current_non_collide_index;
+			non_collide_verts.push_back(v2);
+			non_collide_indices.push_back(current_non_collide_index);
+
+			++current_non_collide_index;
+		}
+		else {
+			uint32_t t_idx = iter->second;
+			non_collide_indices.push_back(t_idx);
+		}
+
+		tt = std::make_tuple(v3.x, v3.y, v3.z);
+		iter = non_collide_vert_to_index.find(tt);
+		if (iter == non_collide_vert_to_index.end()) {
+			non_collide_vert_to_index[tt] = current_non_collide_index;
+			non_collide_verts.push_back(v3);
+			non_collide_indices.push_back(current_non_collide_index);
+
+			++current_non_collide_index;
+		}
+		else {
+			uint32_t t_idx = iter->second;
+			non_collide_indices.push_back(t_idx);
+		}
+	}
+	else {
+		std::tuple<float, float, float> tt = std::make_tuple(v1.x, v1.y, v1.z);
+		auto iter = collide_vert_to_index.find(tt);
+		if (iter == collide_vert_to_index.end()) {
+			collide_vert_to_index[tt] = current_collide_index;
+			collide_verts.push_back(v1);
+			collide_indices.push_back(current_collide_index);
+
+			++current_collide_index;
+		}
+		else {
+			uint32_t t_idx = iter->second;
+			collide_indices.push_back(t_idx);
+		}
+
+		tt = std::make_tuple(v2.x, v2.y, v2.z);
+		iter = collide_vert_to_index.find(tt);
+		if (iter == collide_vert_to_index.end()) {
+			collide_vert_to_index[tt] = current_collide_index;
+			collide_verts.push_back(v2);
+			collide_indices.push_back(current_collide_index);
+
+			++current_collide_index;
+		}
+		else {
+			uint32_t t_idx = iter->second;
+			collide_indices.push_back(t_idx);
+		}
+
+		tt = std::make_tuple(v3.x, v3.y, v3.z);
+		iter = collide_vert_to_index.find(tt);
+		if (iter == collide_vert_to_index.end()) {
+			collide_vert_to_index[tt] = current_collide_index;
+			collide_verts.push_back(v3);
+			collide_indices.push_back(current_collide_index);
+
+			++current_collide_index;
+		}
+		else {
+			uint32_t t_idx = iter->second;
+			collide_indices.push_back(t_idx);
+		}
+	}
 }
 
 void Map::RotateVertex(glm::vec3 &v, float rx, float ry, float rz) {

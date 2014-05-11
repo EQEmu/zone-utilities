@@ -9,6 +9,7 @@
 #include "light.h"
 #include "any.h"
 #include "wld_fragment_reference.h"
+#include "skeleton_track.h"
 
 namespace EQEmu
 {
@@ -48,6 +49,42 @@ class WLDFragment05 : public WLDFragment
 public:
 	WLDFragment05(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old);
 	~WLDFragment05() { }
+
+	uint32_t GetData() { try { return EQEmu::any_cast<uint32_t>(data); } catch (EQEmu::bad_any_cast&) { return 0; } }
+};
+
+class WLDFragment10 : public WLDFragment
+{
+public:
+	WLDFragment10(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old);
+	~WLDFragment10() { }
+
+	std::shared_ptr<SkeletonTrack> GetData() { try { return EQEmu::any_cast<std::shared_ptr<SkeletonTrack>>(data); } catch (EQEmu::bad_any_cast&) { return std::shared_ptr<SkeletonTrack>(); } }
+};
+
+class WLDFragment11 : public WLDFragment
+{
+public:
+	WLDFragment11(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old);
+	~WLDFragment11() { }
+
+	uint32_t GetData() { try { return EQEmu::any_cast<uint32_t>(data); } catch (EQEmu::bad_any_cast&) { return 0; } }
+};
+
+class WLDFragment12 : public WLDFragment
+{
+public:
+	WLDFragment12(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old);
+	~WLDFragment12() { }
+
+	std::shared_ptr<SkeletonTrack::BoneOrientation> GetData() { try { return EQEmu::any_cast<std::shared_ptr<SkeletonTrack::BoneOrientation>>(data); } catch (EQEmu::bad_any_cast&) { return std::shared_ptr<SkeletonTrack::BoneOrientation>(); } }
+};
+
+class WLDFragment13 : public WLDFragment
+{
+public:
+	WLDFragment13(S3DLoader *loader, std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old);
+	~WLDFragment13() { }
 
 	uint32_t GetData() { try { return EQEmu::any_cast<uint32_t>(data); } catch (EQEmu::bad_any_cast&) { return 0; } }
 };
