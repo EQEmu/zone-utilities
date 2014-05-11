@@ -29,8 +29,10 @@ int main(int argc, char **argv) {
 		archive.GetFilenames(ext, files);
 
 		printf("Files with extension %s in %s:\n", ext.c_str(), argv[2]);
-		for(const std::string &s : files) {
-			printf("%s\n", s.c_str());
+		auto iter = files.begin();
+		while (iter != files.end()) {
+			printf("%s\n", (*iter).c_str());
+			++iter;
 		}
 
 	} else if(strcmp(argv[1], "-e") == 0) {

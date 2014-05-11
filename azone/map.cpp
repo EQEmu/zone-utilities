@@ -209,8 +209,8 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::SkeletonTrack::Bone> bone, glm::ve
 		}
 	}
 
-	for(auto &c : bone->children) {
-		TraverseBone(c, pos, rot, parent_scale);
+	for(size_t i = 0; i < bone->children.size(); ++i) {
+		TraverseBone(bone->children[i], pos, rot, parent_scale);
 	}
 }
 
