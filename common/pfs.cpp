@@ -82,22 +82,27 @@ bool EQEmu::PFS::Archive::Open(std::string filename)
 	size_t running = 0;
 	size_t temp_position = 0;
 	size_t inflate = 0;
-	char temp_buffer[32768];
-	char temp_buffer2[32768];
+	char *temp_buffer = nullptr;
+	char *temp_buffer2 = nullptr;
 	char temp_string[MAX_FILENAME_SIZE];
 	for (; i < directory_header->count; ++i) {
 		BufferRead(directory, Internal::Directory);
 		if (directory->crc == EQEmu::NetworkToHostOrder<uint32_t>(0xC90A5861)) {
 			temp_position = position;
 			position = directory->offset;
+
+			temp_buffer = new char[directory->size + 1];
+
 			memset(temp_buffer, 0, directory->size);
 			inflate = 0;
 
 			while (inflate < directory->size) {
 				BufferRead(data_block, Internal::DataBlock);
+				temp_buffer2 = new char[data_block->deflate_length + 1];
 				BufferReadLength(temp_buffer2, data_block->deflate_length);
 				decompress(temp_buffer2, data_block->deflate_length, temp_buffer + inflate, data_block->inflate_length);
 				inflate += data_block->inflate_length;
+				delete[] temp_buffer2;
 			}
 
 			position = temp_position;
@@ -116,6 +121,8 @@ bool EQEmu::PFS::Archive::Open(std::string filename)
 				filenames[j] = temp_string;
 				temp_position += sizeof(Internal::FilenameEntry) + filename_entry->filename_length;
 			}
+
+			delete[] temp_buffer;
 		}
 		else {
 			file_offsets[running] = position - 12;

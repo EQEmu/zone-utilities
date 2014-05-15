@@ -5,6 +5,7 @@
 #include <random>
 #include <tuple>
 #include <map>
+#include <unordered_map>
 #include "compression.h"
 
 bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices) {
@@ -128,6 +129,14 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 
 	return true;
 }
+
+struct VertexHash
+{
+	size_t operator() (std::tuple<float, float, float> t) const {
+		float f_temp = std::get<0>(t) + std::get<1>(t) +std::get<2>(t);
+		return *(size_t*)&f_temp;
+	}
+};
 
 bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices, std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
 	verts.clear();
@@ -309,6 +318,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			}
 
 			int row_number = -1;
+			std::unordered_map<std::tuple<float, float, float>, uint32_t, VertexHash> cur_verts;
 			for (uint32_t quad = 0; quad < ter_quad_count; ++quad) {
 				if ((quad % quads_per_tile) == 0) {
 					++row_number;
@@ -333,25 +343,108 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 				float QuadVertex4Y = QuadVertex1Y + units_per_vertex;
 				float QuadVertex4Z = floats[quad + row_number + 1];
 
-				uint32_t current_vert = (uint32_t)verts.size() + 3;
+				//uint32_t current_vert = (uint32_t)verts.size() + 3;
+				uint32_t i1, i2, i3, i4;
 #ifdef INVERSEXY
-				verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
-				verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
-				verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
-				verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
+				std::tuple<float, float, float> t = std::make_tuple(QuadVertex1X, QuadVertex1Y, QuadVertex1Z);
+				auto iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i1 = iter->second;
+				} else {
+					i1 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
+					cur_verts[t] = i1;
+				}
+
+				t = std::make_tuple(QuadVertex2X, QuadVertex2Y, QuadVertex2Z);
+				iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i2 = iter->second;
+				}
+				else {
+					i2 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
+					cur_verts[t] = i2;
+				}
+
+				t = std::make_tuple(QuadVertex3X, QuadVertex3Y, QuadVertex3Z);
+				iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i3 = iter->second;
+				}
+				else {
+					i3 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
+					cur_verts[t] = i3;
+				}
+
+				t = std::make_tuple(QuadVertex4X, QuadVertex4Y, QuadVertex4Z);
+				iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i4 = iter->second;
+				}
+				else {
+					i4 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
+					cur_verts[t] = i4;
+				}
 #else
+				std::tuple<float, float, float> t = std::make_tuple(QuadVertex1Y, QuadVertex1X, QuadVertex1Z);
+				auto iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i1 = iter->second;
+				}
+				else {
+					i1 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex1Y, QuadVertex1X, QuadVertex1Z))
+						cur_verts[t] = i1;
+				}
+
+				t = std::make_tuple(QuadVertex2Y, QuadVertex2X, QuadVertex2Z);
+				iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i2 = iter->second;
+				}
+				else {
+					i2 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex2Y, QuadVertex2X, QuadVertex2Z));
+					cur_verts[t] = i2;
+				}
+
+				t = std::make_tuple(QuadVertex3Y, QuadVertex3X, QuadVertex3Z);
+				iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i3 = iter->second;
+				}
+				else {
+					i3 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex3Y, QuadVertex3X, QuadVertex3Z));
+					cur_verts[t] = i3;
+				}
+
+				t = std::make_tuple(QuadVertex4Y, QuadVertex4X, QuadVertex4Z);
+				iter = cur_verts.find(t);
+				if (iter != cur_verts.end()) {
+					i4 = iter->second;
+				}
+				else {
+					i4 = (uint32_t)verts.size();
+					verts.push_back(glm::vec3(QuadVertex4Y, QuadVertex4X, QuadVertex4Z));
+					cur_verts[t] = i4;
+				}
+
 				verts.push_back(glm::vec3(QuadVertex1Y, QuadVertex1X, QuadVertex1Z));
 				verts.push_back(glm::vec3(QuadVertex2Y, QuadVertex2X, QuadVertex2Z));
 				verts.push_back(glm::vec3(QuadVertex3Y, QuadVertex3X, QuadVertex3Z));
 				verts.push_back(glm::vec3(QuadVertex4Y, QuadVertex4X, QuadVertex4Z));
 #endif
-				indices.push_back(current_vert);
-				indices.push_back(current_vert - 2);
-				indices.push_back(current_vert - 1);
-
-				indices.push_back(current_vert);
-				indices.push_back(current_vert - 3);
-				indices.push_back(current_vert - 2);
+				indices.push_back(i4);
+				indices.push_back(i2);
+				indices.push_back(i3);
+				
+				indices.push_back(i4);
+				indices.push_back(i1);
+				indices.push_back(i2);
 			}
 		}
 	}
