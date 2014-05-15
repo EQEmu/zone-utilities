@@ -28,9 +28,12 @@ SET(common_headers
 	light.h
 	pfs.h
 	placeable.h
+	placeable_group.h
 	safe_alloc.h
 	s3d_loader.h
 	string_util.h
+	terrain.h
+	terrain_tile.h
 	texture.h
 	texture_brush.h
 	texture_brush_set.h

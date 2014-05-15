@@ -11,7 +11,7 @@ EQEmu::EQG4Loader::EQG4Loader() {
 EQEmu::EQG4Loader::~EQG4Loader() {
 }
 
-bool EQEmu::EQG4Loader::Load(std::string file)
+bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<Terrain> &terrain)
 {
 	EQEmu::PFS::Archive archive;
 	if (!archive.Open(file + ".eqg")) {
@@ -43,23 +43,18 @@ bool EQEmu::EQG4Loader::Load(std::string file)
 		return false;
 	}
 
-	if(!ParseDat(archive, opts)) {
+	terrain.reset(new Terrain());
+	if(!ParseZoneDat(archive, opts, terrain)) {
 		return false;
 	}
 
 	return true;
 }
 
-//#define VARSTRUCT_DECODE_TYPE(Type, Buffer) *(Type *)Buffer; Buffer += sizeof(Type);
-//#define VARSTRUCT_DECODE_STRING(String, Buffer) strcpy(String, Buffer); Buffer += strlen(String)+1;
-//#define VARSTRUCT_ENCODE_STRING(Buffer, String) sprintf(Buffer, String); Buffer += strlen(String) + 1;
-//#define VARSTRUCT_ENCODE_INTSTRING(Buffer, Number) sprintf(Buffer, "%i", Number); Buffer += strlen(Buffer) + 1;
-//#define VARSTRUCT_ENCODE_TYPE(Type, Buffer, Value) *(Type *)Buffer = Value; Buffer += sizeof(Type);
-//#define VARSTRUCT_SKIP_TYPE(Type, Buffer) Buffer += sizeof(Type);
-
-bool EQEmu::EQG4Loader::ParseDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts) {
+bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts, std::shared_ptr<Terrain> &terrain) {
 	std::string filename = opts.name + ".dat";
 
+	
 	std::vector<char> buffer;
 	if(!archive.Get(filename, buffer)) {
 		return false;
@@ -75,28 +70,22 @@ bool EQEmu::EQG4Loader::ParseDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts
 	float lat_range = float(opts.max_lat - opts.min_lat);
 	float lng_range = float(opts.max_lng - opts.min_lng);
 
-	float zone_min_x = opts.min_lat * opts.quads_per_tile * opts.units_per_vert;
-	float zone_max_x = (opts.max_lat + 1) * opts.quads_per_tile * opts.units_per_vert;
+	float zone_min_x = (float)opts.min_lat * (float)opts.quads_per_tile * (float)opts.units_per_vert;
+	float zone_max_x = (float)(opts.max_lat + 1) * (float)opts.quads_per_tile * (float)opts.units_per_vert;
 
-	float zone_min_y = opts.min_lng * opts.quads_per_tile * opts.units_per_vert;
-	float zone_max_y = (opts.max_lng + 1) * opts.quads_per_tile * opts.units_per_vert;
+	float zone_min_y = (float)opts.min_lng * (float)opts.quads_per_tile * opts.units_per_vert;
+	float zone_max_y = (float)(opts.max_lng + 1) * (float)opts.quads_per_tile * opts.units_per_vert;
 
 	uint32_t quad_count = (opts.quads_per_tile * opts.quads_per_tile);
 	uint32_t vert_count = ((opts.quads_per_tile + 1) * (opts.quads_per_tile + 1));
 
-	int vert_number = -1;
-	int quad_number = -1;
-
-	EQG::Geometry zone_model;
-	zone_model.GetVertices().resize((size_t)(quad_count * tile_count * 4));
-	zone_model.GetPolygons().resize((size_t)(quad_count * tile_count * 2));
-
-	std::vector<float> floats(vert_count, 0);
-	std::vector<uint32_t> colors(vert_count, 0);
-	std::vector<uint32_t> colors2(vert_count, 0);
-	std::vector<uint8_t> flags(quad_count, 0);
+	terrain->SetQuadsPerTile(opts.quads_per_tile);
+	terrain->SetUnitsPerVertex(opts.units_per_vert);
 
 	for(uint32_t i = 0; i < tile_count; ++i) {
+		std::shared_ptr<TerrainTile> tile(new TerrainTile());
+		terrain->AddTile(tile);
+
 		SafeVarAllocParse(int32_t, tile_lng);
 		SafeVarAllocParse(int32_t, tile_lat);
 		SafeVarAllocParse(int32_t, tile_unk);
@@ -105,29 +94,40 @@ bool EQEmu::EQG4Loader::ParseDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts
 		float tile_start_x = zone_min_x + (tile_lat - 100000 - opts.min_lat) * opts.units_per_vert * opts.quads_per_tile;
 	
 		bool floats_all_the_same = true;
+		tile->GetFloats().resize(vert_count);
+		tile->GetColors().resize(vert_count);
+		tile->GetColors2().resize(vert_count);
+		tile->GetFlags().resize(quad_count);
+
 		for (uint32_t j = 0; j < vert_count; ++j) {
 			SafeVarAllocParse(float, t);
-			floats[j] = t;
+			tile->GetFloats()[j] = t;
 
-			if ((j > 0) && (floats[j] != floats[0])) {
+			if ((j > 0) && (tile->GetFloats()[j] != tile->GetFloats()[0])) {
 				floats_all_the_same = false;
 			}
 		}
 
 		for (uint32_t j = 0; j < vert_count; ++j) {
 			SafeVarAllocParse(uint32_t, color);
-			colors[j] = color;
+			tile->GetColors()[j] = color;
 		}
 
 		for (uint32_t j = 0; j < vert_count; ++j) {
 			SafeVarAllocParse(uint32_t, color);
-			colors2[j] = color;
+			tile->GetColors2()[j] = color;
 		}
 
 		for (uint32_t j = 0; j < quad_count; ++j) {
 			SafeVarAllocParse(uint8_t, flag);
-			flags[j] = flag;
+			tile->GetFlags()[j] = flag;
+
+			if(flag & 0x01)
+				floats_all_the_same = false;
 		}
+
+		if (floats_all_the_same)
+			tile->SetFlat(true);
 
 		SafeVarAllocParse(float, unkFloat);
 		SafeVarAllocParse(int32_t, unk_unk);
@@ -145,9 +145,145 @@ bool EQEmu::EQG4Loader::ParseDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts
 
 			SafeVarAllocParse(float, f1);
 		}
+
+		SafeVarAllocParse(uint32_t, layer_count);
+		SafeStringAllocParse(base_material);
+		//tile.SetBaseMaterial(base_material);
+
+		uint32_t overlay_count = 0;
+		for (uint32_t layer = 1; layer < layer_count; ++layer) {
+			SafeStringAllocParse(material);
+
+			SafeVarAllocParse(uint32_t, detail_mask_dim);
+			uint32_t sz_m = detail_mask_dim * detail_mask_dim;
+
+			//TerrainTileLayer layer;
+			//DetailMask dm;
+			for (uint32_t b = 0; b < sz_m; ++b)
+			{
+				SafeVarAllocParse(uint8_t, detail_mask_byte);
+				//dm.AddByte(detail_mask_byte);
+			}
+
+			//layer.AddDetailMask(dm);
+			//tile.AddLayer(layer);
+			++overlay_count;
+		}
+
+		SafeVarAllocParse(uint32_t, single_placeable_count);
+		for(uint32_t j = 0; j < single_placeable_count; ++j) {
+			SafeStringAllocParse(model_name);
+			SafeStringAllocParse(s);
+
+			SafeVarAllocParse(uint32_t, longitude);
+			SafeVarAllocParse(uint32_t, latitude);
+
+			SafeVarAllocParse(float, x);
+			SafeVarAllocParse(float, y);
+			SafeVarAllocParse(float, z);
+
+			SafeVarAllocParse(float, rot_x);
+			SafeVarAllocParse(float, rot_y);
+			SafeVarAllocParse(float, rot_z);
+
+			SafeVarAllocParse(float, scale_x);
+			SafeVarAllocParse(float, scale_y);
+			SafeVarAllocParse(float, scale_z);
+		
+			SafeVarAllocParse(uint8_t, unk);
+
+			//Placable p;
+
+			//terrain.AddPlaceable(p);
+
+			//PlaceableGroup pg;
+
+			//terrain.AddPlaceableGroup(pg);
+
+			//do offset stuff derision worked out
+		}
+
+		SafeVarAllocParse(uint32_t, areas_count);
+		for (uint32_t j = 0; j < areas_count; ++j) {
+			SafeStringAllocParse(s);
+			SafeVarAllocParse(int32_t, unk);
+			SafeStringAllocParse(s2);
+
+			SafeVarAllocParse(uint32_t, longitude);
+			SafeVarAllocParse(uint32_t, latitude);
+
+			SafeVarAllocParse(float, x);
+			SafeVarAllocParse(float, y);
+			SafeVarAllocParse(float, z);
+
+			SafeVarAllocParse(float, rot_x);
+			SafeVarAllocParse(float, rot_y);
+			SafeVarAllocParse(float, rot_z);
+
+			SafeVarAllocParse(float, scale_x);
+			SafeVarAllocParse(float, scale_y);
+			SafeVarAllocParse(float, scale_z);
+
+			SafeVarAllocParse(float, size_x);
+			SafeVarAllocParse(float, size_y);
+			SafeVarAllocParse(float, size_z);
+
+			//TerrainArea ta;
+
+			//tile.AddArea(ta);
+		}
+
+		SafeVarAllocParse(uint32_t, Light_effects_count);
+		for (uint32_t j = 0; j < Light_effects_count; ++j) {
+			SafeStringAllocParse(s);
+			SafeStringAllocParse(s2);
+
+			SafeVarAllocParse(int8_t, unk);
+
+			SafeVarAllocParse(uint32_t, longitude);
+			SafeVarAllocParse(uint32_t, latitude);
+
+			SafeVarAllocParse(float, x);
+			SafeVarAllocParse(float, y);
+			SafeVarAllocParse(float, z);
+
+			SafeVarAllocParse(float, rot_x);
+			SafeVarAllocParse(float, rot_y);
+			SafeVarAllocParse(float, rot_z);
+
+			SafeVarAllocParse(float, scale_x);
+			SafeVarAllocParse(float, scale_y);
+			SafeVarAllocParse(float, scale_z);
+
+			SafeVarAllocParse(float, unk_float);
+		}
+
+		SafeVarAllocParse(uint32_t, tog_ref_count);
+		for (uint32_t j = 0; j < tog_ref_count; ++j) {
+			SafeStringAllocParse(tog_name);
+
+			SafeVarAllocParse(uint32_t, longitude);
+			SafeVarAllocParse(uint32_t, latitude);
+
+			SafeVarAllocParse(float, x);
+			SafeVarAllocParse(float, y);
+			SafeVarAllocParse(float, z);
+
+			SafeVarAllocParse(float, rot_x);
+			SafeVarAllocParse(float, rot_y);
+			SafeVarAllocParse(float, rot_z);
+
+			SafeVarAllocParse(float, scale_x);
+			SafeVarAllocParse(float, scale_y);
+			SafeVarAllocParse(float, scale_z);
+
+			SafeVarAllocParse(float, z_adjust);
+		}
+
+		tile->SetLocation(tile_start_x, tile_start_y);
 	}
 
-	return false;
+	return true;
 }
 
 bool EQEmu::EQG4Loader::GetZon(std::string file, std::vector<char> &buffer) {

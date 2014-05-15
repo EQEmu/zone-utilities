@@ -24,6 +24,8 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 		return false;
 	}
 
+	verts.reserve(face_count * 3);
+	indices.reserve(face_count * 3);
 	std::map<std::tuple<float, float, float>, uint32_t> cur_verts;
 	for (uint32_t i = 0; i < face_count; ++i) {
 		glm::vec3 a;
@@ -158,6 +160,9 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 	uint32_t ind_count;
 	uint32_t nc_vert_count;
 	uint32_t nc_ind_count;
+	uint32_t tile_count;
+	uint32_t quads_per_tile;
+	float units_per_vertex;
 	
 	vert_count = *(uint32_t*)buf;
 	buf += sizeof(uint32_t);
@@ -170,6 +175,15 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 
 	nc_ind_count = *(uint32_t*)buf;
 	buf += sizeof(uint32_t);
+
+	tile_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
+
+	quads_per_tile = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
+
+	units_per_vertex = *(float*)buf;
+	buf += sizeof(float);
 
 	for(uint32_t i = 0; i < vert_count; ++i) {
 		float x;
@@ -222,6 +236,126 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 		nc_indices.push_back(index);
 	}
 
+	uint32_t ter_quad_count = (quads_per_tile * quads_per_tile);
+	uint32_t ter_vert_count = ((quads_per_tile + 1) * (quads_per_tile + 1));
+	std::vector<uint8_t> flags;
+	std::vector<float> floats;
+	flags.resize(ter_quad_count);
+	floats.resize(ter_vert_count);
+	for (uint32_t i = 0; i < tile_count; ++i) {
+		bool flat;
+		flat = *(bool*)buf;
+		buf += sizeof(bool);
+
+		float x;
+		x = *(float*)buf;
+		buf += sizeof(float);
+
+		float y;
+		y = *(float*)buf;
+		buf += sizeof(float);
+
+		if(flat) {
+			float z;
+			z = *(float*)buf;
+			buf += sizeof(float);
+
+			float QuadVertex1X = x;
+			float QuadVertex1Y = y;
+			float QuadVertex1Z = z;
+
+			float QuadVertex2X = QuadVertex1X + (quads_per_tile * units_per_vertex);
+			float QuadVertex2Y = QuadVertex1Y;
+			float QuadVertex2Z = QuadVertex1Z;
+
+			float QuadVertex3X = QuadVertex2X;
+			float QuadVertex3Y = QuadVertex1Y + (quads_per_tile * units_per_vertex);
+			float QuadVertex3Z = QuadVertex1Z;
+
+			float QuadVertex4X = QuadVertex1X;
+			float QuadVertex4Y = QuadVertex3Y;
+			float QuadVertex4Z = QuadVertex1Z;
+
+			uint32_t current_vert = (uint32_t)verts.size() + 3;
+			verts.push_back(glm::vec3(QuadVertex1Y, QuadVertex1X, QuadVertex1Z));
+			verts.push_back(glm::vec3(QuadVertex2Y, QuadVertex2X, QuadVertex2Z));
+			verts.push_back(glm::vec3(QuadVertex3Y, QuadVertex3X, QuadVertex3Z));
+			verts.push_back(glm::vec3(QuadVertex4Y, QuadVertex4X, QuadVertex4Z));
+			
+			indices.push_back(current_vert);
+			indices.push_back(current_vert - 2);
+			indices.push_back(current_vert - 1);
+
+			indices.push_back(current_vert);
+			indices.push_back(current_vert - 3);
+			indices.push_back(current_vert - 1);
+		} else {
+			//read flags
+			for (uint32_t j = 0; j < ter_quad_count; ++j) {
+				uint8_t f;
+				f = *(uint8_t*)buf;
+				buf += sizeof(uint8_t);
+
+				flags[j] = f;
+			}
+
+			//read floats
+			for (uint32_t j = 0; j < ter_vert_count; ++j) {
+				float f;
+				f = *(float*)buf;
+				buf += sizeof(float);
+
+				floats[j] = f;
+			}
+
+			int row_number = -1;
+			for (uint32_t quad = 0; quad < ter_quad_count; ++quad) {
+				if ((quad % quads_per_tile) == 0) {
+					++row_number;
+				}
+
+				if(flags[quad] & 0x01)
+					continue;
+
+				float QuadVertex1X = x + (row_number * units_per_vertex);
+				float QuadVertex1Y = y + (quad % quads_per_tile) * units_per_vertex;
+				float QuadVertex1Z = floats[quad + row_number];
+
+				float QuadVertex2X = QuadVertex1X + units_per_vertex;
+				float QuadVertex2Y = QuadVertex1Y;
+				float QuadVertex2Z = floats[quad + row_number + quads_per_tile + 1];
+
+				float QuadVertex3X = QuadVertex1X + units_per_vertex;
+				float QuadVertex3Y = QuadVertex1Y + units_per_vertex;
+				float QuadVertex3Z = floats[quad + row_number + quads_per_tile + 2];
+
+				float QuadVertex4X = QuadVertex1X;
+				float QuadVertex4Y = QuadVertex1Y + units_per_vertex;
+				float QuadVertex4Z = floats[quad + row_number + 1];
+
+				uint32_t current_vert = (uint32_t)verts.size() + 3;
+#ifdef INVERSEXY
+				verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
+				verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
+				verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
+				verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
+#else
+				verts.push_back(glm::vec3(QuadVertex1Y, QuadVertex1X, QuadVertex1Z));
+				verts.push_back(glm::vec3(QuadVertex2Y, QuadVertex2X, QuadVertex2Z));
+				verts.push_back(glm::vec3(QuadVertex3Y, QuadVertex3X, QuadVertex3Z));
+				verts.push_back(glm::vec3(QuadVertex4Y, QuadVertex4X, QuadVertex4Z));
+#endif
+				indices.push_back(current_vert);
+				indices.push_back(current_vert - 2);
+				indices.push_back(current_vert - 1);
+
+				indices.push_back(current_vert);
+				indices.push_back(current_vert - 3);
+				indices.push_back(current_vert - 2);
+			}
+		}
+	}
+
 	return true;
 }
 
@@ -268,21 +402,25 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 				std::mt19937 gen;
 				gen.seed((unsigned long)time(0));
 				size_t color_count = new_model->GetPositions().size();
-				for (size_t i = 0; i < color_count; ++i) {
-					float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
-					new_model->GetColors().push_back(glm::vec3(color, color, color));
+				if(color_count > 0) {
+					for (size_t i = 0; i < color_count; ++i) {
+						float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
+						new_model->GetColors().push_back(glm::vec3(color, color, color));
+					}
+					new_model->Compile();
+					*collision = new_model;
 				}
 
 				color_count = nc_new_model->GetPositions().size();
-				for (size_t i = 0; i < color_count; ++i) {
-					float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
-					nc_new_model->GetColors().push_back(glm::vec3(color, color, color));
-				}
+				if (color_count > 0) {
+					for (size_t i = 0; i < color_count; ++i) {
+						float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
+						nc_new_model->GetColors().push_back(glm::vec3(color, color, color));
+					}
 
-				new_model->Compile();
-				nc_new_model->Compile();
-				*collision = new_model;
-				*vision = nc_new_model;
+					nc_new_model->Compile();
+					*vision = nc_new_model;
+				}
 			}
 			else {
 				delete new_model;

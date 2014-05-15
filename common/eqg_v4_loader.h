@@ -5,10 +5,9 @@
 #include <stdint.h>
 #include <string>
 #include <memory>
-#include "eqg_geometry.h"
 #include "placeable.h"
-#include "eqg_region.h"
-#include "light.h"
+#include "placeable_group.h"
+#include "terrain.h"
 #include "pfs.h"
 
 namespace EQEmu
@@ -33,9 +32,9 @@ class EQG4Loader
 public:
 	EQG4Loader();
 	~EQG4Loader();
-	bool Load(std::string file);
+	bool Load(std::string file, std::shared_ptr<Terrain> &terrain);
 private:
-	bool ParseDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts);
+	bool ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts, std::shared_ptr<Terrain> &terrain);
 	bool GetZon(std::string file, std::vector<char> &buffer);
 	bool ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, ZoneOptions &opts);
 };

@@ -23,8 +23,8 @@ bool Map::Build(std::string zone_name) {
 
 	//if that fails try to load a v4 eqg here
 	EQEmu::EQG4Loader eqg4;
-	if (eqg4.Load(zone_name)) {
-		return false;
+	if (eqg4.Load(zone_name, terrain)) {
+		return CompileEQGv4();
 	}
 	
 	//if that fails try to load a s3d here
@@ -48,7 +48,7 @@ bool Map::Build(std::string zone_name) {
 }
 
 bool Map::Write(std::string filename) {
-	if (collide_verts.size() == 0 || collide_indices.size() == 0 || non_collide_verts.size() == 0 || non_collide_indices.size() == 0)
+	if ((collide_verts.size() == 0 || collide_indices.size() == 0 || non_collide_verts.size() == 0 || non_collide_indices.size() == 0) && !terrain)
 		return false;
 
 	FILE *f = fopen(filename.c_str(), "wb");
@@ -67,12 +67,18 @@ bool Map::Write(std::string filename) {
 	uint32_t collide_ind_count = (uint32_t)collide_indices.size();
 	uint32_t non_collide_vert_count = (uint32_t)non_collide_verts.size();
 	uint32_t non_collide_ind_count = (uint32_t)non_collide_indices.size();
+	uint32_t tile_count = terrain ? (uint32_t)terrain->GetTiles().size() : 0;
+	uint32_t quads_per_tile = terrain ? terrain->GetQuadsPerTile() : 0;
+	float units_per_vertex = terrain ? terrain->GetUnitsPerVertex() : 0.0f;
 	
 	ss.write((const char*)&collide_vert_count, sizeof(uint32_t));
 	ss.write((const char*)&collide_ind_count, sizeof(uint32_t));
 	ss.write((const char*)&non_collide_vert_count, sizeof(uint32_t));
 	ss.write((const char*)&non_collide_ind_count, sizeof(uint32_t));
-	
+	ss.write((const char*)&tile_count, sizeof(uint32_t));
+	ss.write((const char*)&quads_per_tile, sizeof(uint32_t));
+	ss.write((const char*)&units_per_vertex, sizeof(float));
+
 	for(uint32_t i = 0; i < collide_vert_count; ++i) {
 		auto vert = collide_verts[i];
 	
@@ -99,6 +105,43 @@ bool Map::Write(std::string filename) {
 		uint32_t ind = non_collide_indices[i];
 	
 		ss.write((const char*)&ind, sizeof(uint32_t));
+	}
+
+	if(terrain) {
+		uint32_t quad_count = (quads_per_tile * quads_per_tile);
+		uint32_t vert_count = ((quads_per_tile + 1) * (quads_per_tile + 1));
+		auto &tiles = terrain->GetTiles();
+		for (uint32_t i = 0; i < tile_count; ++i) {
+			if(tiles[i]->IsFlat()) {
+				bool flat = true;
+				float x = tiles[i]->GetX();
+				float y = tiles[i]->GetY();
+				float z = tiles[i]->GetFloats()[0];
+				ss.write((const char*)&flat, sizeof(bool));
+				ss.write((const char*)&x, sizeof(float));
+				ss.write((const char*)&y, sizeof(float));
+				ss.write((const char*)&z, sizeof(float));
+			} else {
+				bool flat = false;
+				float x = tiles[i]->GetX();
+				float y = tiles[i]->GetY();
+				ss.write((const char*)&flat, sizeof(bool));
+				ss.write((const char*)&x, sizeof(float));
+				ss.write((const char*)&y, sizeof(float));
+
+				auto &flags = tiles[i]->GetFlags();
+				for(uint32_t j = 0; j < quad_count; ++j) {
+					uint8_t f = flags[j];
+					ss.write((const char*)&f, sizeof(uint8_t));
+				}
+
+				auto &floats = tiles[i]->GetFloats();
+				for (uint32_t j = 0; j < vert_count; ++j) {
+					float f = floats[j];
+					ss.write((const char*)&f, sizeof(float));
+				}
+			}
+		}
 	}
 	
 	std::vector<char> buffer;
@@ -493,6 +536,19 @@ bool Map::CompileEQG(
 		}
 	}
 
+	return true;
+}
+
+bool Map::CompileEQGv4()
+{
+	collide_verts.clear();
+	collide_indices.clear();
+	non_collide_verts.clear();
+	non_collide_indices.clear();
+	current_collide_index = 0;
+	current_non_collide_index = 0;
+	collide_vert_to_index.clear();
+	non_collide_vert_to_index.clear();
 	return true;
 }
 

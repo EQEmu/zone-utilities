@@ -17,4 +17,8 @@
 	if ((idx + (uint32_t)var_name.length() + 1) > (uint32_t)buffer.size()) { return false; } \
 	idx += (uint32_t)var_name.length() + 1;
 
+#define SafeStringNoAllocParse(var_name) var_name = &buffer[idx]; \
+	if ((idx + (uint32_t)var_name.length() + 1) > (uint32_t)buffer.size()) { return false; } \
+	idx += (uint32_t)var_name.length() + 1;
+
 #endif

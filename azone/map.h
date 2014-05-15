@@ -33,6 +33,7 @@ private:
 		std::vector<std::shared_ptr<EQEmu::EQG::Region>> &regions,
 		std::vector<std::shared_ptr<EQEmu::Light>> &lights
 		);
+	bool CompileEQGv4();
 
 	void AddFace(glm::vec3 &v1, glm::vec3 &v2, glm::vec3 &v3, bool collidable);
 
@@ -51,6 +52,8 @@ private:
 
 	std::map<std::tuple<float, float, float>, uint32_t> collide_vert_to_index;
 	std::map<std::tuple<float, float, float>, uint32_t> non_collide_vert_to_index;
+
+	std::shared_ptr<EQEmu::Terrain> terrain;
 };
 
 #endif
