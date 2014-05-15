@@ -297,7 +297,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 
 			indices.push_back(current_vert);
 			indices.push_back(current_vert - 3);
-			indices.push_back(current_vert - 1);
+			indices.push_back(current_vert - 2);
 		} else {
 			//read flags
 			for (uint32_t j = 0; j < ter_quad_count; ++j) {

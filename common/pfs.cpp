@@ -92,7 +92,6 @@ bool EQEmu::PFS::Archive::Open(std::string filename)
 			position = directory->offset;
 
 			temp_buffer = new char[directory->size + 1];
-
 			memset(temp_buffer, 0, directory->size);
 			inflate = 0;
 
