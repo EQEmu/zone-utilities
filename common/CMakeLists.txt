@@ -37,6 +37,7 @@ SET(common_headers
 	texture.h
 	texture_brush.h
 	texture_brush_set.h
+	water_sheet.h
 	wld_fragment_reference.h
 	wld_fragment.h
 	wld_structs.h

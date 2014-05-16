@@ -1,6 +1,8 @@
 #ifndef EQEMU_COMMON_TERRAIN_TILE_H
 #define EQEMU_COMMON_TERRAIN_TILE_H
 
+#include <vector>
+
 namespace EQEmu
 {
 

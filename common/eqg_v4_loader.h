@@ -35,8 +35,10 @@ public:
 	bool Load(std::string file, std::shared_ptr<Terrain> &terrain);
 private:
 	bool ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts, std::shared_ptr<Terrain> &terrain);
+	bool ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_ptr<Terrain> &terrain);
 	bool GetZon(std::string file, std::vector<char> &buffer);
-	bool ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, ZoneOptions &opts);
+	void ParseConfigFile(std::vector<char> &buffer, std::vector<std::string> &tokens);
+	bool ParseZon(std::vector<char> &buffer, ZoneOptions &opts);
 };
 
 }

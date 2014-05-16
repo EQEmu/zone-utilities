@@ -39,12 +39,16 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<Terrain> &terrain
 		return false;
 
 	ZoneOptions opts;
-	if (!ParseZon(archive, zon, opts)) {
+	if (!ParseZon(zon, opts)) {
 		return false;
 	}
 
 	terrain.reset(new Terrain());
 	if(!ParseZoneDat(archive, opts, terrain)) {
+		return false;
+	}
+
+	if (!ParseWaterDat(archive, terrain)) {
 		return false;
 	}
 
@@ -66,9 +70,6 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 
 	SafeStringAllocParse(base_tile_texture);
 	SafeVarAllocParse(uint32_t, tile_count);
-
-	float lat_range = float(opts.max_lat - opts.min_lat);
-	float lng_range = float(opts.max_lng - opts.min_lng);
 
 	float zone_min_x = (float)opts.min_lat * (float)opts.quads_per_tile * (float)opts.units_per_vert;
 	float zone_max_x = (float)(opts.max_lat + 1) * (float)opts.quads_per_tile * (float)opts.units_per_vert;
@@ -286,6 +287,84 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 	return true;
 }
 
+bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_ptr<Terrain> &terrain) {
+	std::vector<char> wat;
+	if(!archive.Get("water.dat", wat)) {
+		return false;
+	}
+
+	std::vector<std::string> tokens;
+	ParseConfigFile(wat, tokens);
+
+	std::shared_ptr<WaterSheet> ws;
+
+	for (size_t i = 1; i < tokens.size();) {
+		auto token = tokens[i];
+		if (token.compare("*WATERSHEET") == 0) {
+			ws.reset(new WaterSheet());
+
+			++i;
+		}
+		else if (token.compare("*END_SHEET") == 0) {
+			if(ws) {
+				terrain->AddWaterSheet(ws);
+			}
+
+			++i;
+		} else if (token.compare("*MINX") == 0) {
+			if (i + 1 >= tokens.size()) {
+				break;
+			}
+
+			float min_x = std::stof(tokens[i + 1]);
+			ws->SetMinX(min_x);
+
+			i += 2;
+		} else if (token.compare("*MINY") == 0) {
+			if (i + 1 >= tokens.size()) {
+				break;
+			}
+
+			float min_y = std::stof(tokens[i + 1]);
+			ws->SetMinY(min_y);
+
+			i += 2;
+		} else if (token.compare("*MAXX") == 0) {
+			if (i + 1 >= tokens.size()) {
+				break;
+			}
+
+			float max_x = std::stof(tokens[i + 1]);
+			ws->SetMaxX(max_x);
+
+			i += 2;
+		} else if (token.compare("*MAXY") == 0) {
+			if (i + 1 >= tokens.size()) {
+				break;
+			}
+
+			float max_y = std::stof(tokens[i + 1]);
+			ws->SetMaxY(max_y);
+
+			i += 2;
+		} else if (token.compare("*ZHEIGHT") == 0) {
+			if (i + 1 >= tokens.size()) {
+				break;
+			}
+
+			float z = std::stof(tokens[i + 1]);
+			ws->SetZHeight(z);
+
+			i += 2;
+		}
+		else {
+			++i;
+		}
+	}
+
+	return true;
+}
+
 bool EQEmu::EQG4Loader::GetZon(std::string file, std::vector<char> &buffer) {
 	buffer.clear();
 	FILE *f = fopen(file.c_str(), "rb");
@@ -314,32 +393,38 @@ bool EQEmu::EQG4Loader::GetZon(std::string file, std::vector<char> &buffer) {
 	return false;
 }
 
-bool EQEmu::EQG4Loader::ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, ZoneOptions &opts) {
-	if (buffer.size() < 5)
-		return false;
-
-	v4_zon_header *header = (v4_zon_header*)&buffer[0];
-
-	if (header->magic[0] != 'E' || header->magic[1] != 'Q' || header->magic[2] != 'T' || header->magic[3] != 'Z' || header->magic[4] != 'P')
-		return false;
-
+void EQEmu::EQG4Loader::ParseConfigFile(std::vector<char> &buffer, std::vector<std::string> &tokens) {
+	tokens.clear();
 	std::string cur;
-	std::vector<std::string> tokens;
 	for (size_t i = 0; i < buffer.size(); ++i) {
 		char c = buffer[i];
-		if (c == '\n' || c == '\r') {
-			if (cur.size() > 0) {
-				auto sp = EQEmu::SplitString(cur, ' ');
-				tokens.insert(tokens.end(), sp.begin(), sp.end());
+		if(c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f') {
+			if(cur.size() > 0) {
+				tokens.push_back(cur);
 				cur.clear();
 			}
-		}
-		else {
+		} else {
 			cur.push_back(c);
 		}
 	}
+}
 
-	for (size_t i = 0; i < tokens.size();) {
+bool EQEmu::EQG4Loader::ParseZon(std::vector<char> &buffer, ZoneOptions &opts) {
+	if (buffer.size() < 5)
+		return false;
+
+	std::vector<std::string> tokens;
+	ParseConfigFile(buffer, tokens);
+
+	if(tokens.size() < 1) {
+		return false;
+	}
+
+	if(tokens[0].compare("EQTZP") != 0) {
+		return 0;
+	}
+
+	for (size_t i = 1; i < tokens.size();) {
 		auto token = tokens[i];
 		if (token.compare("*NAME") == 0) {
 			if (i + 1 >= tokens.size()) {

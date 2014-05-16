@@ -123,13 +123,6 @@ struct mod_polygon
 	uint32_t flags;
 };
 
-
-struct v4_zon_header
-{
-	char magic[5];
-};
-
-
 struct v4_zone_dat_header
 {
 	uint32_t unk000;

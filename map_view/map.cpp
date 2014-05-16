@@ -2,10 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
-#include <random>
 #include <tuple>
 #include <map>
-#include <unordered_map>
 #include "compression.h"
 
 bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices) {
@@ -129,14 +127,6 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 
 	return true;
 }
-
-struct VertexHash
-{
-	size_t operator() (std::tuple<float, float, float> t) const {
-		float f_temp = std::get<0>(t) + std::get<1>(t) +std::get<2>(t);
-		return *(size_t*)&f_temp;
-	}
-};
 
 bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices, std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
 	verts.clear();
@@ -318,7 +308,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			}
 
 			int row_number = -1;
-			std::unordered_map<std::tuple<float, float, float>, uint32_t, VertexHash> cur_verts;
+			std::map<std::tuple<float, float, float>, uint32_t> cur_verts;
 			for (uint32_t quad = 0; quad < ter_quad_count; ++quad) {
 				if ((quad % quads_per_tile) == 0) {
 					++row_number;
@@ -467,15 +457,7 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 			bool v = LoadMapV1(f, new_model->GetPositions(), new_model->GetIndicies());
 			fclose(f);
 
-			if(v) {
-				std::mt19937 gen;
-				gen.seed((unsigned long)time(0));
-				size_t color_count = new_model->GetPositions().size();
-				for(size_t i = 0; i < color_count; ++i) {
-					float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
-					new_model->GetColors().push_back(glm::vec3(color, color, color));
-				}
-
+			if (v && new_model->GetPositions().size() > 0) {
 				new_model->Compile();
 				*collision = new_model;
 				*vision = nullptr;
@@ -492,27 +474,21 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 			fclose(f);
 
 			if (v) {
-				std::mt19937 gen;
-				gen.seed((unsigned long)time(0));
-				size_t color_count = new_model->GetPositions().size();
-				if(color_count > 0) {
-					for (size_t i = 0; i < color_count; ++i) {
-						float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
-						new_model->GetColors().push_back(glm::vec3(color, color, color));
-					}
+				if (new_model->GetPositions().size() > 0) {
 					new_model->Compile();
 					*collision = new_model;
+				} else {
+					delete new_model;
+					*collision = nullptr;
 				}
 
-				color_count = nc_new_model->GetPositions().size();
-				if (color_count > 0) {
-					for (size_t i = 0; i < color_count; ++i) {
-						float color = 0.5f + (0.5f * ((float)gen() / (float)gen.max()));
-						nc_new_model->GetColors().push_back(glm::vec3(color, color, color));
-					}
-
+				if (nc_new_model->GetPositions().size() > 0) {
 					nc_new_model->Compile();
 					*vision = nc_new_model;
+				}
+				else {
+					delete nc_new_model;
+					*vision = nullptr;
 				}
 			}
 			else {

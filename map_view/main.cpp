@@ -68,26 +68,42 @@ int main(int argc, char **argv)
 
 	bool rendering = true;
 	do {
+		double current_frame_time = glfwGetTime();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		
+
 		cam.UpdateInputs(win);
 
 		shader.Use();
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		
 		glm::mat4 model = glm::mat4(1.0);
 		glm::mat4 mvp = cam.GetProjMat() * cam.GetViewMat() * model;
 		uniform.SetValueMatrix4(1, false, &mvp[0][0]);
 
-		glm::vec3 tnt(1.0f, 1.0f, 1.0f);
+		glm::vec3 tnt(0.8f, 0.8f, 0.8f);
 		tint.SetValuePtr3(1, &tnt[0]);
 
 		if (collide)
 			collide->Draw();
 		
+		tnt[0] = 0.5f;
+		tnt[1] = 0.7f;
+		tnt[2] = 1.0f;
+		tint.SetValuePtr3(1, &tnt[0]);
+
+		if (invis)
+			invis->Draw();
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 		tnt[0] = 0.0f;
 		tnt[1] = 0.0f;
-		tnt[2] = 0.7f;
+		tnt[2] = 0.0f;
 		tint.SetValuePtr3(1, &tnt[0]);
+
+		if (collide)
+			collide->Draw();
 
 		if (invis)
 			invis->Draw();

@@ -549,6 +549,45 @@ bool Map::CompileEQGv4()
 	current_non_collide_index = 0;
 	collide_vert_to_index.clear();
 	non_collide_vert_to_index.clear();
+
+	if(!terrain)
+		return false;
+
+	auto &water_sheets = terrain->GetWaterSheets();
+	for(size_t i = 0; i < water_sheets.size(); ++i) {
+		auto &sheet = water_sheets[i];
+	
+		uint32_t id = (uint32_t)non_collide_verts.size();
+
+#ifdef INVERSEXY
+		non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMinX(), sheet->GetZHeight()));
+		non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMaxX(), sheet->GetZHeight()));
+		non_collide_verts.push_back(glm::vec3(sheet->GetMaxY(), sheet->GetMinX(), sheet->GetZHeight()));
+		non_collide_verts.push_back(glm::vec3(sheet->GetMaxY(), sheet->GetMaxX(), sheet->GetZHeight()));
+
+		non_collide_indices.push_back(id);
+		non_collide_indices.push_back(id + 1);
+		non_collide_indices.push_back(id + 2);
+
+		non_collide_indices.push_back(id + 1);
+		non_collide_indices.push_back(id + 3);
+		non_collide_indices.push_back(id + 2);
+#else
+		non_collide_verts.push_back(glm::vec3(sheet->GetMinX(), sheet->GetMinY(), sheet->GetZHeight()));
+		non_collide_verts.push_back(glm::vec3(sheet->GetMinX(), sheet->GetMaxY(), sheet->GetZHeight()));
+		non_collide_verts.push_back(glm::vec3(sheet->GetMaxX(), sheet->GetMinY(), sheet->GetZHeight()));
+		non_collide_verts.push_back(glm::vec3(sheet->GetMaxX(), sheet->GetMaxY(), sheet->GetZHeight()));
+
+		non_collide_indices.push_back(id);
+		non_collide_indices.push_back(id + 1);
+		non_collide_indices.push_back(id + 2);
+
+		non_collide_indices.push_back(id + 1);
+		non_collide_indices.push_back(id + 3);
+		non_collide_indices.push_back(id + 2);
+#endif
+	}
+
 	return true;
 }
 
