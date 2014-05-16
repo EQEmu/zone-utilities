@@ -1,7 +1,6 @@
 #version 130
 
 in vec3 vp_ms;
-in vec3 vert_color;
 
 uniform mat4 MVP;
 uniform vec3 Tint;
@@ -13,6 +12,6 @@ void main(){
 	gl_Position.z = vp_ms.y;
 	gl_Position.w = 1.0;
     gl_Position = MVP * gl_Position;
-	frag_color = vert_color * Tint;
+	frag_color = vec3(1.0, 1.0, 1.0) * Tint;
 }
 
