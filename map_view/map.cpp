@@ -461,11 +461,11 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			float p_z = *(float*)buf;
 			buf += sizeof(float);
 
-			float p_x_rot = *(float*)buf * 3.14159 / 180;
+			float p_x_rot = *(float*)buf * 3.14159f / 180;
 			buf += sizeof(float);
-			float p_y_rot = *(float*)buf * 3.14159 / 180;
+			float p_y_rot = *(float*)buf * 3.14159f / 180;
 			buf += sizeof(float);
-			float p_z_rot = *(float*)buf * 3.14159 / 180;
+			float p_z_rot = *(float*)buf * 3.14159f / 180;
 			buf += sizeof(float);
 
 			float p_x_scale = *(float*)buf;
@@ -496,17 +496,17 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 				TranslateVertex(v2, p_x, p_y, p_z);
 				TranslateVertex(v3, p_x, p_y, p_z);
 
-				RotateVertex(v1, x_rot * 3.14159 / 180.0f, 0, 0);
-				RotateVertex(v2, x_rot * 3.14159 / 180.0f, 0, 0);
-				RotateVertex(v3, x_rot * 3.14159 / 180.0f, 0, 0);
+				RotateVertex(v1, x_rot * 3.14159f / 180.0f, 0, 0);
+				RotateVertex(v2, x_rot * 3.14159f / 180.0f, 0, 0);
+				RotateVertex(v3, x_rot * 3.14159f / 180.0f, 0, 0);
 
-				RotateVertex(v1, 0, y_rot * 3.14159 / 180.0f, 0);
-				RotateVertex(v2, 0, y_rot * 3.14159 / 180.0f, 0);
-				RotateVertex(v3, 0, y_rot * 3.14159 / 180.0f, 0);
+				RotateVertex(v1, 0, y_rot * 3.14159f / 180.0f, 0);
+				RotateVertex(v2, 0, y_rot * 3.14159f / 180.0f, 0);
+				RotateVertex(v3, 0, y_rot * 3.14159f / 180.0f, 0);
 
 				glm::vec3 correction(p_x, p_y, p_z);
 
-				RotateVertex(correction, x_rot * 3.14159 / 180.0f, 0, 0);
+				RotateVertex(correction, x_rot * 3.14159f / 180.0f, 0, 0);
 
 				TranslateVertex(v1, -correction.x, -correction.y, -correction.z);
 				TranslateVertex(v2, -correction.x, -correction.y, -correction.z);
@@ -528,9 +528,9 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 				TranslateVertex(v2, correction.x, correction.y, correction.z);
 				TranslateVertex(v3, correction.x, correction.y, correction.z);
 
-				RotateVertex(v1, 0, 0, z_rot * 3.14159 / 180.0f);
-				RotateVertex(v2, 0, 0, z_rot * 3.14159 / 180.0f);
-				RotateVertex(v3, 0, 0, z_rot * 3.14159 / 180.0f);
+				RotateVertex(v1, 0, 0, z_rot * 3.14159f / 180.0f);
+				RotateVertex(v2, 0, 0, z_rot * 3.14159f / 180.0f);
+				RotateVertex(v3, 0, 0, z_rot * 3.14159f / 180.0f);
 
 				ScaleVertex(v1, x_scale, y_scale, z_scale);
 				ScaleVertex(v2, x_scale, y_scale, z_scale);
@@ -619,10 +619,10 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			float QuadVertex4Z = QuadVertex1Z;
 
 			uint32_t current_vert = (uint32_t)verts.size() + 3;
-			verts.push_back(glm::vec3(QuadVertex1Y, QuadVertex1X, QuadVertex1Z));
-			verts.push_back(glm::vec3(QuadVertex2Y, QuadVertex2X, QuadVertex2Z));
-			verts.push_back(glm::vec3(QuadVertex3Y, QuadVertex3X, QuadVertex3Z));
-			verts.push_back(glm::vec3(QuadVertex4Y, QuadVertex4X, QuadVertex4Z));
+			verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
+			verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
+			verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
+			verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 			
 			indices.push_back(current_vert);
 			indices.push_back(current_vert - 2);

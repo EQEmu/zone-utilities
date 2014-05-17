@@ -15,6 +15,21 @@ namespace EQEmu
 class Terrain
 {
 public:
+	struct ZoneOptions {
+		std::string name;
+		int32_t min_lng;
+		int32_t max_lng;
+		int32_t min_lat;
+		int32_t max_lat;
+		float min_extents[3];
+		float max_extents[3];
+		float units_per_vert;
+		uint32_t quads_per_tile;
+		uint32_t cover_map_input_size;
+		uint32_t layer_map_input_size;
+		float base_water_level;
+	};
+
 	Terrain() { }
 	~Terrain() { }
 
@@ -24,6 +39,7 @@ public:
 	void AddWaterSheet(std::shared_ptr<WaterSheet> s) { water_sheets.push_back(s); }
 	void AddInvisWall(std::shared_ptr<InvisWall> w) { invis_walls.push_back(w); }
 	void AddPlaceableGroup(std::shared_ptr<PlaceableGroup> p) { placeable_groups.push_back(p); }
+	void SetOpts(ZoneOptions opt) { opts = opt; }
 
 	std::vector<std::shared_ptr<TerrainTile>>& GetTiles() { return tiles; }
 	uint32_t GetQuadsPerTile() { return quads_per_tile; }
@@ -32,6 +48,7 @@ public:
 	std::vector<std::shared_ptr<InvisWall>>& GetInvisWalls() { return invis_walls; }
 	std::vector<std::shared_ptr<PlaceableGroup>>& GetPlaceableGroups() { return placeable_groups; }
 	std::map<std::string, std::shared_ptr<EQG::Geometry>>& GetModels() { return models; }
+	ZoneOptions &GetOpts() { return opts; }
 private:
 	std::vector<std::shared_ptr<TerrainTile>> tiles;
 	uint32_t quads_per_tile;
@@ -41,6 +58,7 @@ private:
 	std::vector<std::shared_ptr<InvisWall>> invis_walls;
 	std::vector<std::shared_ptr<PlaceableGroup>> placeable_groups;
 	std::map<std::string, std::shared_ptr<EQG::Geometry>> models;
+	ZoneOptions opts;
 };
 
 }

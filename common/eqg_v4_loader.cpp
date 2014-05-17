@@ -41,13 +41,12 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<Terrain> &terrain
 	if (!zon_found)
 		return false;
 
-	ZoneOptions opts;
-	if (!ParseZon(zon, opts)) {
+	terrain.reset(new Terrain());
+	if (!ParseZon(zon, terrain->GetOpts())) {
 		return false;
 	}
 
-	terrain.reset(new Terrain());
-	if(!ParseZoneDat(archive, opts, terrain)) {
+	if(!ParseZoneDat(archive, terrain)) {
 		return false;
 	}
 
@@ -102,8 +101,8 @@ float HeightWithinQuad(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, f
 	return (((n.x) * (x - a.x) + (n.y) * (y - a.y)) / -n.z) + a.z;
 }
 
-bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts, std::shared_ptr<Terrain> &terrain) {
-	std::string filename = opts.name + ".dat";
+bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_ptr<Terrain> &terrain) {
+	std::string filename = terrain->GetOpts().name + ".dat";
 
 	
 	std::vector<char> buffer;
@@ -118,17 +117,17 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 	SafeStringAllocParse(base_tile_texture);
 	SafeVarAllocParse(uint32_t, tile_count);
 
-	float zone_min_x = (float)opts.min_lat * (float)opts.quads_per_tile * (float)opts.units_per_vert;
-	//float zone_max_x = (float)(opts.max_lat + 1) * (float)opts.quads_per_tile * (float)opts.units_per_vert;
+	float zone_min_x = (float)terrain->GetOpts().min_lat * (float)terrain->GetOpts().quads_per_tile * (float)terrain->GetOpts().units_per_vert;
+	//float zone_max_x = (float)(terrain->GetOpts().max_lat + 1) * (float)terrain->GetOpts().quads_per_tile * (float)terrain->GetOpts().units_per_vert;
 
-	float zone_min_y = (float)opts.min_lng * (float)opts.quads_per_tile * opts.units_per_vert;
-	//float zone_max_y = (float)(opts.max_lng + 1) * (float)opts.quads_per_tile * opts.units_per_vert;
+	float zone_min_y = (float)terrain->GetOpts().min_lng * (float)terrain->GetOpts().quads_per_tile * terrain->GetOpts().units_per_vert;
+	//float zone_max_y = (float)(terrain->GetOpts().max_lng + 1) * (float)terrain->GetOpts().quads_per_tile * terrain->GetOpts().units_per_vert;
 
-	uint32_t quad_count = (opts.quads_per_tile * opts.quads_per_tile);
-	uint32_t vert_count = ((opts.quads_per_tile + 1) * (opts.quads_per_tile + 1));
+	uint32_t quad_count = (terrain->GetOpts().quads_per_tile * terrain->GetOpts().quads_per_tile);
+	uint32_t vert_count = ((terrain->GetOpts().quads_per_tile + 1) * (terrain->GetOpts().quads_per_tile + 1));
 
-	terrain->SetQuadsPerTile(opts.quads_per_tile);
-	terrain->SetUnitsPerVertex(opts.units_per_vert);
+	terrain->SetQuadsPerTile(terrain->GetOpts().quads_per_tile);
+	terrain->SetUnitsPerVertex(terrain->GetOpts().units_per_vert);
 
 	for(uint32_t i = 0; i < tile_count; ++i) {
 		std::shared_ptr<TerrainTile> tile(new TerrainTile());
@@ -138,8 +137,8 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 		SafeVarAllocParse(int32_t, tile_lat);
 		SafeVarAllocParse(int32_t, tile_unk);
 
-		float tile_start_y = zone_min_y + (tile_lng - 100000 - opts.min_lng) * opts.units_per_vert * opts.quads_per_tile;
-		float tile_start_x = zone_min_x + (tile_lat - 100000 - opts.min_lat) * opts.units_per_vert * opts.quads_per_tile;
+		float tile_start_y = zone_min_y + (tile_lng - 100000 - terrain->GetOpts().min_lng) * terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile;
+		float tile_start_x = zone_min_x + (tile_lat - 100000 - terrain->GetOpts().min_lat) * terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile;
 	
 		bool floats_all_the_same = true;
 		tile->GetFloats().resize(vert_count);
@@ -147,6 +146,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 		tile->GetColors2().resize(vert_count);
 		tile->GetFlags().resize(quad_count);
 
+		double current_avg = 0.0;
 		for (uint32_t j = 0; j < vert_count; ++j) {
 			SafeVarAllocParse(float, t);
 			tile->GetFloats()[j] = t;
@@ -177,7 +177,11 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 		if (floats_all_the_same)
 			tile->SetFlat(true);
 
-		SafeVarAllocParse(float, unkFloat);
+		//not 100% sure on this but it seems to fit a pattern
+		//most zones have it set to -1000.0
+		SafeVarAllocParse(float, BaseWaterLevel);
+		tile->SetBaseWaterLevel(BaseWaterLevel);
+
 		SafeVarAllocParse(int32_t, unk_unk);
 		idx -= sizeof(int32_t);
 		SafeVarAllocParse(float, unk_unk2);
@@ -277,28 +281,28 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 			float adjusted_y = y;
 
 			if(adjusted_x < 0)
-				adjusted_x = adjusted_x + (-(int)(adjusted_x / (opts.units_per_vert * opts.quads_per_tile)) + 1) * (opts.units_per_vert * opts.quads_per_tile);
+				adjusted_x = adjusted_x + (-(int)(adjusted_x / (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile)) + 1) * (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
 			else
-				adjusted_x = fmod(adjusted_x, opts.units_per_vert * opts.quads_per_tile);
+				adjusted_x = fmod(adjusted_x, terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
 
 			if(adjusted_y < 0)
-				adjusted_y = adjusted_y + (-(int)(adjusted_y / (opts.units_per_vert * opts.quads_per_tile)) + 1) * (opts.units_per_vert * opts.quads_per_tile);
+				adjusted_y = adjusted_y + (-(int)(adjusted_y / (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile)) + 1) * (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
 			else
-				adjusted_y = fmod(adjusted_y, opts.units_per_vert * opts.quads_per_tile);
+				adjusted_y = fmod(adjusted_y, terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
 
-			int row_number = (int)(adjusted_y / opts.units_per_vert);
-			int column = (int)(adjusted_x / opts.units_per_vert);
-			int quad = row_number * opts.quads_per_tile + column;
+			int row_number = (int)(adjusted_y / terrain->GetOpts().units_per_vert);
+			int column = (int)(adjusted_x / terrain->GetOpts().units_per_vert);
+			int quad = row_number * terrain->GetOpts().quads_per_tile + column;
 
 			float quad_vertex1Z = tile->GetFloats()[quad + row_number];
-			float quad_vertex2Z = tile->GetFloats()[quad + row_number + opts.quads_per_tile + 1];
-			float quad_vertex3Z = tile->GetFloats()[quad + row_number + opts.quads_per_tile + 2];
+			float quad_vertex2Z = tile->GetFloats()[quad + row_number + terrain->GetOpts().quads_per_tile + 1];
+			float quad_vertex3Z = tile->GetFloats()[quad + row_number + terrain->GetOpts().quads_per_tile + 2];
 			float quad_vertex4Z = tile->GetFloats()[quad + row_number + 1];
 
-			glm::vec3 p1(row_number * opts.units_per_vert, (quad % opts.quads_per_tile) * opts.units_per_vert, quad_vertex1Z);
-			glm::vec3 p2(p1.x + opts.units_per_vert, p1.y, quad_vertex2Z);
-			glm::vec3 p3(p1.x + opts.units_per_vert, p1.y + opts.units_per_vert, quad_vertex3Z);
-			glm::vec3 p4(p1.x, p1.y + opts.units_per_vert, quad_vertex4Z);
+			glm::vec3 p1(row_number * terrain->GetOpts().units_per_vert, (quad % terrain->GetOpts().quads_per_tile) * terrain->GetOpts().units_per_vert, quad_vertex1Z);
+			glm::vec3 p2(p1.x + terrain->GetOpts().units_per_vert, p1.y, quad_vertex2Z);
+			glm::vec3 p3(p1.x + terrain->GetOpts().units_per_vert, p1.y + terrain->GetOpts().units_per_vert, quad_vertex3Z);
+			glm::vec3 p4(p1.x, p1.y + terrain->GetOpts().units_per_vert, quad_vertex4Z);
 			
 			terrain_height = HeightWithinQuad(p1, p2, p3, p4, adjusted_y, adjusted_x);
 
@@ -386,8 +390,10 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 			SafeVarAllocParse(float, z_adjust);
 
 			std::vector<char> tog_buffer;
+			std::transform(tog_name.begin(), tog_name.end(), tog_name.begin(), ::tolower);
 			if(!archive.Get(tog_name + ".tog", tog_buffer))
 			{
+				printf("Could not load tog: %s\n", tog_name.c_str());
 				continue;
 			}
 
@@ -494,6 +500,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 		auto token = tokens[i];
 		if (token.compare("*WATERSHEET") == 0) {
 			ws.reset(new WaterSheet());
+			ws->SetTile(false);
 
 			++i;
 		}
@@ -503,7 +510,30 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 			}
 
 			++i;
-		} else if (token.compare("*MINX") == 0) {
+		}
+		else if (token.compare("*WATERSHEETDATA") == 0) {
+			ws.reset(new WaterSheet());
+			ws->SetTile(true);
+		
+			++i;
+		}
+		else if (token.compare("*ENDWATERSHEETDATA") == 0) {
+			if (ws) {
+				terrain->AddWaterSheet(ws);
+			}
+		
+			++i;
+		}
+		else if (token.compare("*INDEX") == 0) {
+			if (i + 1 >= tokens.size()) {
+				break;
+			}
+
+			int32_t index = std::stoi(tokens[i + 1]);
+			ws->SetIndex(index);
+			i += 2;
+		}
+		else if (token.compare("*MINX") == 0) {
 			if (i + 1 >= tokens.size()) {
 				break;
 			}
@@ -647,7 +677,7 @@ void EQEmu::EQG4Loader::ParseConfigFile(std::vector<char> &buffer, std::vector<s
 	}
 }
 
-bool EQEmu::EQG4Loader::ParseZon(std::vector<char> &buffer, ZoneOptions &opts) {
+bool EQEmu::EQG4Loader::ParseZon(std::vector<char> &buffer, Terrain::ZoneOptions &opts) {
 	if (buffer.size() < 5)
 		return false;
 
