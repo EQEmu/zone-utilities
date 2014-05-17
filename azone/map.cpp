@@ -69,6 +69,7 @@ bool Map::Write(std::string filename) {
 	uint32_t non_collide_ind_count = (uint32_t)non_collide_indices.size();
 	uint32_t model_count = (uint32_t)(map_models.size() + map_eqg_models.size());
 	uint32_t plac_count = (uint32_t)map_placeables.size();
+	uint32_t plac_group_count = (uint32_t)map_group_placeables.size();
 	uint32_t tile_count = terrain ? (uint32_t)terrain->GetTiles().size() : 0;
 	uint32_t quads_per_tile = terrain ? terrain->GetQuadsPerTile() : 0;
 	float units_per_vertex = terrain ? terrain->GetUnitsPerVertex() : 0.0f;
@@ -79,6 +80,7 @@ bool Map::Write(std::string filename) {
 	ss.write((const char*)&non_collide_ind_count, sizeof(uint32_t));
 	ss.write((const char*)&model_count, sizeof(uint32_t));
 	ss.write((const char*)&plac_count, sizeof(uint32_t));
+	ss.write((const char*)&plac_group_count, sizeof(uint32_t));
 	ss.write((const char*)&tile_count, sizeof(uint32_t));
 	ss.write((const char*)&quads_per_tile, sizeof(uint32_t));
 	ss.write((const char*)&units_per_vertex, sizeof(float));
@@ -215,6 +217,65 @@ bool Map::Write(std::string filename) {
 		ss.write((const char*)&x_scale, sizeof(float));
 		ss.write((const char*)&y_scale, sizeof(float));
 		ss.write((const char*)&z_scale, sizeof(float));
+	}
+
+	for (uint32_t i = 0; i < plac_group_count; ++i) {
+		auto &gp = map_group_placeables[i];
+		uint8_t null = 0;
+		float x = gp->GetX();
+		float y = gp->GetY();
+		float z = gp->GetZ();
+		float x_rot = gp->GetRotationX();
+		float y_rot = gp->GetRotationY();
+		float z_rot = gp->GetRotationZ();
+		float x_scale = gp->GetScaleX();
+		float y_scale = gp->GetScaleY();
+		float z_scale = gp->GetScaleZ();
+		float x_tile = gp->GetTileX();
+		float y_tile = gp->GetTileY();
+		float z_tile = gp->GetTileZ();
+
+		ss.write((const char*)&x, sizeof(float));
+		ss.write((const char*)&y, sizeof(float));
+		ss.write((const char*)&z, sizeof(float));
+		ss.write((const char*)&x_rot, sizeof(float));
+		ss.write((const char*)&y_rot, sizeof(float));
+		ss.write((const char*)&z_rot, sizeof(float));
+		ss.write((const char*)&x_scale, sizeof(float));
+		ss.write((const char*)&y_scale, sizeof(float));
+		ss.write((const char*)&z_scale, sizeof(float));
+		ss.write((const char*)&x_tile, sizeof(float));
+		ss.write((const char*)&y_tile, sizeof(float));
+		ss.write((const char*)&z_tile, sizeof(float));
+
+		auto &placs = gp->GetPlaceables();
+		uint32_t plac_count = placs.size();
+		ss.write((const char*)&plac_count, sizeof(uint32_t));
+		
+		for (uint32_t j = 0; j < plac_count; ++j) {
+			auto &plac = placs[j];
+			float x = plac->GetX();
+			float y = plac->GetY();
+			float z = plac->GetZ();
+			float x_rot = plac->GetRotateX();
+			float y_rot = plac->GetRotateY();
+			float z_rot = plac->GetRotateZ();
+			float x_scale = plac->GetScaleX();
+			float y_scale = plac->GetScaleY();
+			float z_scale = plac->GetScaleZ();
+
+			ss.write(plac->GetFileName().c_str(), plac->GetFileName().length());
+			ss.write((const char*)&null, sizeof(uint8_t));
+			ss.write((const char*)&x, sizeof(float));
+			ss.write((const char*)&y, sizeof(float));
+			ss.write((const char*)&z, sizeof(float));
+			ss.write((const char*)&x_rot, sizeof(float));
+			ss.write((const char*)&y_rot, sizeof(float));
+			ss.write((const char*)&z_rot, sizeof(float));
+			ss.write((const char*)&x_scale, sizeof(float));
+			ss.write((const char*)&y_scale, sizeof(float));
+			ss.write((const char*)&z_scale, sizeof(float));
+		}
 	}
 
 	if(terrain) {
@@ -373,7 +434,7 @@ bool Map::CompileS3D(
 				auto v1 = mod_verts[current_poly.verts[0]];
 				auto v2 = mod_verts[current_poly.verts[1]];
 				auto v3 = mod_verts[current_poly.verts[2]];
-#ifdef INVERSEXY
+
 				float t = v1.pos.x;
 				v1.pos.x = v1.pos.y;
 				v1.pos.y = t;
@@ -385,7 +446,7 @@ bool Map::CompileS3D(
 				t = v3.pos.x;
 				v3.pos.x = v3.pos.y;
 				v3.pos.y = t;
-#endif
+
 				if(current_poly.flags == 0x10)
 					AddFace(v1.pos, v2.pos, v3.pos, false);
 				else
@@ -581,7 +642,7 @@ bool Map::CompileEQG(
 			auto v2 = mod_verts[current_poly.verts[1]];
 			auto v3 = mod_verts[current_poly.verts[2]];
 
-#ifdef INVERSEXY
+
 			float t = v1.pos.x;
 			v1.pos.x = v1.pos.y;
 			v1.pos.y = t;
@@ -593,7 +654,7 @@ bool Map::CompileEQG(
 			t = v3.pos.x;
 			v3.pos.x = v3.pos.y;
 			v3.pos.y = t;
-#endif
+
 			if (current_poly.flags & 0x01)
 				AddFace(v1.pos, v2.pos, v3.pos, false);
 			else
@@ -627,7 +688,6 @@ bool Map::CompileEQGv4()
 	
 		uint32_t id = (uint32_t)non_collide_verts.size();
 
-#ifdef INVERSEXY
 		non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMinX(), sheet->GetZHeight()));
 		non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMaxX(), sheet->GetZHeight()));
 		non_collide_verts.push_back(glm::vec3(sheet->GetMaxY(), sheet->GetMinX(), sheet->GetZHeight()));
@@ -640,20 +700,6 @@ bool Map::CompileEQGv4()
 		non_collide_indices.push_back(id + 1);
 		non_collide_indices.push_back(id + 3);
 		non_collide_indices.push_back(id + 2);
-#else
-		non_collide_verts.push_back(glm::vec3(sheet->GetMinX(), sheet->GetMinY(), sheet->GetZHeight()));
-		non_collide_verts.push_back(glm::vec3(sheet->GetMinX(), sheet->GetMaxY(), sheet->GetZHeight()));
-		non_collide_verts.push_back(glm::vec3(sheet->GetMaxX(), sheet->GetMinY(), sheet->GetZHeight()));
-		non_collide_verts.push_back(glm::vec3(sheet->GetMaxX(), sheet->GetMaxY(), sheet->GetZHeight()));
-
-		non_collide_indices.push_back(id);
-		non_collide_indices.push_back(id + 1);
-		non_collide_indices.push_back(id + 2);
-
-		non_collide_indices.push_back(id + 1);
-		non_collide_indices.push_back(id + 3);
-		non_collide_indices.push_back(id + 2);
-#endif
 	}
 
 	auto &invis_walls = terrain->GetInvisWalls();
@@ -665,7 +711,6 @@ bool Map::CompileEQGv4()
 			if (j + 1 == verts.size())
 				break;
 
-#ifdef INVERSEXY
 			float t;
 			auto v1 = verts[j];
 			auto v2 = verts[j + 1];
@@ -683,21 +728,28 @@ bool Map::CompileEQGv4()
 
 			glm::vec3 v4 = v2;
 			v4.z += 100.0;
-#else
-			auto &v1 = verts[j];
-			auto &v2 = verts[j + 1];
-
-			glm::vec3 v3 = v1;
-			v3.z += 50.0;
-
-			glm::vec3 v4 = v2;
-			v4.z += 50.0;
-#endif
 
 			AddFace(v3, v1, v2, true);
 			AddFace(v3, v4, v2, true);
 		}
 
+	}
+
+	//map_eqg_models
+	auto &models = terrain->GetModels();
+	auto model_iter = models.begin();
+	while(model_iter != models.end()) {
+		auto &model = model_iter->second;
+		if (map_eqg_models.count(model->GetName()) == 0) {
+			map_eqg_models[model->GetName()] = model;
+		}
+		++model_iter;
+	}
+
+	//map_placeables
+	auto &pgs = terrain->GetPlaceableGroups();
+	for(size_t i = 0; i < pgs.size(); ++i) {
+		map_group_placeables.push_back(pgs[i]);
 	}
 
 	return true;

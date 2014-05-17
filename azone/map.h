@@ -57,6 +57,7 @@ private:
 	std::map<std::string, std::shared_ptr<EQEmu::Geometry>> map_models;
 	std::map<std::string, std::shared_ptr<EQEmu::EQG::Geometry>> map_eqg_models;
 	std::vector<std::shared_ptr<EQEmu::Placeable>> map_placeables;
+	std::vector<std::shared_ptr<EQEmu::PlaceableGroup>> map_group_placeables;
 };
 
 #endif

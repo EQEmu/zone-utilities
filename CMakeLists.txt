@@ -38,15 +38,10 @@ IF(NOT MSVC)
 ENDIF(NOT MSVC)
 
 OPTION(EQEMU_ENABLE_GL "Enable programs that rely on OpenGL (turn off if you only want command line)" ON)
-OPTION(EQEMU_INVERSE_XY "Inverse the X and Y coords on maps; this should match your server." ON)
 
 FIND_PACKAGE(ZLIB REQUIRED)
 
 INCLUDE_DIRECTORIES("common" "${ZLIB_INCLUDE_DIRS}" "${CMAKE_CURRENT_SOURCE_DIR}/glm/glm")
-
-IF(EQEMU_INVERSE_XY)
-	ADD_DEFINITIONS(-DINVERSEXY)
-ENDIF(EQEMU_INVERSE_XY)
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(azone)

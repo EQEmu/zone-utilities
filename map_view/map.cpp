@@ -204,6 +204,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 	uint32_t nc_ind_count;
 	uint32_t model_count;
 	uint32_t plac_count;
+	uint32_t plac_group_count;
 	uint32_t tile_count;
 	uint32_t quads_per_tile;
 	float units_per_vertex;
@@ -224,6 +225,9 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 	buf += sizeof(uint32_t);
 
 	plac_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
+
+	plac_group_count = *(uint32_t*)buf;
 	buf += sizeof(uint32_t);
 
 	tile_count = *(uint32_t*)buf;
@@ -381,7 +385,6 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			TranslateVertex(v2, x, y, z);
 			TranslateVertex(v3, x, y, z);
 
-#ifdef INVERSEXY
 			float t = v1.x;
 			v1.x = v1.y;
 			v1.y = t;
@@ -393,7 +396,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			t = v3.x;
 			v3.x = v3.y;
 			v3.y = t;
-#endif
+
 			if (current_poly.vis == 0) {
 				nc_verts.push_back(v1);
 				nc_verts.push_back(v2);
@@ -411,6 +414,166 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 				indices.push_back((uint32_t)verts.size() - 3);
 				indices.push_back((uint32_t)verts.size() - 2);
 				indices.push_back((uint32_t)verts.size() - 1);
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < plac_group_count; ++i) {
+		float x = *(float*)buf;
+		buf += sizeof(float);
+		float y = *(float*)buf;
+		buf += sizeof(float);
+		float z = *(float*)buf;
+		buf += sizeof(float);
+
+		float x_rot = *(float*)buf;
+		buf += sizeof(float);
+		float y_rot = *(float*)buf;
+		buf += sizeof(float);
+		float z_rot = *(float*)buf;
+		buf += sizeof(float);
+
+		float x_scale = *(float*)buf;
+		buf += sizeof(float);
+		float y_scale = *(float*)buf;
+		buf += sizeof(float);
+		float z_scale = *(float*)buf;
+		buf += sizeof(float);
+
+		float x_tile = *(float*)buf;
+		buf += sizeof(float);
+		float y_tile = *(float*)buf;
+		buf += sizeof(float);
+		float z_tile = *(float*)buf;
+		buf += sizeof(float);
+
+		uint32_t p_count = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+
+		for (uint32_t j = 0; j < p_count; ++j) {
+			std::string name = buf;
+			buf += name.length() + 1;
+
+			float p_x = *(float*)buf;
+			buf += sizeof(float);
+			float p_y = *(float*)buf;
+			buf += sizeof(float);
+			float p_z = *(float*)buf;
+			buf += sizeof(float);
+
+			float p_x_rot = *(float*)buf * 3.14159 / 180;
+			buf += sizeof(float);
+			float p_y_rot = *(float*)buf * 3.14159 / 180;
+			buf += sizeof(float);
+			float p_z_rot = *(float*)buf * 3.14159 / 180;
+			buf += sizeof(float);
+
+			float p_x_scale = *(float*)buf;
+			buf += sizeof(float);
+			float p_y_scale = *(float*)buf;
+			buf += sizeof(float);
+			float p_z_scale = *(float*)buf;
+			buf += sizeof(float);
+
+			if (models.count(name) == 0)
+				continue;
+
+			auto &model = models[name];
+
+			for(size_t k = 0; k < model->polys.size(); ++k) {
+				auto &poly = model->polys[k];
+				glm::vec3 v1, v2, v3;
+
+				v1 = model->verts[poly.v1];
+				v2 = model->verts[poly.v2];
+				v3 = model->verts[poly.v3];
+
+				ScaleVertex(v1, p_x_scale, p_y_scale, p_z_scale);
+				ScaleVertex(v2, p_x_scale, p_y_scale, p_z_scale);
+				ScaleVertex(v3, p_x_scale, p_y_scale, p_z_scale);
+
+				TranslateVertex(v1, p_x, p_y, p_z);
+				TranslateVertex(v2, p_x, p_y, p_z);
+				TranslateVertex(v3, p_x, p_y, p_z);
+
+				RotateVertex(v1, x_rot * 3.14159 / 180.0f, 0, 0);
+				RotateVertex(v2, x_rot * 3.14159 / 180.0f, 0, 0);
+				RotateVertex(v3, x_rot * 3.14159 / 180.0f, 0, 0);
+
+				RotateVertex(v1, 0, y_rot * 3.14159 / 180.0f, 0);
+				RotateVertex(v2, 0, y_rot * 3.14159 / 180.0f, 0);
+				RotateVertex(v3, 0, y_rot * 3.14159 / 180.0f, 0);
+
+				glm::vec3 correction(p_x, p_y, p_z);
+
+				RotateVertex(correction, x_rot * 3.14159 / 180.0f, 0, 0);
+
+				TranslateVertex(v1, -correction.x, -correction.y, -correction.z);
+				TranslateVertex(v2, -correction.x, -correction.y, -correction.z);
+				TranslateVertex(v3, -correction.x, -correction.y, -correction.z);
+
+				RotateVertex(v1, p_x_rot, 0, 0);
+				RotateVertex(v2, p_x_rot, 0, 0);
+				RotateVertex(v3, p_x_rot, 0, 0);
+
+				RotateVertex(v1, 0, -p_y_rot, 0);
+				RotateVertex(v2, 0, -p_y_rot, 0);
+				RotateVertex(v3, 0, -p_y_rot, 0);
+
+				RotateVertex(v1, 0, 0, p_z_rot);
+				RotateVertex(v2, 0, 0, p_z_rot);
+				RotateVertex(v3, 0, 0, p_z_rot);
+
+				TranslateVertex(v1, correction.x, correction.y, correction.z);
+				TranslateVertex(v2, correction.x, correction.y, correction.z);
+				TranslateVertex(v3, correction.x, correction.y, correction.z);
+
+				RotateVertex(v1, 0, 0, z_rot * 3.14159 / 180.0f);
+				RotateVertex(v2, 0, 0, z_rot * 3.14159 / 180.0f);
+				RotateVertex(v3, 0, 0, z_rot * 3.14159 / 180.0f);
+
+				ScaleVertex(v1, x_scale, y_scale, z_scale);
+				ScaleVertex(v2, x_scale, y_scale, z_scale);
+				ScaleVertex(v3, x_scale, y_scale, z_scale);
+
+				TranslateVertex(v1, x_tile, y_tile, z_tile);
+				TranslateVertex(v2, x_tile, y_tile, z_tile);
+				TranslateVertex(v3, x_tile, y_tile, z_tile);
+
+				TranslateVertex(v1, x, y, z);
+				TranslateVertex(v2, x, y, z);
+				TranslateVertex(v3, x, y, z);
+
+				float t = v1.x;
+				v1.x = v1.y;
+				v1.y = t;
+
+				t = v2.x;
+				v2.x = v2.y;
+				v2.y = t;
+
+				t = v3.x;
+				v3.x = v3.y;
+				v3.y = t;
+
+				if (poly.vis == 0) {
+					nc_verts.push_back(v1);
+					nc_verts.push_back(v2);
+					nc_verts.push_back(v3);
+
+					nc_indices.push_back((uint32_t)nc_verts.size() - 3);
+					nc_indices.push_back((uint32_t)nc_verts.size() - 2);
+					nc_indices.push_back((uint32_t)nc_verts.size() - 1);
+				}
+				else {
+					verts.push_back(v1);
+					verts.push_back(v2);
+					verts.push_back(v3);
+
+					indices.push_back((uint32_t)verts.size() - 3);
+					indices.push_back((uint32_t)verts.size() - 2);
+					indices.push_back((uint32_t)verts.size() - 1);
+				}
 			}
 		}
 	}
@@ -514,7 +677,6 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 				float QuadVertex4Z = floats[quad + row_number + 1];
 
 				uint32_t i1, i2, i3, i4;
-#ifdef INVERSEXY
 				std::tuple<float, float, float> t = std::make_tuple(QuadVertex1X, QuadVertex1Y, QuadVertex1Z);
 				auto iter = cur_verts.find(t);
 				if (iter != cur_verts.end()) {
@@ -557,56 +719,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 					verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 					cur_verts[t] = i4;
 				}
-#else
-				std::tuple<float, float, float> t = std::make_tuple(QuadVertex1Y, QuadVertex1X, QuadVertex1Z);
-				auto iter = cur_verts.find(t);
-				if (iter != cur_verts.end()) {
-					i1 = iter->second;
-				}
-				else {
-					i1 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex1Y, QuadVertex1X, QuadVertex1Z))
-						cur_verts[t] = i1;
-				}
 
-				t = std::make_tuple(QuadVertex2Y, QuadVertex2X, QuadVertex2Z);
-				iter = cur_verts.find(t);
-				if (iter != cur_verts.end()) {
-					i2 = iter->second;
-				}
-				else {
-					i2 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex2Y, QuadVertex2X, QuadVertex2Z));
-					cur_verts[t] = i2;
-				}
-
-				t = std::make_tuple(QuadVertex3Y, QuadVertex3X, QuadVertex3Z);
-				iter = cur_verts.find(t);
-				if (iter != cur_verts.end()) {
-					i3 = iter->second;
-				}
-				else {
-					i3 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex3Y, QuadVertex3X, QuadVertex3Z));
-					cur_verts[t] = i3;
-				}
-
-				t = std::make_tuple(QuadVertex4Y, QuadVertex4X, QuadVertex4Z);
-				iter = cur_verts.find(t);
-				if (iter != cur_verts.end()) {
-					i4 = iter->second;
-				}
-				else {
-					i4 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex4Y, QuadVertex4X, QuadVertex4Z));
-					cur_verts[t] = i4;
-				}
-
-				verts.push_back(glm::vec3(QuadVertex1Y, QuadVertex1X, QuadVertex1Z));
-				verts.push_back(glm::vec3(QuadVertex2Y, QuadVertex2X, QuadVertex2Z));
-				verts.push_back(glm::vec3(QuadVertex3Y, QuadVertex3X, QuadVertex3Z));
-				verts.push_back(glm::vec3(QuadVertex4Y, QuadVertex4X, QuadVertex4Z));
-#endif
 				indices.push_back(i4);
 				indices.push_back(i2);
 				indices.push_back(i3);

@@ -1,5 +1,8 @@
 #include "eqg_v4_loader.h"
 #include <stdio.h>
+#include <algorithm>
+#include <functional>
+#include <cctype>
 #include "eqg_structs.h"
 #include "safe_alloc.h"
 #include "eqg_model_loader.h"
@@ -54,6 +57,51 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<Terrain> &terrain
 	return true;
 }
 
+float HeightWithinQuad(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, float x, float y)
+{
+	int inTriangle = 0;
+
+	glm::vec3 a, b, c;
+	glm::vec3 n;
+
+	float fAB = (y - p1.y) * (p2.x - p1.x) - (x - p1.x) * (p2.y - p1.y);
+	float fBC = (y - p2.y) * (p3.x - p2.x) - (x - p2.x) * (p3.y - p2.y);
+	float fCA = (y - p3.y) * (p1.x - p3.x) - (x - p3.x) * (p1.y - p3.y);
+
+	if ((fAB * fBC >= 0) && (fBC * fCA >= 0))
+	{
+		inTriangle = 1;
+		a = p1;
+		b = p2;
+		c = p3;
+	}
+
+	fAB = (y - p1.y) * (p3.x - p1.x) - (x - p1.x) * (p3.y - p1.y);
+	fBC = (y - p3.y) * (p4.x - p3.x) - (x - p3.x) * (p4.y - p3.y);
+	fCA = (y - p4.y) * (p1.x - p4.x) - (x - p4.x) * (p1.y - p4.y);
+
+
+	if ((fAB * fBC >= 0) && (fBC * fCA >= 0))
+	{
+		inTriangle = 2;
+		a = p1;
+		b = p3;
+		c = p4;
+	}
+
+	n.x = (b.y - a.y)*(c.z - a.z) - (b.z - a.z)*(c.y - a.y);
+	n.y = (b.z - a.z)*(c.x - a.x) - (b.x - a.x)*(c.z - a.z);
+	n.z = (b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x);
+
+	float len = sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
+
+	n.x /= len;
+	n.y /= len;
+	n.z /= len;
+
+	return (((n.x) * (x - a.x) + (n.y) * (y - a.y)) / -n.z) + a.z;
+}
+
 bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &opts, std::shared_ptr<Terrain> &terrain) {
 	std::string filename = opts.name + ".dat";
 
@@ -71,10 +119,10 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 	SafeVarAllocParse(uint32_t, tile_count);
 
 	float zone_min_x = (float)opts.min_lat * (float)opts.quads_per_tile * (float)opts.units_per_vert;
-	float zone_max_x = (float)(opts.max_lat + 1) * (float)opts.quads_per_tile * (float)opts.units_per_vert;
+	//float zone_max_x = (float)(opts.max_lat + 1) * (float)opts.quads_per_tile * (float)opts.units_per_vert;
 
 	float zone_min_y = (float)opts.min_lng * (float)opts.quads_per_tile * opts.units_per_vert;
-	float zone_max_y = (float)(opts.max_lng + 1) * (float)opts.quads_per_tile * opts.units_per_vert;
+	//float zone_max_y = (float)(opts.max_lng + 1) * (float)opts.quads_per_tile * opts.units_per_vert;
 
 	uint32_t quad_count = (opts.quads_per_tile * opts.quads_per_tile);
 	uint32_t vert_count = ((opts.quads_per_tile + 1) * (opts.quads_per_tile + 1));
@@ -173,6 +221,8 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 		SafeVarAllocParse(uint32_t, single_placeable_count);
 		for(uint32_t j = 0; j < single_placeable_count; ++j) {
 			SafeStringAllocParse(model_name);
+			std::transform(model_name.begin(), model_name.end(), model_name.begin(), ::tolower);
+
 			SafeStringAllocParse(s);
 
 			SafeVarAllocParse(uint32_t, longitude);
@@ -192,15 +242,71 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 		
 			SafeVarAllocParse(uint8_t, unk);
 
-			//Placable p;
+			if(terrain->GetModels().count(model_name) == 0) {
+				EQGModelLoader model_loader;
+				std::shared_ptr<EQG::Geometry> m(new EQG::Geometry());
+				m->SetName(model_name);
+				if (model_loader.Load(archive, model_name + ".mod", m)) {
+					terrain->GetModels()[model_name] = m;
+				}
+				else if (model_loader.Load(archive, model_name, m)) {
+					terrain->GetModels()[model_name] = m;
+				}
+				else {
+					m->GetMaterials().clear();
+					m->GetPolygons().clear();
+					m->GetVertices().clear();
+					terrain->GetModels()[model_name] = m;
+				}
+			}
 
-			//terrain.AddPlaceable(p);
+			std::shared_ptr<Placeable> p(new Placeable());
+			p->SetName(model_name);
+			p->SetFileName(model_name);
+			p->SetLocation(0.0f, 0.0f, 0.0f);
+			p->SetRotation(rot_x, rot_y, rot_z);
+			p->SetScale(scale_x, scale_y, scale_z);
 
-			//PlaceableGroup pg;
+			//There's a lot of work with offsets here =/
+			std::shared_ptr<PlaceableGroup> pg(new PlaceableGroup());
+			pg->SetFromTOG(false);
+			pg->SetLocation(x, y, z);
 
-			//terrain.AddPlaceableGroup(pg);
+			float terrain_height = 0.0f;
+			float adjusted_x = x;
+			float adjusted_y = y;
 
-			//do offset stuff derision worked out
+			if(adjusted_x < 0)
+				adjusted_x = adjusted_x + (-(int)(adjusted_x / (opts.units_per_vert * opts.quads_per_tile)) + 1) * (opts.units_per_vert * opts.quads_per_tile);
+			else
+				adjusted_x = fmod(adjusted_x, opts.units_per_vert * opts.quads_per_tile);
+
+			if(adjusted_y < 0)
+				adjusted_y = adjusted_y + (-(int)(adjusted_y / (opts.units_per_vert * opts.quads_per_tile)) + 1) * (opts.units_per_vert * opts.quads_per_tile);
+			else
+				adjusted_y = fmod(adjusted_y, opts.units_per_vert * opts.quads_per_tile);
+
+			int row_number = (int)(adjusted_y / opts.units_per_vert);
+			int column = (int)(adjusted_x / opts.units_per_vert);
+			int quad = row_number * opts.quads_per_tile + column;
+
+			float quad_vertex1Z = tile->GetFloats()[quad + row_number];
+			float quad_vertex2Z = tile->GetFloats()[quad + row_number + opts.quads_per_tile + 1];
+			float quad_vertex3Z = tile->GetFloats()[quad + row_number + opts.quads_per_tile + 2];
+			float quad_vertex4Z = tile->GetFloats()[quad + row_number + 1];
+
+			glm::vec3 p1(row_number * opts.units_per_vert, (quad % opts.quads_per_tile) * opts.units_per_vert, quad_vertex1Z);
+			glm::vec3 p2(p1.x + opts.units_per_vert, p1.y, quad_vertex2Z);
+			glm::vec3 p3(p1.x + opts.units_per_vert, p1.y + opts.units_per_vert, quad_vertex3Z);
+			glm::vec3 p4(p1.x, p1.y + opts.units_per_vert, quad_vertex4Z);
+			
+			terrain_height = HeightWithinQuad(p1, p2, p3, p4, adjusted_y, adjusted_x);
+
+			pg->SetTileLocation(tile_start_y, tile_start_x, terrain_height);
+			pg->SetRotation(0.0f, 0.0f, 0.0f);
+			pg->SetScale(1.0f, 1.0f, 1.0f);
+			pg->AddPlaceable(p);
+			terrain->AddPlaceableGroup(pg);
 		}
 
 		SafeVarAllocParse(uint32_t, areas_count);
