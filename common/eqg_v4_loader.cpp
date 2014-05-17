@@ -384,6 +384,93 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, ZoneOptions &
 			SafeVarAllocParse(float, scale_z);
 
 			SafeVarAllocParse(float, z_adjust);
+
+			std::vector<char> tog_buffer;
+			if(!archive.Get(tog_name + ".tog", tog_buffer))
+			{
+				continue;
+			}
+
+			std::shared_ptr<PlaceableGroup> pg(new PlaceableGroup());
+			pg->SetFromTOG(true);
+			pg->SetLocation(x, y, z + (scale_z * z_adjust));
+			pg->SetRotation(rot_x, rot_y, rot_z);
+			pg->SetScale(scale_x, scale_y, scale_z);
+			pg->SetTileLocation(tile_start_y, tile_start_x, 0.0f);
+
+			std::vector<std::string> tokens;
+			std::shared_ptr<Placeable> p;
+			ParseConfigFile(tog_buffer, tokens);
+			for (size_t k = 0; k < tokens.size();) {
+				auto token = tokens[k];
+				if (token.compare("*BEGIN_OBJECT") == 0) {
+					p.reset(new Placeable());
+					++k;
+				}
+				else if (token.compare("*NAME") == 0) {
+					if (k + 1 >= tokens.size()) {
+						break;
+					}
+
+					std::string model_name = tokens[k + 1];
+					std::transform(model_name.begin(), model_name.end(), model_name.begin(), ::tolower);
+
+					if (terrain->GetModels().count(model_name) == 0) {
+						EQGModelLoader model_loader;
+						std::shared_ptr<EQG::Geometry> m(new EQG::Geometry());
+						m->SetName(model_name);
+						if (model_loader.Load(archive, model_name + ".mod", m)) {
+							terrain->GetModels()[model_name] = m;
+						}
+						else if (model_loader.Load(archive, model_name, m)) {
+							terrain->GetModels()[model_name] = m;
+						}
+						else {
+							m->GetMaterials().clear();
+							m->GetPolygons().clear();
+							m->GetVertices().clear();
+							terrain->GetModels()[model_name] = m;
+						}
+					}
+
+					p->SetName(model_name);
+					p->SetFileName(model_name);
+					k += 2;
+				}
+				else if (token.compare("*POSITION") == 0) {
+					if (k + 3 >= tokens.size()) {
+						break;
+					}
+
+					p->SetLocation(std::stof(tokens[k + 1]), std::stof(tokens[k + 2]), std::stof(tokens[k + 3]));
+					k += 4;
+				}
+				else if (token.compare("*ROTATION") == 0) {
+					if (k + 3 >= tokens.size()) {
+						break;
+					}
+
+					p->SetRotation(std::stof(tokens[k + 1]), std::stof(tokens[k + 2]), std::stof(tokens[k + 3]));
+					k += 4;
+				}
+				else if (token.compare("*SCALE") == 0) {
+					if (k + 1 >= tokens.size()) {
+						break;
+					}
+
+					p->SetScale(std::stof(tokens[k + 1]), std::stof(tokens[k + 1]), std::stof(tokens[k + 1]));
+					k += 2;
+				}
+				else if (token.compare("*END_OBJECT") == 0) {
+					pg->AddPlaceable(p);
+					++k;
+				}
+				else {
+					++k;
+				}
+			}
+
+			terrain->AddPlaceableGroup(pg);
 		}
 
 		tile->SetLocation(tile_start_x, tile_start_y);

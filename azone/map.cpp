@@ -249,7 +249,7 @@ bool Map::Write(std::string filename) {
 		ss.write((const char*)&z_tile, sizeof(float));
 
 		auto &placs = gp->GetPlaceables();
-		uint32_t plac_count = placs.size();
+		uint32_t plac_count = (uint32_t)placs.size();
 		ss.write((const char*)&plac_count, sizeof(uint32_t));
 		
 		for (uint32_t j = 0; j < plac_count; ++j) {
