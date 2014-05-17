@@ -25,6 +25,7 @@ SET(common_headers
 	eqg_region.h
 	eqg_structs.h
 	eqg_v4_loader.h
+	invis_wall.h
 	light.h
 	pfs.h
 	placeable.h

@@ -48,9 +48,8 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<Terrain> &terrain
 		return false;
 	}
 
-	if (!ParseWaterDat(archive, terrain)) {
-		return false;
-	}
+	ParseWaterDat(archive, terrain);
+	ParseInvwDat(archive, terrain);
 
 	return true;
 }
@@ -360,6 +359,52 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 		else {
 			++i;
 		}
+	}
+
+	return true;
+}
+
+bool EQEmu::EQG4Loader::ParseInvwDat(EQEmu::PFS::Archive &archive, std::shared_ptr<Terrain> &terrain) {
+	std::vector<char> invw;
+	if (!archive.Get("invw.dat", invw)) {
+		return false;
+	}
+
+	char *buf = &invw[0];
+	uint32_t count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
+
+	for(uint32_t i = 0; i < count; ++i) {
+		std::string name = buf;
+		buf += name.length() + 1;
+
+		uint32_t flag = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+
+		uint32_t vert_count = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+
+		std::shared_ptr<InvisWall> w(new InvisWall());
+		w->SetName(name);
+		auto &verts = w->GetVerts();
+
+		verts.resize(vert_count);
+		for(uint32_t j = 0; j < vert_count; ++j) {
+			float x = *(float*)buf;
+			buf += sizeof(float);
+
+			float y = *(float*)buf;
+			buf += sizeof(float);
+
+			float z = *(float*)buf;
+			buf += sizeof(float);
+
+			verts[j].x = x;
+			verts[j].y = y;
+			verts[j].z = z;			
+		}
+
+		terrain->AddInvisWall(w);
 	}
 
 	return true;

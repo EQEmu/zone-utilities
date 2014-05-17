@@ -656,6 +656,50 @@ bool Map::CompileEQGv4()
 #endif
 	}
 
+	auto &invis_walls = terrain->GetInvisWalls();
+	for (size_t i = 0; i < invis_walls.size(); ++i) {
+		auto &wall = invis_walls[i];
+		auto &verts = wall->GetVerts();
+
+		for(size_t j = 0; j < verts.size(); ++j) {
+			if (j + 1 == verts.size())
+				break;
+
+#ifdef INVERSEXY
+			float t;
+			auto v1 = verts[j];
+			auto v2 = verts[j + 1];
+
+			t = v1.x;
+			v1.x = v1.y;
+			v1.y = t;
+
+			t = v2.x;
+			v2.x = v2.y;
+			v2.y = t;
+
+			glm::vec3 v3 = v1;
+			v3.z += 100.0;
+
+			glm::vec3 v4 = v2;
+			v4.z += 100.0;
+#else
+			auto &v1 = verts[j];
+			auto &v2 = verts[j + 1];
+
+			glm::vec3 v3 = v1;
+			v3.z += 50.0;
+
+			glm::vec3 v4 = v2;
+			v4.z += 50.0;
+#endif
+
+			AddFace(v3, v1, v2, true);
+			AddFace(v3, v4, v2, true);
+		}
+
+	}
+
 	return true;
 }
 
