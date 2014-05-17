@@ -54,6 +54,9 @@ private:
 	std::map<std::tuple<float, float, float>, uint32_t> non_collide_vert_to_index;
 
 	std::shared_ptr<EQEmu::Terrain> terrain;
+	std::map<std::string, std::shared_ptr<EQEmu::Geometry>> map_models;
+	std::map<std::string, std::shared_ptr<EQEmu::EQG::Geometry>> map_eqg_models;
+	std::vector<std::shared_ptr<EQEmu::Placeable>> map_placeables;
 };
 
 #endif

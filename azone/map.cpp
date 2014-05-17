@@ -67,6 +67,8 @@ bool Map::Write(std::string filename) {
 	uint32_t collide_ind_count = (uint32_t)collide_indices.size();
 	uint32_t non_collide_vert_count = (uint32_t)non_collide_verts.size();
 	uint32_t non_collide_ind_count = (uint32_t)non_collide_indices.size();
+	uint32_t model_count = (uint32_t)(map_models.size() + map_eqg_models.size());
+	uint32_t plac_count = (uint32_t)map_placeables.size();
 	uint32_t tile_count = terrain ? (uint32_t)terrain->GetTiles().size() : 0;
 	uint32_t quads_per_tile = terrain ? terrain->GetQuadsPerTile() : 0;
 	float units_per_vertex = terrain ? terrain->GetUnitsPerVertex() : 0.0f;
@@ -75,6 +77,8 @@ bool Map::Write(std::string filename) {
 	ss.write((const char*)&collide_ind_count, sizeof(uint32_t));
 	ss.write((const char*)&non_collide_vert_count, sizeof(uint32_t));
 	ss.write((const char*)&non_collide_ind_count, sizeof(uint32_t));
+	ss.write((const char*)&model_count, sizeof(uint32_t));
+	ss.write((const char*)&plac_count, sizeof(uint32_t));
 	ss.write((const char*)&tile_count, sizeof(uint32_t));
 	ss.write((const char*)&quads_per_tile, sizeof(uint32_t));
 	ss.write((const char*)&units_per_vertex, sizeof(float));
@@ -105,6 +109,112 @@ bool Map::Write(std::string filename) {
 		uint32_t ind = non_collide_indices[i];
 	
 		ss.write((const char*)&ind, sizeof(uint32_t));
+	}
+
+	auto model_iter = map_models.begin();
+	while(model_iter != map_models.end()) {
+		uint8_t null = 0;
+
+		ss.write(model_iter->second->GetName().c_str(), model_iter->second->GetName().length());
+		ss.write((const char*)&null, sizeof(uint8_t));
+
+		auto &verts = model_iter->second->GetVertices();
+		auto &polys = model_iter->second->GetPolygons();
+		uint32_t vert_count = (uint32_t)verts.size();
+		uint32_t poly_count = (uint32_t)polys.size();
+
+		ss.write((const char*)&vert_count, sizeof(uint32_t));
+		ss.write((const char*)&poly_count, sizeof(uint32_t));
+		for(uint32_t i = 0; i < vert_count; ++i) {
+			auto &vert = verts[i];
+			float x = vert.pos.x;
+			float y = vert.pos.y;
+			float z = vert.pos.z;
+			ss.write((const char*)&x, sizeof(float));
+			ss.write((const char*)&y, sizeof(float));
+			ss.write((const char*)&z, sizeof(float));
+		}
+
+		for (uint32_t i = 0; i < poly_count; ++i) {
+			auto &poly = polys[i];
+			uint32_t v1 = poly.verts[0];
+			uint32_t v2 = poly.verts[1];
+			uint32_t v3 = poly.verts[2];
+			uint8_t vis = poly.flags == 0x10 ? 0 : 1;
+
+			ss.write((const char*)&v1, sizeof(uint32_t));
+			ss.write((const char*)&v2, sizeof(uint32_t));
+			ss.write((const char*)&v3, sizeof(uint32_t));
+			ss.write((const char*)&vis, sizeof(uint8_t));
+		}
+
+		++model_iter;
+	}
+
+	auto eqg_model_iter = map_eqg_models.begin();
+	while (eqg_model_iter != map_eqg_models.end()) {
+		uint8_t null = 0;
+
+		ss.write(eqg_model_iter->second->GetName().c_str(), eqg_model_iter->second->GetName().length());
+		ss.write((const char*)&null, sizeof(uint8_t));
+
+		auto &verts = eqg_model_iter->second->GetVertices();
+		auto &polys = eqg_model_iter->second->GetPolygons();
+		uint32_t vert_count = (uint32_t)verts.size();
+		uint32_t poly_count = (uint32_t)polys.size();
+
+		ss.write((const char*)&vert_count, sizeof(uint32_t));
+		ss.write((const char*)&poly_count, sizeof(uint32_t));
+		for (uint32_t i = 0; i < vert_count; ++i) {
+			auto &vert = verts[i];
+			float x = vert.pos.x;
+			float y = vert.pos.y;
+			float z = vert.pos.z;
+			ss.write((const char*)&x, sizeof(float));
+			ss.write((const char*)&y, sizeof(float));
+			ss.write((const char*)&z, sizeof(float));
+		}
+
+		for (uint32_t i = 0; i < poly_count; ++i) {
+			auto &poly = polys[i];
+			uint32_t v1 = poly.verts[0];
+			uint32_t v2 = poly.verts[1];
+			uint32_t v3 = poly.verts[2];
+			uint8_t vis = poly.flags & 0x01 ? 0 : 1;
+
+			ss.write((const char*)&v1, sizeof(uint32_t));
+			ss.write((const char*)&v2, sizeof(uint32_t));
+			ss.write((const char*)&v3, sizeof(uint32_t));
+			ss.write((const char*)&vis, sizeof(uint8_t));
+		}
+
+		++eqg_model_iter;
+	}
+
+	for (uint32_t i = 0; i < plac_count; ++i) {
+		auto &plac = map_placeables[i];
+		uint8_t null = 0;
+		float x = plac->GetX();
+		float y = plac->GetY();
+		float z = plac->GetZ();
+		float x_rot = plac->GetRotateX();
+		float y_rot = plac->GetRotateY();
+		float z_rot = plac->GetRotateZ();
+		float x_scale = plac->GetScaleX();
+		float y_scale = plac->GetScaleY();
+		float z_scale = plac->GetScaleZ();
+
+		ss.write(plac->GetFileName().c_str(), plac->GetFileName().length());
+		ss.write((const char*)&null, sizeof(uint8_t));
+		ss.write((const char*)&x, sizeof(float));
+		ss.write((const char*)&y, sizeof(float));
+		ss.write((const char*)&z, sizeof(float));
+		ss.write((const char*)&x_rot, sizeof(float));
+		ss.write((const char*)&y_rot, sizeof(float));
+		ss.write((const char*)&z_rot, sizeof(float));
+		ss.write((const char*)&x_scale, sizeof(float));
+		ss.write((const char*)&y_scale, sizeof(float));
+		ss.write((const char*)&z_scale, sizeof(float));
 	}
 
 	if(terrain) {
@@ -214,42 +324,17 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::SkeletonTrack::Bone> bone, glm::ve
 		auto &mod_polys = bone->model->GetPolygons();
 		auto &mod_verts = bone->model->GetVertices();
 
-		for (uint32_t j = 0; j < mod_polys.size(); ++j) {
-			auto &current_poly = mod_polys[j];
-			auto v1 = mod_verts[current_poly.verts[0]];
-			auto v2 = mod_verts[current_poly.verts[1]];
-			auto v3 = mod_verts[current_poly.verts[2]];
-
-			RotateVertex(v1.pos, rot.x, rot.y, rot.z);
-			RotateVertex(v2.pos, rot.x, rot.y, rot.z);
-			RotateVertex(v3.pos, rot.x, rot.y, rot.z);
-
-			ScaleVertex(v1.pos, scale_x, scale_y, scale_z);
-			ScaleVertex(v2.pos, scale_x, scale_y, scale_z);
-			ScaleVertex(v3.pos, scale_x, scale_y, scale_z);
-
-			TranslateVertex(v1.pos, pos.x, pos.y, pos.z);
-			TranslateVertex(v2.pos, pos.x, pos.y, pos.z);
-			TranslateVertex(v3.pos, pos.x, pos.y, pos.z);
-
-#ifdef INVERSEXY
-			float t = v1.pos.x;
-			v1.pos.x = v1.pos.y;
-			v1.pos.y = t;
-
-			t = v2.pos.x;
-			v2.pos.x = v2.pos.y;
-			v2.pos.y = t;
-
-			t = v3.pos.x;
-			v3.pos.x = v3.pos.y;
-			v3.pos.y = t;
-#endif
-			if (current_poly.flags == 0x10)
-				AddFace(v1.pos, v2.pos, v3.pos, false);
-			else
-				AddFace(v1.pos, v2.pos, v3.pos, true);
+		if (map_models.count(bone->model->GetName()) == 0) {
+			map_models[bone->model->GetName()] = bone->model;
 		}
+		
+		std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
+		gen_plac->SetName("Generated Placeable");
+		gen_plac->SetFileName(bone->model->GetName());
+		gen_plac->SetLocation(pos.x, pos.y, pos.z);
+		gen_plac->SetRotation(rot.x, rot.y, rot.z);
+		gen_plac->SetScale(scale_x, scale_y, scale_z);
+		map_placeables.push_back(gen_plac);
 	}
 
 	for(size_t i = 0; i < bone->children.size(); ++i) {
@@ -271,6 +356,9 @@ bool Map::CompileS3D(
 	current_non_collide_index = 0;
 	collide_vert_to_index.clear();
 	non_collide_vert_to_index.clear();
+	map_models.clear();
+	map_eqg_models.clear();
+	map_placeables.clear();
 
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x36) {
@@ -380,42 +468,16 @@ bool Map::CompileS3D(
 		float scale_y = plac->GetScaleY();
 		float scale_z = plac->GetScaleZ();
 		
-		for (uint32_t j = 0; j < mod_polys.size(); ++j) {
-			auto &current_poly = mod_polys[j];
-			auto v1 = mod_verts[current_poly.verts[0]];
-			auto v2 = mod_verts[current_poly.verts[1]];
-			auto v3 = mod_verts[current_poly.verts[2]];
-
-			RotateVertex(v1.pos, rot_x, rot_y, rot_z);
-			RotateVertex(v2.pos, rot_x, rot_y, rot_z);
-			RotateVertex(v3.pos, rot_x, rot_y, rot_z);
-
-			ScaleVertex(v1.pos, scale_x, scale_y, scale_z);
-			ScaleVertex(v2.pos, scale_x, scale_y, scale_z);
-			ScaleVertex(v3.pos, scale_x, scale_y, scale_z);
-
-			TranslateVertex(v1.pos, offset_x, offset_y, offset_z);
-			TranslateVertex(v2.pos, offset_x, offset_y, offset_z);
-			TranslateVertex(v3.pos, offset_x, offset_y, offset_z);
-
-#ifdef INVERSEXY
-			float t = v1.pos.x;
-			v1.pos.x = v1.pos.y;
-			v1.pos.y = t;
-
-			t = v2.pos.x;
-			v2.pos.x = v2.pos.y;
-			v2.pos.y = t;
-
-			t = v3.pos.x;
-			v3.pos.x = v3.pos.y;
-			v3.pos.y = t;
-#endif
-			if (current_poly.flags == 0x10)
-				AddFace(v1.pos, v2.pos, v3.pos, false);
-			else
-				AddFace(v1.pos, v2.pos, v3.pos, true);
+		if (map_models.count(model->GetName()) == 0) {
+			map_models[model->GetName()] = model;
 		}
+		std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
+		gen_plac->SetName("Generated Placeable");
+		gen_plac->SetFileName(model->GetName());
+		gen_plac->SetLocation(offset_x, offset_y, offset_z);
+		gen_plac->SetRotation(rot_x, rot_y, rot_z);
+		gen_plac->SetScale(scale_x, scale_y, scale_z);
+		map_placeables.push_back(gen_plac);
 	}
 
 	pl_sz = placables_skeleton.size();
@@ -459,6 +521,9 @@ bool Map::CompileEQG(
 	current_non_collide_index = 0;
 	collide_vert_to_index.clear();
 	non_collide_vert_to_index.clear();
+	map_models.clear();
+	map_eqg_models.clear();
+	map_placeables.clear();
 
 	for(uint32_t i = 0; i < placeables.size(); ++i) {
 		std::shared_ptr<EQEmu::Placeable> &plac = placeables[i];
@@ -480,9 +545,6 @@ bool Map::CompileEQG(
 			continue;
 		}
 
-		auto &mod_polys = model->GetPolygons();
-		auto &mod_verts = model->GetVertices();
-
 		float offset_x = plac->GetX();
 		float offset_y = plac->GetY();
 		float offset_z = plac->GetZ();
@@ -495,25 +557,29 @@ bool Map::CompileEQG(
 		float scale_y = plac->GetScaleY();
 		float scale_z = plac->GetScaleZ();
 
+		if(!is_ter) {
+			if (map_eqg_models.count(model->GetName()) == 0) {
+				map_eqg_models[model->GetName()] = model;
+			}
+
+			std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
+			gen_plac->SetName("Generated Placeable");
+			gen_plac->SetFileName(model->GetName());
+			gen_plac->SetLocation(offset_x, offset_y, offset_z);
+			gen_plac->SetRotation(rot_x, rot_y, rot_z);
+			gen_plac->SetScale(scale_x, scale_y, scale_z);
+			map_placeables.push_back(gen_plac);
+			continue;
+		}
+
+		auto &mod_polys = model->GetPolygons();
+		auto &mod_verts = model->GetVertices();
+
 		for (uint32_t j = 0; j < mod_polys.size(); ++j) {
 			auto &current_poly = mod_polys[j];
 			auto v1 = mod_verts[current_poly.verts[0]];
 			auto v2 = mod_verts[current_poly.verts[1]];
 			auto v3 = mod_verts[current_poly.verts[2]];
-
-			if(!is_ter) {
-				RotateVertex(v1.pos, rot_x, rot_y, rot_z);
-				RotateVertex(v2.pos, rot_x, rot_y, rot_z);
-				RotateVertex(v3.pos, rot_x, rot_y, rot_z);
-
-				ScaleVertex(v1.pos, scale_x, scale_y, scale_z);
-				ScaleVertex(v2.pos, scale_x, scale_y, scale_z);
-				ScaleVertex(v3.pos, scale_x, scale_y, scale_z);
-
-				TranslateVertex(v1.pos, offset_x, offset_y, offset_z);
-				TranslateVertex(v2.pos, offset_x, offset_y, offset_z);
-				TranslateVertex(v3.pos, offset_x, offset_y, offset_z);
-			}
 
 #ifdef INVERSEXY
 			float t = v1.pos.x;
@@ -528,7 +594,6 @@ bool Map::CompileEQG(
 			v3.pos.x = v3.pos.y;
 			v3.pos.y = t;
 #endif
-
 			if (current_poly.flags & 0x01)
 				AddFace(v1.pos, v2.pos, v3.pos, false);
 			else
@@ -549,6 +614,9 @@ bool Map::CompileEQGv4()
 	current_non_collide_index = 0;
 	collide_vert_to_index.clear();
 	non_collide_vert_to_index.clear();
+	map_models.clear();
+	map_eqg_models.clear();
+	map_placeables.clear();
 
 	if(!terrain)
 		return false;

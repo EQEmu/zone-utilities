@@ -4,7 +4,19 @@
 #include <time.h>
 #include <tuple>
 #include <map>
+#include <memory>
 #include "compression.h"
+
+struct ModelEntry
+{
+	struct Poly
+	{
+		uint32_t v1, v2, v3;
+		uint8_t vis;
+	};
+	std::vector<glm::vec3> verts;
+	std::vector<Poly> polys;
+};
 
 bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices) {
 	uint32_t face_count;
@@ -128,6 +140,37 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 	return true;
 }
 
+void RotateVertex(glm::vec3 &v, float rx, float ry, float rz) {
+	glm::vec3 nv = v;
+
+	nv.y = (cos(rx) * v.y) - (sin(rx) * v.z);
+	nv.z = (sin(rx) * v.y) + (cos(rx) * v.z);
+
+	v = nv;
+
+	nv.x = (cos(ry) * v.x) + (sin(ry) * v.z);
+	nv.z = -(sin(ry) * v.x) + (cos(ry) * v.z);
+
+	v = nv;
+
+	nv.x = (cos(rz) * v.x) - (sin(rz) * v.y);
+	nv.y = (sin(rz) * v.x) + (cos(rz) * v.y);
+
+	v = nv;
+}
+
+void ScaleVertex(glm::vec3 &v, float sx, float sy, float sz) {
+	v.x = v.x * sx;
+	v.y = v.y * sy;
+	v.z = v.z * sz;
+}
+
+void TranslateVertex(glm::vec3 &v, float tx, float ty, float tz) {
+	v.x = v.x + tx;
+	v.y = v.y + ty;
+	v.z = v.z + tz;
+}
+
 bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices, std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
 	verts.clear();
 	indices.clear();
@@ -159,6 +202,8 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 	uint32_t ind_count;
 	uint32_t nc_vert_count;
 	uint32_t nc_ind_count;
+	uint32_t model_count;
+	uint32_t plac_count;
 	uint32_t tile_count;
 	uint32_t quads_per_tile;
 	float units_per_vertex;
@@ -173,6 +218,12 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 	buf += sizeof(uint32_t);
 
 	nc_ind_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
+
+	model_count = *(uint32_t*)buf;
+	buf += sizeof(uint32_t);
+
+	plac_count = *(uint32_t*)buf;
 	buf += sizeof(uint32_t);
 
 	tile_count = *(uint32_t*)buf;
@@ -233,6 +284,135 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 		buf += sizeof(uint32_t);
 	
 		nc_indices.push_back(index);
+	}
+
+	std::map<std::string, std::shared_ptr<ModelEntry>> models;
+	for (uint32_t i = 0; i < model_count; ++i) {
+		std::shared_ptr<ModelEntry> me(new ModelEntry);
+		std::string name = buf;
+		buf += name.length() + 1;
+
+		uint32_t vert_count = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+
+		uint32_t poly_count = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+
+		me->verts.resize(vert_count);
+		for(uint32_t j = 0; j < vert_count; ++j) {
+			float x = *(float*)buf;
+			buf += sizeof(float);
+			float y = *(float*)buf;
+			buf += sizeof(float);
+			float z = *(float*)buf;
+			buf += sizeof(float);
+
+			me->verts[j] = glm::vec3(x, y, z);
+		}
+
+		me->polys.resize(poly_count);
+		for (uint32_t j = 0; j < poly_count; ++j) {
+			uint32_t v1 = *(uint32_t*)buf;
+			buf += sizeof(uint32_t);
+			uint32_t v2 = *(uint32_t*)buf;
+			buf += sizeof(uint32_t);
+			uint32_t v3 = *(uint32_t*)buf;
+			buf += sizeof(uint32_t);
+			uint8_t vis = *(uint8_t*)buf;
+			buf += sizeof(uint8_t);
+
+			ModelEntry::Poly p;
+			p.v1 = v1;
+			p.v2 = v2;
+			p.v3 = v3;
+			p.vis = vis;
+			me->polys[j] = p;
+		}
+
+		models[name] = me;
+	}
+
+	for (uint32_t i = 0; i < plac_count; ++i) {
+		std::string name = buf;
+		buf += name.length() + 1;
+
+		float x = *(float*)buf;
+		buf += sizeof(float);
+		float y = *(float*)buf;
+		buf += sizeof(float);
+		float z = *(float*)buf;
+		buf += sizeof(float);
+
+		float x_rot = *(float*)buf;
+		buf += sizeof(float);
+		float y_rot = *(float*)buf;
+		buf += sizeof(float);
+		float z_rot = *(float*)buf;
+		buf += sizeof(float);
+
+		float x_scale = *(float*)buf;
+		buf += sizeof(float);
+		float y_scale = *(float*)buf;
+		buf += sizeof(float);
+		float z_scale = *(float*)buf;
+		buf += sizeof(float);
+
+		if(models.count(name) == 0)
+			continue;
+
+		auto model = models[name];
+		auto &mod_polys = model->polys;
+		auto &mod_verts = model->verts;
+		for (uint32_t j = 0; j < mod_polys.size(); ++j) {
+			auto &current_poly = mod_polys[j];
+			auto v1 = mod_verts[current_poly.v1];
+			auto v2 = mod_verts[current_poly.v2];
+			auto v3 = mod_verts[current_poly.v3];
+
+			RotateVertex(v1, x_rot, y_rot, z_rot);
+			RotateVertex(v2, x_rot, y_rot, z_rot);
+			RotateVertex(v3, x_rot, y_rot, z_rot);
+
+			ScaleVertex(v1, x_scale, y_scale, z_scale);
+			ScaleVertex(v2, x_scale, y_scale, z_scale);
+			ScaleVertex(v3, x_scale, y_scale, z_scale);
+
+			TranslateVertex(v1, x, y, z);
+			TranslateVertex(v2, x, y, z);
+			TranslateVertex(v3, x, y, z);
+
+#ifdef INVERSEXY
+			float t = v1.x;
+			v1.x = v1.y;
+			v1.y = t;
+
+			t = v2.x;
+			v2.x = v2.y;
+			v2.y = t;
+
+			t = v3.x;
+			v3.x = v3.y;
+			v3.y = t;
+#endif
+			if (current_poly.vis == 0) {
+				nc_verts.push_back(v1);
+				nc_verts.push_back(v2);
+				nc_verts.push_back(v3);
+
+				nc_indices.push_back((uint32_t)nc_verts.size() - 3);
+				nc_indices.push_back((uint32_t)nc_verts.size() - 2);
+				nc_indices.push_back((uint32_t)nc_verts.size() - 1);
+			}
+			else {
+				verts.push_back(v1);
+				verts.push_back(v2);
+				verts.push_back(v3);
+
+				indices.push_back((uint32_t)verts.size() - 3);
+				indices.push_back((uint32_t)verts.size() - 2);
+				indices.push_back((uint32_t)verts.size() - 1);
+			}
+		}
 	}
 
 	uint32_t ter_quad_count = (quads_per_tile * quads_per_tile);
@@ -333,7 +513,6 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 				float QuadVertex4Y = QuadVertex1Y + units_per_vertex;
 				float QuadVertex4Z = floats[quad + row_number + 1];
 
-				//uint32_t current_vert = (uint32_t)verts.size() + 3;
 				uint32_t i1, i2, i3, i4;
 #ifdef INVERSEXY
 				std::tuple<float, float, float> t = std::make_tuple(QuadVertex1X, QuadVertex1Y, QuadVertex1Z);
