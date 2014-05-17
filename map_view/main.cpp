@@ -67,6 +67,8 @@ int main(int argc, char **argv)
 	Camera cam(1280, 720, 45.0f, 0.1f, 15000.0f);
 
 	bool rendering = true;
+	bool r_nc_pressed = false;
+	bool r_nc = true;
 	do {
 		double current_frame_time = glfwGetTime();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -92,7 +94,7 @@ int main(int argc, char **argv)
 		tnt[2] = 1.0f;
 		tint.SetValuePtr3(1, &tnt[0]);
 
-		if (invis)
+		if (invis && r_nc)
 			invis->Draw();
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -105,11 +107,20 @@ int main(int argc, char **argv)
 		if (collide)
 			collide->Draw();
 
-		if (invis)
+		if (invis && r_nc)
 			invis->Draw();
 
 		glfwSwapBuffers(win);
 		glfwPollEvents();
+
+		if (glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS) {
+			r_nc_pressed = true;
+		}
+
+		if (glfwGetKey(win, GLFW_KEY_N) == GLFW_RELEASE && r_nc_pressed) {
+			r_nc = !r_nc;
+			r_nc_pressed = false;
+		}
 
 		if(glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(win) != 0)
 			rendering = false;
