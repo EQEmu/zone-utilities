@@ -16,7 +16,7 @@ class S3DLoader
 public:
 	S3DLoader();
 	~S3DLoader();
-	bool ParseWLDFile(std::string file_name, std::string wld_name, std::vector<WLDFragment> &out);
+	bool ParseWLDFile(std::string file_name, std::string wld_name, std::vector<S3D::WLDFragment> &out);
 };
 
 }

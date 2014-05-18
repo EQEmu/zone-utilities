@@ -14,31 +14,32 @@ SET(common_sources
 SET(common_headers
 	any.h
 	archive.h
-	bsp.h
 	compression.h
-	geometry.h
 	eqemu_endian.h
 	eqg_geometry.h
+	eqg_invis_wall.h
 	eqg_loader.h
 	eqg_material.h
 	eqg_model_loader.h
 	eqg_region.h
 	eqg_structs.h
+	eqg_terrain.h
+	eqg_terrain_tile.h
 	eqg_v4_loader.h
-	invis_wall.h
+	eqg_water_sheet.h
 	light.h
 	pfs.h
 	placeable.h
 	placeable_group.h
 	safe_alloc.h
+	s3d_bsp.h
+	s3d_geometry.h
 	s3d_loader.h
+	s3d_skeleton_track.h
+	s3d_texture.h
+	s3d_texture_brush.h
+	s3d_texture_brush_set.h
 	string_util.h
-	terrain.h
-	terrain_tile.h
-	texture.h
-	texture_brush.h
-	texture_brush_set.h
-	water_sheet.h
 	wld_fragment_reference.h
 	wld_fragment.h
 	wld_structs.h

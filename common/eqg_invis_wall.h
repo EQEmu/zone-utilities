@@ -1,11 +1,14 @@
-#ifndef EQEMU_COMMON_INVIS_WALL_H
-#define EQEMU_COMMON_INVIS_WALL_H
+#ifndef EQEMU_COMMON_EQG_INVIS_WALL_H
+#define EQEMU_COMMON_EQG_INVIS_WALL_H
 
 #include <string>
 #include <vector>
 #include <glm.hpp>
 
 namespace EQEmu
+{
+
+namespace EQG
 {
 
 class InvisWall
@@ -22,6 +25,8 @@ private:
 	std::string name;
 	std::vector<glm::vec3> verts;
 };
+
+}
 
 }
 

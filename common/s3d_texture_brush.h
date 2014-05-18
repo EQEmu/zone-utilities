@@ -1,9 +1,12 @@
-#ifndef EQEMU_COMMON_TEXTURE_BRUSH_H
-#define EQEMU_COMMON_TEXTURE_BRUSH_H
+#ifndef EQEMU_COMMON_S3D_TEXTURE_BRUSH_H
+#define EQEMU_COMMON_S3D_TEXTURE_BRUSH_H
 
-#include "texture.h"
+#include "s3d_texture.h"
 
 namespace EQEmu
+{
+
+namespace S3D
 {
 
 class TextureBrush
@@ -20,6 +23,8 @@ private:
 	std::vector<std::shared_ptr<Texture>> brush_textures;
 	uint32_t flags;
 };
+
+}
 
 }
 

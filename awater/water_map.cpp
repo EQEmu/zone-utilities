@@ -1,7 +1,7 @@
 #include "water_map.h"
 #include <string.h>
 
-void BSPMarkRegion(std::shared_ptr<EQEmu::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
+void BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
 
 WaterMap::WaterMap() {
 }
@@ -22,22 +22,22 @@ bool WaterMap::BuildAndWrite(std::string zone_name) {
 
 bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 	EQEmu::S3DLoader s3d;
-	std::vector<EQEmu::WLDFragment> zone_frags;
+	std::vector<EQEmu::S3D::WLDFragment> zone_frags;
 	if (!s3d.ParseWLDFile(zone_name + ".s3d", zone_name + ".wld", zone_frags)) {
 		return false;
 	}
 
-	std::shared_ptr<EQEmu::BSPTree> tree;
+	std::shared_ptr<EQEmu::S3D::BSPTree> tree;
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x21) {
-			EQEmu::WLDFragment21 &frag = reinterpret_cast<EQEmu::WLDFragment21&>(zone_frags[i]);
+			EQEmu::S3D::WLDFragment21 &frag = reinterpret_cast<EQEmu::S3D::WLDFragment21&>(zone_frags[i]);
 			tree = frag.GetData();
 		}
 		else if (zone_frags[i].type == 0x29) {
 			if(!tree)
 				continue;
 
-			EQEmu::WLDFragment29 &frag = reinterpret_cast<EQEmu::WLDFragment29&>(zone_frags[i]);
+			EQEmu::S3D::WLDFragment29 &frag = reinterpret_cast<EQEmu::S3D::WLDFragment29&>(zone_frags[i]);
 			auto region = frag.GetData();
 
 			auto regions = region->GetRegions();
@@ -164,7 +164,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 	return false;
 }
 
-void BSPMarkRegion(std::shared_ptr<EQEmu::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
+void BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
 	if (node_number < 1) {
 		return;
 	}

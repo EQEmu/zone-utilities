@@ -1,15 +1,18 @@
-#ifndef EQEMU_COMMON_TERRAIN_H
-#define EQEMU_COMMON_TERRAIN_H
+#ifndef EQEMU_COMMON_EQG_TERRAIN_H
+#define EQEMU_COMMON_EQG_TERRAIN_H
 
 #include <memory>
 #include <map>
-#include "terrain_tile.h"
-#include "water_sheet.h"
-#include "invis_wall.h"
+#include "eqg_terrain_tile.h"
+#include "eqg_water_sheet.h"
+#include "eqg_invis_wall.h"
 #include "placeable_group.h"
 #include "eqg_model_loader.h"
 
 namespace EQEmu
+{
+
+namespace EQG
 {
 
 class Terrain
@@ -60,6 +63,8 @@ private:
 	std::map<std::string, std::shared_ptr<EQG::Geometry>> models;
 	ZoneOptions opts;
 };
+
+}
 
 }
 

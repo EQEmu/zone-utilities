@@ -14,7 +14,7 @@ EQEmu::EQG4Loader::EQG4Loader() {
 EQEmu::EQG4Loader::~EQG4Loader() {
 }
 
-bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<Terrain> &terrain)
+bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain> &terrain)
 {
 	EQEmu::PFS::Archive archive;
 	if (!archive.Open(file + ".eqg")) {
@@ -41,7 +41,7 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<Terrain> &terrain
 	if (!zon_found)
 		return false;
 
-	terrain.reset(new Terrain());
+	terrain.reset(new EQG::Terrain());
 	if (!ParseZon(zon, terrain->GetOpts())) {
 		return false;
 	}
@@ -101,7 +101,7 @@ float HeightWithinQuad(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, f
 	return (((n.x) * (x - a.x) + (n.y) * (y - a.y)) / -n.z) + a.z;
 }
 
-bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_ptr<Terrain> &terrain) {
+bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_ptr<EQG::Terrain> &terrain) {
 	std::string filename = terrain->GetOpts().name + ".dat";
 
 	
@@ -130,7 +130,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 	terrain->SetUnitsPerVertex(terrain->GetOpts().units_per_vert);
 
 	for(uint32_t i = 0; i < tile_count; ++i) {
-		std::shared_ptr<TerrainTile> tile(new TerrainTile());
+		std::shared_ptr<EQG::TerrainTile> tile(new EQG::TerrainTile());
 		terrain->AddTile(tile);
 
 		SafeVarAllocParse(int32_t, tile_lng);
@@ -485,7 +485,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 	return true;
 }
 
-bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_ptr<Terrain> &terrain) {
+bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_ptr<EQG::Terrain> &terrain) {
 	std::vector<char> wat;
 	if(!archive.Get("water.dat", wat)) {
 		return false;
@@ -494,12 +494,12 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 	std::vector<std::string> tokens;
 	ParseConfigFile(wat, tokens);
 
-	std::shared_ptr<WaterSheet> ws;
+	std::shared_ptr<EQG::WaterSheet> ws;
 
 	for (size_t i = 1; i < tokens.size();) {
 		auto token = tokens[i];
 		if (token.compare("*WATERSHEET") == 0) {
-			ws.reset(new WaterSheet());
+			ws.reset(new EQG::WaterSheet());
 			ws->SetTile(false);
 
 			++i;
@@ -512,7 +512,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 			++i;
 		}
 		else if (token.compare("*WATERSHEETDATA") == 0) {
-			ws.reset(new WaterSheet());
+			ws.reset(new EQG::WaterSheet());
 			ws->SetTile(true);
 		
 			++i;
@@ -587,7 +587,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 	return true;
 }
 
-bool EQEmu::EQG4Loader::ParseInvwDat(EQEmu::PFS::Archive &archive, std::shared_ptr<Terrain> &terrain) {
+bool EQEmu::EQG4Loader::ParseInvwDat(EQEmu::PFS::Archive &archive, std::shared_ptr<EQG::Terrain> &terrain) {
 	std::vector<char> invw;
 	if (!archive.Get("invw.dat", invw)) {
 		return false;
@@ -607,7 +607,7 @@ bool EQEmu::EQG4Loader::ParseInvwDat(EQEmu::PFS::Archive &archive, std::shared_p
 		uint32_t vert_count = *(uint32_t*)buf;
 		buf += sizeof(uint32_t);
 
-		std::shared_ptr<InvisWall> w(new InvisWall());
+		std::shared_ptr<EQG::InvisWall> w(new EQG::InvisWall());
 		w->SetName(name);
 		auto &verts = w->GetVerts();
 
@@ -677,7 +677,7 @@ void EQEmu::EQG4Loader::ParseConfigFile(std::vector<char> &buffer, std::vector<s
 	}
 }
 
-bool EQEmu::EQG4Loader::ParseZon(std::vector<char> &buffer, Terrain::ZoneOptions &opts) {
+bool EQEmu::EQG4Loader::ParseZon(std::vector<char> &buffer, EQG::Terrain::ZoneOptions &opts) {
 	if (buffer.size() < 5)
 		return false;
 

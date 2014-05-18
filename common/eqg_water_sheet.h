@@ -1,7 +1,10 @@
-#ifndef EQEMU_COMMON_WATER_SHEET_H
-#define EQEMU_COMMON_WATER_SHEET_H
+#ifndef EQEMU_COMMON_EQG_WATER_SHEET_H
+#define EQEMU_COMMON_EQG_WATER_SHEET_H
 
 namespace EQEmu
+{
+
+namespace EQG
 {
 
 class WaterSheet
@@ -34,6 +37,8 @@ private:
 	bool tile;
 	int index;
 };
+
+}
 
 }
 

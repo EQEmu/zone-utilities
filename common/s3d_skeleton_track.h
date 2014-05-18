@@ -1,10 +1,13 @@
-#ifndef EQEMU_COMMON_SKELETON_TRACK_H
-#define EQEMU_COMMON_SKELETON_TRACK_H
+#ifndef EQEMU_COMMON_S3D_SKELETON_TRACK_H
+#define EQEMU_COMMON_S3D_SKELETON_TRACK_H
 
 #include "wld_fragment.h"
 #include <vector>
 
 namespace EQEmu
+{
+
+namespace S3D
 {
 
 class SkeletonTrack
@@ -26,7 +29,7 @@ public:
 	struct Bone
 	{
 		std::shared_ptr<BoneOrientation> orientation;
-		std::shared_ptr<EQEmu::Geometry> model;
+		std::shared_ptr<Geometry> model;
 		std::vector<std::shared_ptr<Bone>> children;
 	};
 
@@ -42,6 +45,8 @@ private:
 	std::string name;
 	std::vector<std::shared_ptr<Bone>> bones;
 };
+
+}
 
 }
 

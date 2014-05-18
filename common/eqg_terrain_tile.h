@@ -1,9 +1,12 @@
-#ifndef EQEMU_COMMON_TERRAIN_TILE_H
-#define EQEMU_COMMON_TERRAIN_TILE_H
+#ifndef EQEMU_COMMON_EQG_TERRAIN_TILE_H
+#define EQEMU_COMMON_EQG_TERRAIN_TILE_H
 
 #include <vector>
 
 namespace EQEmu
+{
+
+namespace  EQG 
 {
 
 class TerrainTile
@@ -33,6 +36,8 @@ private:
 	std::vector<uint8_t> flags;
 	float base_water_level;
 };
+
+}
 
 }
 

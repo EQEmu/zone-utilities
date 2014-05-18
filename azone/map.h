@@ -20,12 +20,12 @@ public:
 	bool Build(std::string zone_name);
 	bool Write(std::string filename);
 private:
-	void TraverseBone(std::shared_ptr<EQEmu::SkeletonTrack::Bone> bone, glm::vec3 parent_trans, glm::vec3 parent_rot, glm::vec3 parent_scale);
+	void TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone, glm::vec3 parent_trans, glm::vec3 parent_rot, glm::vec3 parent_scale);
 
 	bool CompileS3D(
-		std::vector<EQEmu::WLDFragment> &zone_frags,
-		std::vector<EQEmu::WLDFragment> &zone_object_frags,
-		std::vector<EQEmu::WLDFragment> &object_frags
+		std::vector<EQEmu::S3D::WLDFragment> &zone_frags,
+		std::vector<EQEmu::S3D::WLDFragment> &zone_object_frags,
+		std::vector<EQEmu::S3D::WLDFragment> &object_frags
 		);
 	bool CompileEQG(
 		std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> &models,
@@ -53,8 +53,8 @@ private:
 	std::map<std::tuple<float, float, float>, uint32_t> collide_vert_to_index;
 	std::map<std::tuple<float, float, float>, uint32_t> non_collide_vert_to_index;
 
-	std::shared_ptr<EQEmu::Terrain> terrain;
-	std::map<std::string, std::shared_ptr<EQEmu::Geometry>> map_models;
+	std::shared_ptr<EQEmu::EQG::Terrain> terrain;
+	std::map<std::string, std::shared_ptr<EQEmu::S3D::Geometry>> map_models;
 	std::map<std::string, std::shared_ptr<EQEmu::EQG::Geometry>> map_eqg_models;
 	std::vector<std::shared_ptr<EQEmu::Placeable>> map_placeables;
 	std::vector<std::shared_ptr<EQEmu::PlaceableGroup>> map_group_placeables;

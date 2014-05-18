@@ -29,9 +29,9 @@ bool Map::Build(std::string zone_name) {
 	
 	//if that fails try to load a s3d here
 	EQEmu::S3DLoader s3d;
-	std::vector<EQEmu::WLDFragment> zone_frags;
-	std::vector<EQEmu::WLDFragment> zone_object_frags;
-	std::vector<EQEmu::WLDFragment> object_frags;
+	std::vector<EQEmu::S3D::WLDFragment> zone_frags;
+	std::vector<EQEmu::S3D::WLDFragment> zone_object_frags;
+	std::vector<EQEmu::S3D::WLDFragment> object_frags;
 	if (!s3d.ParseWLDFile(zone_name + ".s3d", zone_name + ".wld", zone_frags)) {
 		return false;
 	}
@@ -342,7 +342,7 @@ bool Map::Write(std::string filename) {
 	return true;
 }
 
-void Map::TraverseBone(std::shared_ptr<EQEmu::SkeletonTrack::Bone> bone, glm::vec3 parent_trans, glm::vec3 parent_rot, glm::vec3 parent_scale)
+void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone, glm::vec3 parent_trans, glm::vec3 parent_rot, glm::vec3 parent_scale)
 {
 	float offset_x = 0.0f;
 	float offset_y = 0.0f;
@@ -405,9 +405,9 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::SkeletonTrack::Bone> bone, glm::ve
 }
 
 bool Map::CompileS3D(
-	std::vector<EQEmu::WLDFragment> &zone_frags,
-	std::vector<EQEmu::WLDFragment> &zone_object_frags,
-	std::vector<EQEmu::WLDFragment> &object_frags
+	std::vector<EQEmu::S3D::WLDFragment> &zone_frags,
+	std::vector<EQEmu::S3D::WLDFragment> &zone_object_frags,
+	std::vector<EQEmu::S3D::WLDFragment> &object_frags
 	)
 {
 	collide_verts.clear();
@@ -424,7 +424,7 @@ bool Map::CompileS3D(
 
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x36) {
-			EQEmu::WLDFragment36 &frag = reinterpret_cast<EQEmu::WLDFragment36&>(zone_frags[i]);
+			EQEmu::S3D::WLDFragment36 &frag = reinterpret_cast<EQEmu::S3D::WLDFragment36&>(zone_frags[i]);
 			auto model = frag.GetData();
 		
 			auto &mod_polys = model->GetPolygons();
@@ -456,11 +456,11 @@ bool Map::CompileS3D(
 		}
 	}
 
-	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::Geometry>>> placables;
-	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::SkeletonTrack>>> placables_skeleton;
+	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::S3D::Geometry>>> placables;
+	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::S3D::SkeletonTrack>>> placables_skeleton;
 	for (uint32_t i = 0; i < zone_object_frags.size(); ++i) {
 		if (zone_object_frags[i].type == 0x15) {
-			EQEmu::WLDFragment15 &frag = reinterpret_cast<EQEmu::WLDFragment15&>(zone_object_frags[i]);
+			EQEmu::S3D::WLDFragment15 &frag = reinterpret_cast<EQEmu::S3D::WLDFragment15&>(zone_object_frags[i]);
 			auto plac = frag.GetData();
 
 			if(!plac)
@@ -472,7 +472,7 @@ bool Map::CompileS3D(
 			bool found = false;
 			for (uint32_t o = 0; o < object_frags.size(); ++o) {
 				if (object_frags[o].type == 0x14) {
-					EQEmu::WLDFragment14 &obj_frag = reinterpret_cast<EQEmu::WLDFragment14&>(object_frags[o]);
+					EQEmu::S3D::WLDFragment14 &obj_frag = reinterpret_cast<EQEmu::S3D::WLDFragment14&>(object_frags[o]);
 					auto mod_ref = obj_frag.GetData();
 
 					if(mod_ref->GetName().compare(plac->GetName()) == 0) {
@@ -481,18 +481,18 @@ bool Map::CompileS3D(
 						auto &frag_refs = mod_ref->GetFrags();
 						for (uint32_t m = 0; m < frag_refs.size(); ++m) {
 							if (object_frags[frag_refs[m] - 1].type == 0x2D) {
-								EQEmu::WLDFragment2D &r_frag = reinterpret_cast<EQEmu::WLDFragment2D&>(object_frags[frag_refs[m] - 1]);
+								EQEmu::S3D::WLDFragment2D &r_frag = reinterpret_cast<EQEmu::S3D::WLDFragment2D&>(object_frags[frag_refs[m] - 1]);
 								auto m_ref = r_frag.GetData();
 
-								EQEmu::WLDFragment36 &mod_frag = reinterpret_cast<EQEmu::WLDFragment36&>(object_frags[m_ref]);
+								EQEmu::S3D::WLDFragment36 &mod_frag = reinterpret_cast<EQEmu::S3D::WLDFragment36&>(object_frags[m_ref]);
 								auto mod = mod_frag.GetData();
 								placables.push_back(std::make_pair(plac, mod));
 							}
 							else if (object_frags[frag_refs[m] - 1].type == 0x11) {
-								EQEmu::WLDFragment11 &r_frag = reinterpret_cast<EQEmu::WLDFragment11&>(object_frags[frag_refs[m] - 1]);
+								EQEmu::S3D::WLDFragment11 &r_frag = reinterpret_cast<EQEmu::S3D::WLDFragment11&>(object_frags[frag_refs[m] - 1]);
 								auto s_ref = r_frag.GetData();
 
-								EQEmu::WLDFragment10 &skeleton_frag = reinterpret_cast<EQEmu::WLDFragment10&>(object_frags[s_ref]);
+								EQEmu::S3D::WLDFragment10 &skeleton_frag = reinterpret_cast<EQEmu::S3D::WLDFragment10&>(object_frags[s_ref]);
 								auto skele = skeleton_frag.GetData();
 								
 								placables_skeleton.push_back(std::make_pair(plac, skele));

@@ -1,11 +1,14 @@
-#ifndef EQEMU_COMMON_GEOMETRY_H
-#define EQEMU_COMMON_GEOMETRY_H
+#ifndef EQEMU_COMMON_S3D_GEOMETRY_H
+#define EQEMU_COMMON_S3D_GEOMETRY_H
 
 #include "glm.hpp"
 #include <vector>
-#include "texture_brush_set.h"
+#include "s3d_texture_brush_set.h"
 
 namespace EQEmu
+{
+
+namespace S3D
 {
 
 class Geometry
@@ -41,6 +44,8 @@ private:
 	std::string name;
 	std::shared_ptr<TextureBrushSet> tex;
 };
+
+}
 
 }
 

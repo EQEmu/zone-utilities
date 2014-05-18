@@ -1,7 +1,10 @@
-#ifndef EQEMU_COMMON_BSP_H
-#define EQEMU_COMMON_BSP_H
+#ifndef EQEMU_COMMON_S3D_BSP_H
+#define EQEMU_COMMON_S3D_BSP_H
 
 namespace EQEmu
+{
+
+namespace S3D
 {
 
 class BSPRegion
@@ -47,6 +50,8 @@ public:
 private:
 	std::vector<BSPNode> nodes;
 };
+
+}
 
 }
 
