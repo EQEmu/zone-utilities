@@ -48,7 +48,8 @@ bool Map::Build(std::string zone_name) {
 }
 
 bool Map::Write(std::string filename) {
-	if ((collide_verts.size() == 0 || collide_indices.size() == 0 || non_collide_verts.size() == 0 || non_collide_indices.size() == 0) && !terrain)
+	//if there are no verts and no terrain
+	if ((collide_verts.size() == 0 && collide_indices.size() == 0 && non_collide_verts.size() == 0 && non_collide_indices.size() == 0) && !terrain)
 		return false;
 
 	FILE *f = fopen(filename.c_str(), "wb");
