@@ -2,11 +2,12 @@
 #include "water_map.h"
 #include "log_macros.h"
 #include "log_stdout.h"
+#include "log_file.h"
 
 int main(int argc, char **argv) {
 	eqLogInit(EQEMU_LOG_LEVEL);
-	std::shared_ptr<EQEmu::Log::LogBase> stdout_log(new EQEmu::Log::LogStdOut());
-	eqLogRegister(stdout_log);
+	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogStdOut()));
+	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogFile("awater.log")));
 
 	for(int i = 1; i < argc; ++i) {
 		WaterMap m;

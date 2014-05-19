@@ -326,7 +326,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 		SafeVarAllocParse(uint32_t, areas_count);
 		for (uint32_t j = 0; j < areas_count; ++j) {
 			SafeStringAllocParse(s);
-			SafeVarAllocParse(int32_t, unk);
+			SafeVarAllocParse(int32_t, type);
 			SafeStringAllocParse(s2);
 
 			SafeVarAllocParse(uint32_t, longitude);
@@ -348,9 +348,19 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			SafeVarAllocParse(float, size_y);
 			SafeVarAllocParse(float, size_z);
 
-			//TerrainArea ta;
+			float area_start_y = zone_min_y + (longitude - 100000 - terrain->GetOpts().min_lng) * terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile;
+			float area_start_x = zone_min_x + (latitude - 100000 - terrain->GetOpts().min_lat) * terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile;
 
-			//tile.AddArea(ta);
+			std::shared_ptr<EQG::Region> region(new EQG::Region());
+
+			region->SetName(s);
+			region->SetLocation(area_start_x + x, area_start_y + y, z);
+			region->SetRotation(rot_x, rot_y, rot_z);
+			region->SetScale(scale_x, scale_y, scale_z);
+			region->SetExtents(size_x, size_y, size_z);
+			region->SetFlags(type, 0);
+
+			terrain->AddRegion(region);
 		}
 
 		SafeVarAllocParse(uint32_t, Light_effects_count);

@@ -12,10 +12,10 @@
 int main(int argc, char **argv)
 {
 	eqLogInit(EQEMU_LOG_LEVEL);
-	std::shared_ptr<EQEmu::Log::LogBase> stdout_log(new EQEmu::Log::LogStdOut());
-	eqLogRegister(stdout_log);
+	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogStdOut()));
 
 	if(!glfwInit()) {
+		eqLogMessage(LogFatal, "Couldn't init graphical system.");
 		return -1;
 	}
 
@@ -38,6 +38,7 @@ int main(int argc, char **argv)
 
 	GLFWwindow *win = glfwCreateWindow(1280, 720, "Map View", nullptr, nullptr);
 	if(!win) {
+		eqLogMessage(LogFatal, "Couldn't create an OpenGL window.");
 		glfwTerminate();
 		return -1;
 	}
@@ -46,6 +47,7 @@ int main(int argc, char **argv)
 
 	glewExperimental = GL_TRUE;
 	if(glewInit() != GLEW_OK) {
+		eqLogMessage(LogFatal, "Couldn't init glew.");
 		glfwTerminate();
 		return -1;
 	}
@@ -69,6 +71,9 @@ int main(int argc, char **argv)
 	Model *collide = nullptr;
 	Model *invis = nullptr;
 	LoadMap(filename, &collide, &invis);
+
+	if(collide == nullptr)
+		eqLogMessage(LogWarn, "Couldn't load zone geometry from map file.");
 
 	Camera cam(1280, 720, 45.0f, 0.1f, 15000.0f);
 

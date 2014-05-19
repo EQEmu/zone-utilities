@@ -1,5 +1,5 @@
-#ifndef EQEMU_LOG_LOG_STDOUT_H
-#define EQEMU_LOG_LOG_STDOUT_H
+#ifndef EQEMU_LOG_LOG_FILE_H
+#define EQEMU_LOG_LOG_FILE_H
 
 #include <string>
 #include <stdio.h>

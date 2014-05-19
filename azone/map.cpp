@@ -164,6 +164,7 @@ bool Map::Write(std::string filename) {
 	while (eqg_model_iter != map_eqg_models.end()) {
 		uint8_t null = 0;
 
+		eqLogMessage(LogDebug, "Writing model %s.", eqg_model_iter->second->GetName().c_str());
 		ss.write(eqg_model_iter->second->GetName().c_str(), eqg_model_iter->second->GetName().length());
 		ss.write((const char*)&null, sizeof(uint8_t));
 
@@ -189,7 +190,14 @@ bool Map::Write(std::string filename) {
 			uint32_t v1 = poly.verts[0];
 			uint32_t v2 = poly.verts[1];
 			uint32_t v3 = poly.verts[2];
-			uint8_t vis = poly.flags & 0x01 ? 0 : 1;
+
+			uint8_t vis = 1;
+			if (poly.flags == 0x01)
+				vis = 0;
+
+			if(vis == 1 && poly.flags & 0x01) {
+				eqLogMessage(LogDebug, "Polygon flag was %u", poly.flags);
+			}
 
 			ss.write((const char*)&v1, sizeof(uint32_t));
 			ss.write((const char*)&v2, sizeof(uint32_t));
