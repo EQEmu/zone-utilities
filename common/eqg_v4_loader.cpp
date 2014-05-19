@@ -1,5 +1,4 @@
 #include "eqg_v4_loader.h"
-#include <stdio.h>
 #include <algorithm>
 #include <functional>
 #include <cctype>
@@ -7,6 +6,7 @@
 #include "safe_alloc.h"
 #include "eqg_model_loader.h"
 #include "string_util.h"
+#include "log_macros.h"
 
 EQEmu::EQG4Loader::EQG4Loader() {
 }
@@ -18,6 +18,7 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain> &te
 {
 	EQEmu::PFS::Archive archive;
 	if (!archive.Open(file + ".eqg")) {
+		eqLogMessage(LogTrace, "Failed to open %s.eqg as an eqgv4 file because the file does not exist.", file.c_str());
 		return false;
 	}
 
@@ -38,19 +39,26 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain> &te
 		}
 	}
 
-	if (!zon_found)
+	if (!zon_found) {
+		eqLogMessage(LogError, "Failed to open %s.eqg because the %s.zon file could not be found.", file.c_str(), file.c_str());
 		return false;
+	}
 
+	eqLogMessage(LogTrace, "Parsing zone file.");
 	terrain.reset(new EQG::Terrain());
 	if (!ParseZon(zon, terrain->GetOpts())) {
 		return false;
 	}
 
+	eqLogMessage(LogTrace, "Parsing zone data file.");
 	if(!ParseZoneDat(archive, terrain)) {
 		return false;
 	}
 
+	eqLogMessage(LogTrace, "Parsing water data file.");
 	ParseWaterDat(archive, terrain);
+
+	eqLogMessage(LogTrace, "Parsing invisible walls file.");
 	ParseInvwDat(archive, terrain);
 
 	return true;
@@ -107,6 +115,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 	
 	std::vector<char> buffer;
 	if(!archive.Get(filename, buffer)) {
+		eqLogMessage(LogError, "Failed to open %s.", filename.c_str());
 		return false;
 	}
 
@@ -129,6 +138,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 	terrain->SetQuadsPerTile(terrain->GetOpts().quads_per_tile);
 	terrain->SetUnitsPerVertex(terrain->GetOpts().units_per_vert);
 
+	eqLogMessage(LogTrace, "Parsing zone terrain tiles.");
 	for(uint32_t i = 0; i < tile_count; ++i) {
 		std::shared_ptr<EQG::TerrainTile> tile(new EQG::TerrainTile());
 		terrain->AddTile(tile);
@@ -393,8 +403,10 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			std::transform(tog_name.begin(), tog_name.end(), tog_name.begin(), ::tolower);
 			if(!archive.Get(tog_name + ".tog", tog_buffer))
 			{
-				printf("Could not load tog: %s\n", tog_name.c_str());
+				eqLogMessage(LogWarn, "Failed to load tog file %s.tog.", tog_name.c_str());
 				continue;
+			} else {
+				eqLogMessage(LogTrace, "Loaded tog file %s.tog.", tog_name.c_str());
 			}
 
 			std::shared_ptr<PlaceableGroup> pg(new PlaceableGroup());
@@ -506,6 +518,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 		}
 		else if (token.compare("*END_SHEET") == 0) {
 			if(ws) {
+				eqLogMessage(LogTrace, "Adding finite water sheet.");
 				terrain->AddWaterSheet(ws);
 			}
 
@@ -519,6 +532,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 		}
 		else if (token.compare("*ENDWATERSHEETDATA") == 0) {
 			if (ws) {
+				eqLogMessage(LogTrace, "Adding infinite water sheet.");
 				terrain->AddWaterSheet(ws);
 			}
 		

@@ -6,9 +6,15 @@
 #include "model.h"
 #include "camera.h"
 #include "map.h"
+#include "log_macros.h"
+#include "log_stdout.h"
 
 int main(int argc, char **argv)
 {
+	eqLogInit(EQEMU_LOG_LEVEL);
+	std::shared_ptr<EQEmu::Log::LogBase> stdout_log(new EQEmu::Log::LogStdOut());
+	eqLogRegister(stdout_log);
+
 	if(!glfwInit()) {
 		return -1;
 	}

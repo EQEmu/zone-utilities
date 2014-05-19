@@ -1,7 +1,7 @@
 #include "map.h"
 #include <sstream>
 #include "compression.h"
-
+#include "log_macros.h"
 #include <gtc/matrix_transform.hpp>
 
 Map::Map() {
@@ -11,7 +11,8 @@ Map::~Map() {
 }
 
 bool Map::Build(std::string zone_name) {
-	//try to load a v1-3 eqg here
+	eqLogMessage(LogTrace, "Attempting to load %s.eqg as a standard eqg.", zone_name.c_str());
+	
 	EQEmu::EQGLoader eqg;
 	std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> eqg_models;
 	std::vector<std::shared_ptr<EQEmu::Placeable>> eqg_placables;
@@ -21,13 +22,13 @@ bool Map::Build(std::string zone_name) {
 		return CompileEQG(eqg_models, eqg_placables, eqg_regions, eqg_lights);
 	}
 
-	//if that fails try to load a v4 eqg here
+	eqLogMessage(LogTrace, "Attempting to load %s.eqg as a v4 eqg.", zone_name.c_str());
 	EQEmu::EQG4Loader eqg4;
 	if (eqg4.Load(zone_name, terrain)) {
 		return CompileEQGv4();
 	}
 	
-	//if that fails try to load a s3d here
+	eqLogMessage(LogTrace, "Attempting to load %s.s3d as a standard s3d.", zone_name.c_str());
 	EQEmu::S3DLoader s3d;
 	std::vector<EQEmu::S3D::WLDFragment> zone_frags;
 	std::vector<EQEmu::S3D::WLDFragment> zone_object_frags;
@@ -49,16 +50,21 @@ bool Map::Build(std::string zone_name) {
 
 bool Map::Write(std::string filename) {
 	//if there are no verts and no terrain
-	if ((collide_verts.size() == 0 && collide_indices.size() == 0 && non_collide_verts.size() == 0 && non_collide_indices.size() == 0) && !terrain)
+	if ((collide_verts.size() == 0 && collide_indices.size() == 0 && non_collide_verts.size() == 0 && non_collide_indices.size() == 0) && !terrain) {
+		eqLogMessage(LogError, "Failed to write %s because the map to build has no information to write.", filename.c_str());
 		return false;
+	}
 
 	FILE *f = fopen(filename.c_str(), "wb");
 
-	if(!f)
+	if(!f) {
+		eqLogMessage(LogError, "Failed to write %s because the file could not be opened to write.", filename.c_str());
 		return false;
+	}
 	
 	uint32_t version = 0x02000000;
 	if (fwrite(&version, sizeof(uint32_t), 1, f) != 1) {
+		eqLogMessage(LogError, "Failed to write %s because the version header could not be written.", filename.c_str());
 		fclose(f);
 		return false;
 	}
@@ -322,18 +328,21 @@ bool Map::Write(std::string filename) {
 
 	uint32_t out_size = EQEmu::DeflateData(ss.str().c_str(), (uint32_t)ss.str().length(), &buffer[0], buffer_len);
 	if (fwrite(&out_size, sizeof(uint32_t), 1, f) != 1) {
+		eqLogMessage(LogError, "Failed to write %s because the compressed size header could not be written.", filename.c_str());
 		fclose(f);
 		return false;
 	}
 	
 	uint32_t uncompressed_size = (uint32_t)ss.str().length();
 	if (fwrite(&uncompressed_size, sizeof(uint32_t), 1, f) != 1) {
+		eqLogMessage(LogError, "Failed to write %s because the uncompressed size header could not be written.", filename.c_str());
 		fclose(f);
 		return false;
 	}
 
 
 	if (fwrite(&buffer[0], out_size, 1, f) != 1) {
+		eqLogMessage(LogError, "Failed to write %s because the compressed data could not be written.", filename.c_str());
 		fclose(f);
 		return false;
 	}
@@ -391,12 +400,13 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone, gl
 		}
 		
 		std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
-		gen_plac->SetName("Generated Placeable");
 		gen_plac->SetFileName(bone->model->GetName());
 		gen_plac->SetLocation(pos.x, pos.y, pos.z);
 		gen_plac->SetRotation(rot.x, rot.y, rot.z);
 		gen_plac->SetScale(scale_x, scale_y, scale_z);
 		map_placeables.push_back(gen_plac);
+
+		eqLogMessage(LogTrace, "Adding placeable %s at (%f, %f, %f)",bone->model->GetName().c_str(), pos.x, pos.y, pos.z);
 	}
 
 	for(size_t i = 0; i < bone->children.size(); ++i) {
@@ -422,6 +432,7 @@ bool Map::CompileS3D(
 	map_eqg_models.clear();
 	map_placeables.clear();
 
+	eqLogMessage(LogTrace, "Processing s3d zone geometry fragments.");
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x36) {
 			EQEmu::S3D::WLDFragment36 &frag = reinterpret_cast<EQEmu::S3D::WLDFragment36&>(zone_frags[i]);
@@ -456,6 +467,7 @@ bool Map::CompileS3D(
 		}
 	}
 
+	eqLogMessage(LogTrace, "Processing zone placeable fragments.");
 	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::S3D::Geometry>>> placables;
 	std::vector<std::pair<std::shared_ptr<EQEmu::Placeable>, std::shared_ptr<EQEmu::S3D::SkeletonTrack>>> placables_skeleton;
 	for (uint32_t i = 0; i < zone_object_frags.size(); ++i) {
@@ -465,7 +477,7 @@ bool Map::CompileS3D(
 
 			if(!plac)
 			{
-				printf("Warning: Placeable entry was not found...\n");
+				eqLogMessage(LogWarn, "Placeable entry was not found.");
 				continue;
 			}
 
@@ -505,11 +517,12 @@ bool Map::CompileS3D(
 			}
 
 			if(!found) {
-				printf("Warning: could not find the model for placeable %s\n", plac->GetName().c_str());
+				eqLogMessage(LogWarn, "Could not find model for placeable %s\n", plac->GetName().c_str());
 			}
 		}
 	}
 
+	eqLogMessage(LogTrace, "Processing s3d placeables.");
 	size_t pl_sz = placables.size();
 	for(size_t i = 0; i < pl_sz; ++i) {
 		auto plac = placables[i].first;
@@ -534,14 +547,16 @@ bool Map::CompileS3D(
 			map_models[model->GetName()] = model;
 		}
 		std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
-		gen_plac->SetName("Generated Placeable");
 		gen_plac->SetFileName(model->GetName());
 		gen_plac->SetLocation(offset_x, offset_y, offset_z);
 		gen_plac->SetRotation(rot_x, rot_y, rot_z);
 		gen_plac->SetScale(scale_x, scale_y, scale_z);
 		map_placeables.push_back(gen_plac);
+
+		eqLogMessage(LogTrace, "Adding placeable %s at (%f, %f, %f)", model->GetName().c_str(), offset_x, offset_y, offset_z);
 	}
 
+	eqLogMessage(LogTrace, "Processing s3d animated placeables.");
 	pl_sz = placables_skeleton.size();
 	for (size_t i = 0; i < pl_sz; ++i) {
 		auto &plac = placables_skeleton[i].first;
@@ -603,7 +618,7 @@ bool Map::CompileEQG(
 		}
 
 		if (!model) {
-			printf("Warning: could not find eqg placeable %s\n", plac->GetFileName().c_str());
+			eqLogMessage(LogWarn, "Could not find placeable %s.", plac->GetFileName().c_str());
 			continue;
 		}
 
@@ -625,12 +640,13 @@ bool Map::CompileEQG(
 			}
 
 			std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
-			gen_plac->SetName("Generated Placeable");
 			gen_plac->SetFileName(model->GetName());
 			gen_plac->SetLocation(offset_x, offset_y, offset_z);
 			gen_plac->SetRotation(rot_x, rot_y, rot_z);
 			gen_plac->SetScale(scale_x, scale_y, scale_z);
 			map_placeables.push_back(gen_plac);
+
+			eqLogMessage(LogTrace, "Adding placeable %s at (%f, %f, %f)", model->GetName().c_str(), offset_x, offset_y, offset_z);
 			continue;
 		}
 

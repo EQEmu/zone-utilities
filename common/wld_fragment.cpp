@@ -141,14 +141,11 @@ EQEmu::S3D::WLDFragment10::WLDFragment10(std::vector<WLDFragment> &out, char *fr
 				if (out[mod_ref].type == 0x36) {
 					WLDFragment36 &f = reinterpret_cast<WLDFragment36&>(out[mod_ref]);
 					auto mod = f.GetData();
-
-					printf("Skeletal piece: %s\n", mod->GetName().c_str());
 				}
 			}
 
 			frag_buffer += sizeof(int32_t);
 		}
-		printf("\n");
 
 		for (uint32_t i = 0; i < sz; ++i) {
 			int32_t data = *(int32_t*)frag_buffer;
