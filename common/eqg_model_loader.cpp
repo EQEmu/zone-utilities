@@ -15,7 +15,7 @@ EQEmu::EQGModelLoader::~EQGModelLoader() {
 bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out) {
 	std::transform(model.begin(), model.end(), model.begin(), ::tolower);
 
-	eqLogMessage(LogTrace, "Loading model %s.", model.c_str());
+	eqLogMessage(LogDebug, "Loading model %s.", model.c_str());
 	std::vector<char> buffer;
 	if(!archive.Get(model, buffer)) {
 		eqLogMessage(LogError, "Unable to load %s, file was not found.", model.c_str());
@@ -60,6 +60,7 @@ bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model
 			SafeStructAllocParse(mod_material_property, prop);
 			auto &p = props[j];
 			p.name = &buffer[list_loc + prop->name_offset];
+			p.type = prop->type;
 
 			if (prop->type == 2) {
 				p.value_s = &buffer[list_loc + prop->i_value];
