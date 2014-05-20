@@ -152,8 +152,12 @@ bool EQEmu::EQGLoader::ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> 
 		std::shared_ptr<EQG::Region> region(new EQG::Region());
 		region->SetName(&buffer[sizeof(zon_header) + reg->loc]);
 		region->SetLocation(reg->center_x, reg->center_y, reg->center_z);
+		region->SetRotation(0.0f, 0.0f, 0.0f);
+		region->SetScale(1.0f, 1.0f, 1.0f);
 		region->SetExtents(reg->extend_x, reg->extend_y, reg->extend_z);
 		region->SetFlags(reg->flag_unknown020, reg->flag_unknown024);
+
+		eqLogMessage(LogDebug, "Area: %s %d %d", region->GetName().c_str(), region->GetFlag1(), region->GetFlag2());
 
 		regions.push_back(region);
 	}

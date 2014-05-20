@@ -33,7 +33,7 @@ public:
 	float GetExtentY() { return y_ext; }
 	float GetExtentZ() { return z_ext; }
 	uint32_t GetFlag1() { return flag[0]; }
-	uint32_t GetFlag2() { return flag[0]; }
+	uint32_t GetFlag2() { return flag[1]; }
 	std::string &GetName() { return name; }
 private:
 	float x, y, z;

@@ -2,7 +2,7 @@
 #define EQEMU_WATER_MAP_H
 
 #include <stdint.h>
-#include "s3d_loader.h"
+#include <string>
 
 enum WaterMapRegionType
 {
@@ -26,6 +26,8 @@ public:
 	
 	bool BuildAndWrite(std::string zone_name);
 	bool BuildAndWriteS3D(std::string zone_name);
+	bool BuildAndWriteEQG(std::string zone_name);
+	bool BuildAndWriteEQG4(std::string zone_name);
 };
 
 #endif

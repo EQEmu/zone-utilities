@@ -1,5 +1,8 @@
 #include "water_map.h"
 #include "log_macros.h"
+#include "s3d_loader.h"
+#include "eqg_loader.h"
+#include "eqg_v4_loader.h"
 #include <string.h>
 
 uint32_t BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
@@ -11,23 +14,31 @@ WaterMap::~WaterMap() {
 }
 
 bool WaterMap::BuildAndWrite(std::string zone_name) {
-	bool status = BuildAndWriteS3D(zone_name);
-	if(status) {
+	if (BuildAndWriteEQG(zone_name)) {
+		return true;
+	}
+
+	if (BuildAndWriteEQG4(zone_name)) {
 		return true;
 	}
 	
-	//try eqg3 and eqg4 here
+	if(BuildAndWriteS3D(zone_name)) {
+		return true;
+	}
 	
 	return false;
 }
 
 bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
+	eqLogMessage(LogTrace, "Loading %s.s3d", zone_name.c_str());
+
 	EQEmu::S3DLoader s3d;
 	std::vector<EQEmu::S3D::WLDFragment> zone_frags;
 	if (!s3d.ParseWLDFile(zone_name + ".s3d", zone_name + ".wld", zone_frags)) {
 		return false;
 	}
 
+	eqLogMessage(LogTrace, "Loaded %s.s3d.", zone_name.c_str());
 	std::shared_ptr<EQEmu::S3D::BSPTree> tree;
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x21) {
@@ -43,6 +54,8 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 
 			auto regions = region->GetRegions();
 			WaterMapRegionType region_type = RegionTypeUntagged;
+
+			eqLogMessage(LogTrace, "Processing region %s for s3d.", region->GetName().c_str());
 
 			if (!strncmp(region->GetName().c_str(), "WT", 2)) {
 				region_type = RegionTypeWater;
@@ -76,6 +89,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 		return false;
 	}
 
+	eqLogMessage(LogTrace, "Writing v1 map file out.");
 	std::string filename = zone_name + ".wtr";
 	FILE *f = fopen(filename.c_str(), "wb");
 	if(f) {
@@ -162,6 +176,160 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 		return false;
 	}
 
+	return false;
+}
+
+bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
+	eqLogMessage(LogTrace, "Loading standard eqg %s.eqg", zone_name.c_str());
+
+	EQEmu::EQGLoader eqg;
+	std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> models;
+	std::vector<std::shared_ptr<EQEmu::Placeable>> placables;
+	std::vector<std::shared_ptr<EQEmu::EQG::Region>> regions;
+	std::vector<std::shared_ptr<EQEmu::Light>> lights;
+	if(!eqg.Load(zone_name, models, placables, regions, lights)) {
+		return false;
+	}
+
+	eqLogMessage(LogTrace, "Loaded standard eqg %s.eqg", zone_name.c_str());
+	std::string filename = zone_name + ".wtr";
+	FILE *f = fopen(filename.c_str(), "wb");
+	if (f) {
+		char *magic = "EQEMUWATER";
+		uint32_t version = 2;
+
+		if (fwrite(magic, strlen(magic), 1, f) != 1) {
+			fclose(f);
+			return false;
+		}
+
+		if (fwrite(&version, sizeof(version), 1, f) != 1) {
+			fclose(f);
+			return false;
+		}
+
+		uint32_t region_count = (uint32_t)regions.size();
+		if (fwrite(&region_count, sizeof(region_count), 1, f) != 1) {
+			fclose(f);
+			return false;
+		}
+
+		for (uint32_t i = 0; i < region_count; ++i) {
+			auto &region = regions[i];
+
+			eqLogMessage(LogTrace, "Writing region %s.", region->GetName().c_str());
+			uint32_t region_type = 0;
+			float x = region->GetX();
+			float y = region->GetY();
+			float z = region->GetZ();
+			float x_rot = region->GetRotationX();
+			float y_rot = region->GetRotationY();
+			float z_rot = region->GetRotationZ();
+			float x_scale = region->GetScaleX();
+			float y_scale = region->GetScaleY();
+			float z_scale = region->GetScaleZ();
+			float x_extent = region->GetExtentX();
+			float y_extent = region->GetExtentY();
+			float z_extent = region->GetExtentZ();
+
+			if (region->GetName().length() >= 3) {
+				std::string region_code = region->GetName().substr(0, 3);
+				if(region_code.compare("AWT") == 0) {
+					region_type = RegionTypeWater;
+				}
+				else if (region_code.compare("ALV") == 0) {
+					region_type = RegionTypeLava;
+				}
+				else if (region_code.compare("APK") == 0) {
+					region_type = RegionTypePVP;
+				}
+				else if (region_code.compare("ATP") == 0) {
+					region_type = RegionTypeZoneLine;
+				}
+				else {
+					eqLogMessage(LogDebug, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
+					region_type = RegionTypeUnsupported;
+				}
+			}
+
+			if (fwrite(&region_type, sizeof(region_type), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&x, sizeof(x), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&y, sizeof(y), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&z, sizeof(z), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&x_rot, sizeof(x_rot), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&y_rot, sizeof(y_rot), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&z_rot, sizeof(z_rot), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&x_scale, sizeof(x_scale), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&y_scale, sizeof(y_scale), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&z_scale, sizeof(z_scale), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&x_extent, sizeof(x_extent), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&y_extent, sizeof(y_extent), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fwrite(&z_extent, sizeof(z_extent), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+		}
+
+		fclose(f);
+		return true;
+	}
+	else {
+		return false;
+	}
+
+	return false;
+}
+
+bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 	return false;
 }
 

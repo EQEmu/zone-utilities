@@ -380,9 +380,9 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone, gl
 			rot_y = (float)bone->orientation->rotate_y_num / (float)bone->orientation->rotate_denom;
 			rot_z = (float)bone->orientation->rotate_z_num / (float)bone->orientation->rotate_denom;
 
-			rot_x = rot_x *3.14159f / 180.0f;
-			rot_y = rot_y *3.14159f / 180.0f;
-			rot_z = rot_z *3.14159f / 180.0f;
+			rot_x = rot_x * 3.14159f / 180.0f;
+			rot_y = rot_y * 3.14159f / 180.0f;
+			rot_z = rot_z * 3.14159f / 180.0f;
 		}
 	}
 
