@@ -1,7 +1,8 @@
 #include "water_map.h"
+#include "log_macros.h"
 #include <string.h>
 
-void BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
+uint32_t BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
 
 WaterMap::WaterMap() {
 }
@@ -92,7 +93,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 		}
 
 		uint32_t bsp_size = (uint32_t)tree->GetNodes().size();
-		if (fwrite(&version, sizeof(version), 1, f) != 1) {
+		if (fwrite(&bsp_size, sizeof(bsp_size), 1, f) != 1) {
 			fclose(f);
 			return false;
 		}
@@ -164,24 +165,30 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 	return false;
 }
 
-void BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
+uint32_t BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
 	if (node_number < 1) {
-		return;
+		eqLogMessage(LogError, "BSPMarkRegion was passed a node < 1.");
+		return 0;
 	}
 
 	auto &nodes = tree->GetNodes();
 	if ((nodes[node_number - 1].left == 0) && (nodes[node_number - 1].right == 0))  {
 		if (nodes[node_number - 1].region == region) {
 			nodes[node_number - 1].special = region_type;
+			return node_number;
 		}
 	}
 
+	uint32_t ret_node = 0;
 	if (nodes[node_number - 1].left != 0) {
-		BSPMarkRegion(tree, nodes[node_number - 1].left, region, region_type);
-
+		ret_node = BSPMarkRegion(tree, nodes[node_number - 1].left, region, region_type);
+		if(ret_node != 0)
+			return ret_node;
 	}
 
 	if (nodes[node_number - 1].right != 0) {
-		BSPMarkRegion(tree, nodes[node_number - 1].right, region, region_type);
+		return BSPMarkRegion(tree, nodes[node_number - 1].right, region, region_type);
 	}
+
+	return 0;
 }
