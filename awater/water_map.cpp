@@ -247,7 +247,7 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 					region_type = RegionTypeZoneLine;
 				}
 				else {
-					eqLogMessage(LogDebug, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
+					eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
 					region_type = RegionTypeUnsupported;
 				}
 			}
@@ -395,7 +395,7 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 					region_type = RegionTypeZoneLine;
 				}
 				else {
-					eqLogMessage(LogDebug, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
+					eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
 					region_type = RegionTypeUnsupported;
 				}
 			}
