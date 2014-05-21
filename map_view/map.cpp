@@ -1037,6 +1037,8 @@ void LoadWaterMap(std::string filename, Model **volume) {
 			transformation = CreateScaleMatrix(x_scale, y_scale, z_scale) * transformation;
 			transformation = CreateTranslateMatrix(x, y, z) * transformation;
 			transformation = CreateTranslateMatrix(tile_x, tile_y, tile_z) * transformation;
+
+
 			
 			v1 = transformation * v1;
 			v2 = transformation * v2;

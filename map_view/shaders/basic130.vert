@@ -3,8 +3,8 @@
 in vec3 vp_ms;
 
 uniform mat4 MVP;
-uniform vec3 Tint;
-out vec3 frag_color;
+uniform vec4 Tint;
+out vec4 frag_color;
 
 void main(){
 	gl_Position.x = vp_ms.x;
@@ -12,6 +12,6 @@ void main(){
 	gl_Position.z = vp_ms.y;
 	gl_Position.w = 1.0;
     gl_Position = MVP * gl_Position;
-	frag_color = vec3(1.0, 1.0, 1.0) * Tint;
+	frag_color = vec4(1.0, 1.0, 1.0, 1.0) * Tint;
 }
 
