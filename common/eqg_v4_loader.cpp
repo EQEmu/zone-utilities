@@ -379,12 +379,11 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			terrain_height = HeightWithinQuad(p1, p2, p3, p4, adjusted_y, adjusted_x);
 
 			region->SetName(s);
-			region->SetLocation(x, y, z);
+			region->SetLocation(x + tile_start_y, y + tile_start_x, z + terrain_height);
 			region->SetRotation(rot_x, rot_y, rot_z);
 			region->SetScale(scale_x, scale_y, scale_z);
 			region->SetExtents(size_x / 2.0f, size_y / 2.0f, size_z / 2.0f);
 			region->SetFlags(type, 0);
-			region->SetTileLocation(tile_start_y, tile_start_x, terrain_height);
 
 			terrain->AddRegion(region);
 		}

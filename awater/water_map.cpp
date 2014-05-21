@@ -222,9 +222,6 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 			float x = region->GetX();
 			float y = region->GetY();
 			float z = region->GetZ();
-			float tile_x = region->GetTileX();
-			float tile_y = region->GetTileY();
-			float tile_z = region->GetTileZ();
 			float x_rot = region->GetRotationX();
 			float y_rot = region->GetRotationY();
 			float z_rot = region->GetRotationZ();
@@ -271,21 +268,6 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 			}
 
 			if (fwrite(&z, sizeof(z), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fwrite(&tile_x, sizeof(tile_x), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fwrite(&tile_y, sizeof(tile_y), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fwrite(&tile_z, sizeof(tile_z), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}
@@ -388,9 +370,6 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 			float x = region->GetX();
 			float y = region->GetY();
 			float z = region->GetZ();
-			float tile_x = region->GetTileX();
-			float tile_y = region->GetTileY();
-			float tile_z = region->GetTileZ();
 			float x_rot = region->GetRotationX();
 			float y_rot = region->GetRotationY();
 			float z_rot = region->GetRotationZ();
@@ -437,21 +416,6 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 			}
 
 			if (fwrite(&z, sizeof(z), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fwrite(&tile_x, sizeof(tile_x), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fwrite(&tile_y, sizeof(tile_y), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fwrite(&tile_z, sizeof(tile_z), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}

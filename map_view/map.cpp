@@ -895,9 +895,6 @@ void LoadWaterMap(std::string filename, Model **volume) {
 			float x;
 			float y;
 			float z;
-			float tile_x;
-			float tile_y;
-			float tile_z;
 			float x_rot;
 			float y_rot;
 			float z_rot;
@@ -930,27 +927,6 @@ void LoadWaterMap(std::string filename, Model **volume) {
 			}
 
 			if (fread(&z, sizeof(z), 1, f) != 1) {
-				fclose(f);
-				delete *volume;
-				*volume = nullptr;
-				return;
-			}
-
-			if (fread(&tile_x, sizeof(tile_x), 1, f) != 1) {
-				fclose(f);
-				delete *volume;
-				*volume = nullptr;
-				return;
-			}
-
-			if (fread(&tile_y, sizeof(tile_y), 1, f) != 1) {
-				fclose(f);
-				delete *volume;
-				*volume = nullptr;
-				return;
-			}
-
-			if (fread(&tile_z, sizeof(tile_z), 1, f) != 1) {
 				fclose(f);
 				delete *volume;
 				*volume = nullptr;
@@ -1036,9 +1012,6 @@ void LoadWaterMap(std::string filename, Model **volume) {
 			glm::mat4 transformation = CreateRotateMatrix(x_rot * 3.14159f / 180.0f, y_rot * 3.14159f / 180.0f, z_rot * 3.14159f / 180.0f);
 			transformation = CreateScaleMatrix(x_scale, y_scale, z_scale) * transformation;
 			transformation = CreateTranslateMatrix(x, y, z) * transformation;
-			transformation = CreateTranslateMatrix(tile_x, tile_y, tile_z) * transformation;
-
-
 			
 			v1 = transformation * v1;
 			v2 = transformation * v2;
