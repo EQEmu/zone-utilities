@@ -43,7 +43,6 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 	}
 
 	if (header->version == 0x00015500) {
-		eqLogMessage(LogDebug, "Old style s3d detected.");
 		old = true;
 	}
 

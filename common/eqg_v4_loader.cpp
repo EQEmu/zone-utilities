@@ -111,8 +111,6 @@ float HeightWithinQuad(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, f
 
 bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_ptr<EQG::Terrain> &terrain) {
 	std::string filename = terrain->GetOpts().name + ".dat";
-
-	
 	std::vector<char> buffer;
 	if(!archive.Get(filename, buffer)) {
 		eqLogMessage(LogError, "Failed to open %s.", filename.c_str());
@@ -379,6 +377,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			terrain_height = HeightWithinQuad(p1, p2, p3, p4, adjusted_y, adjusted_x);
 
 			region->SetName(s);
+			region->SetAlternateName(s2);
 			region->SetLocation(x + tile_start_y, y + tile_start_x, z + terrain_height);
 			region->SetRotation(rot_x, rot_y, rot_z);
 			region->SetScale(scale_x, scale_y, scale_z);
@@ -435,7 +434,6 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			SafeVarAllocParse(float, z_adjust);
 
 			std::vector<char> tog_buffer;
-			std::transform(tog_name.begin(), tog_name.end(), tog_name.begin(), ::tolower);
 			if(!archive.Get(tog_name + ".tog", tog_buffer))
 			{
 				eqLogMessage(LogWarn, "Failed to load tog file %s.tog.", tog_name.c_str());

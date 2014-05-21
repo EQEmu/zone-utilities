@@ -18,6 +18,7 @@ public:
 	void SetScale(float nx, float ny, float nz) { x_scale = nx; y_scale = ny; z_scale = nz; }
 	void SetExtents(float nx, float ny, float nz) { x_ext = nx; y_ext = ny; z_ext = nz; }
 	void SetName(std::string name) { this->name = name; }
+	void SetAlternateName(std::string name) { alt_name = name; }
 	void SetFlags(uint32_t f1, uint32_t f2) { flag[0] = f1; flag[1] = f2; }
 
 	float GetX() { return x; }
@@ -35,6 +36,7 @@ public:
 	uint32_t GetFlag1() { return flag[0]; }
 	uint32_t GetFlag2() { return flag[1]; }
 	std::string &GetName() { return name; }
+	std::string &GetAlternateName() { return alt_name; }
 private:
 	float x, y, z;
 	float x_ext, y_ext, z_ext;
@@ -42,6 +44,7 @@ private:
 	float x_scale, y_scale, z_scale;
 	uint32_t flag[2];
 	std::string name;
+	std::string alt_name;
 };
 
 }

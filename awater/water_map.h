@@ -15,7 +15,8 @@ enum WaterMapRegionType
 	RegionTypePVP = 4,
 	RegionTypeSlime = 5,
 	RegionTypeIce = 6,
-	RegionTypeVWater = 7
+	RegionTypeVWater = 7,
+	RegionTypeGeneralArea = 8
 };
 
 class WaterMap

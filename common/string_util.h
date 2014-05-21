@@ -8,6 +8,7 @@ namespace EQEmu
 {
 
 std::vector<std::string> SplitString(const std::string &str, char delim);
+bool StringsEqual(const std::string& a, const std::string& b);
 
 }
 

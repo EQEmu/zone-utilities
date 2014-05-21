@@ -21,6 +21,7 @@
 #include <zlib.h>
 #include "pfs.h"
 #include "eqemu_endian.h"
+#include "string_util.h"
 
 #define BufferRead(x, y) x = (y*)&buffer[position]; position += sizeof(y);
 #define BufferReadLength(x, y) memcpy(x, &buffer[position], y); position += y;
@@ -160,7 +161,7 @@ bool EQEmu::PFS::Archive::Close() {
 bool EQEmu::PFS::Archive::Get(std::string filename, std::vector<char> &buf) {
 	size_t sz = filenames.size();
 	for (size_t index = 0; index < sz; ++index) {
-		if (!filenames[index].compare(filename)) {
+		if (EQEmu::StringsEqual(filenames[index], filename)) {
 			Internal::Directory* directory = nullptr;
 			Internal::DataBlock* data_block = nullptr;
 			char *temp = nullptr;

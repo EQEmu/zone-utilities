@@ -246,6 +246,12 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 				else if (region_code.compare("ATP") == 0) {
 					region_type = RegionTypeZoneLine;
 				}
+				else if (region_code.compare("ASL") == 0) {
+					region_type = RegionTypeIce;
+				}
+				else if (region_code.compare("APV") == 0) {
+					region_type = RegionTypeGeneralArea;
+				}
 				else {
 					eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
 					region_type = RegionTypeUnsupported;
@@ -394,9 +400,21 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 				else if (region_code.compare("ATP") == 0) {
 					region_type = RegionTypeZoneLine;
 				}
+				else if (region_code.compare("ASL") == 0) {
+					region_type = RegionTypeIce;
+				}
 				else {
-					eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
-					region_type = RegionTypeUnsupported;
+					uint32_t flag = region->GetFlag1();
+					if(flag == 1 || flag == 10 || flag == 9 || flag == 5) {
+						region_type = RegionTypeWater;
+					} else if(flag == 7) {
+						region_type = RegionTypeLava;
+					} else if(flag == 0) {
+						region_type = RegionTypeZoneLine;
+					} else {
+						eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
+						region_type = RegionTypeUnsupported;
+					}
 				}
 			}
 
