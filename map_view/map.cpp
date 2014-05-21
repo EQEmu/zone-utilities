@@ -6,6 +6,8 @@
 #include <map>
 #include <memory>
 #include "compression.h"
+#include <gtc/matrix_transform.hpp>
+#include <gtx/transform.hpp>
 
 struct ModelEntry
 {
@@ -169,6 +171,45 @@ void TranslateVertex(glm::vec3 &v, float tx, float ty, float tz) {
 	v.x = v.x + tx;
 	v.y = v.y + ty;
 	v.z = v.z + tz;
+}
+
+glm::mat4 CreateRotateMatrix(float rx, float ry, float rz) {
+	glm::mat4 rot_x(1.0f);
+	rot_x[1][1] = cos(rx);
+	rot_x[2][1] = -sin(rx);
+	rot_x[1][2] = sin(rx);
+	rot_x[2][2] = cos(rx);
+
+	glm::mat4 rot_y(1.0f);
+	rot_y[0][0] = cos(ry);
+	rot_y[2][0] = sin(ry);
+	rot_y[0][2] = -sin(ry);
+	rot_y[2][2] = cos(ry);
+
+	glm::mat4 rot_z(1.0f);
+	rot_z[0][0] = cos(rz);
+	rot_z[1][0] = -sin(rz);
+	rot_z[0][1] = sin(rz);
+	rot_z[1][1] = cos(rz);
+
+	return rot_z * rot_y * rot_x;
+}
+
+glm::mat4 CreateTranslateMatrix(float tx, float ty, float tz) {
+	glm::mat4 trans(1.0f);
+	trans[3][0] = tx;
+	trans[3][1] = ty;
+	trans[3][2] = tz;
+
+	return trans;
+}
+
+glm::mat4 CreateScaleMatrix(float sx, float sy, float sz) {
+	glm::mat4 scale(1.0f);
+	scale[0][0] = sx;
+	scale[1][1] = sy;
+	scale[2][2] = sz;
+	return scale;
 }
 
 bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices, std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
@@ -735,7 +776,8 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 }
 
 void LoadMap(std::string filename, Model **collision, Model **vision) {
-	FILE *f = fopen(filename.c_str(), "rb");
+	std::string raw_filename = filename + ".map";
+	FILE *f = fopen(raw_filename.c_str(), "rb");
 	if (f) {
 		uint32_t version;
 		if (fread(&version, sizeof(version), 1, f) != 1) {
@@ -798,5 +840,273 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 	} else {
 		*collision = nullptr;
 		*vision = nullptr;
+	}
+}
+
+void LoadWaterMap(std::string filename, Model **volume) {
+	*volume = nullptr;
+
+	std::string raw_filename = filename + ".wtr";
+	FILE *f = fopen(raw_filename.c_str(), "rb");
+	if (f) {
+		char magic[10];
+		uint32_t version;
+		if (fread(magic, 10, 1, f) != 1) {
+			fclose(f);
+			*volume = nullptr;
+			return;
+		}
+
+		if (strncmp(magic, "EQEMUWATER", 10)) {
+			fclose(f);
+			*volume = nullptr;
+			return;
+		}
+
+		if (fread(&version, sizeof(version), 1, f) != 1) {
+			fclose(f);
+			*volume = nullptr;
+			return;
+		}
+
+		if(version != 2) {
+			fclose(f);
+			*volume = nullptr;
+			return;
+		}
+
+		uint32_t region_count;
+		if (fread(&region_count, sizeof(region_count), 1, f) != 1) {
+			fclose(f);
+			*volume = nullptr;
+			return;
+		}
+
+		if(region_count == 0) {
+			fclose(f);
+			*volume = nullptr;
+			return;
+		}
+
+		*volume = new Model();
+
+		for (uint32_t i = 0; i < region_count; ++i) {
+			uint32_t region_type;
+			float x;
+			float y;
+			float z;
+			float tile_x;
+			float tile_y;
+			float tile_z;
+			float x_rot;
+			float y_rot;
+			float z_rot;
+			float x_scale;
+			float y_scale;
+			float z_scale;
+			float x_extent;
+			float y_extent;
+			float z_extent;
+
+			if (fread(&region_type, sizeof(region_type), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&x, sizeof(x), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&y, sizeof(y), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&z, sizeof(z), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&tile_x, sizeof(tile_x), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&tile_y, sizeof(tile_y), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&tile_z, sizeof(tile_z), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&x_rot, sizeof(x_rot), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&y_rot, sizeof(y_rot), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&z_rot, sizeof(z_rot), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&x_scale, sizeof(x_scale), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&y_scale, sizeof(y_scale), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&z_scale, sizeof(z_scale), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&x_extent, sizeof(x_extent), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&y_extent, sizeof(y_extent), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			if (fread(&z_extent, sizeof(z_extent), 1, f) != 1) {
+				fclose(f);
+				delete *volume;
+				*volume = nullptr;
+				return;
+			}
+
+			x_extent = fabs(x_extent);
+			y_extent = fabs(y_extent);
+			z_extent = fabs(z_extent);
+		
+			glm::vec4 v1(-x_extent, y_extent, -z_extent, 1.0f);
+			glm::vec4 v2(-x_extent, y_extent, z_extent, 1.0f);
+			glm::vec4 v3(x_extent, y_extent, z_extent, 1.0f);
+			glm::vec4 v4(x_extent, y_extent, -z_extent, 1.0f);
+			glm::vec4 v5(-x_extent, -y_extent, -z_extent, 1.0f);
+			glm::vec4 v6(-x_extent, -y_extent, z_extent, 1.0f);
+			glm::vec4 v7(x_extent, -y_extent, z_extent, 1.0f);
+			glm::vec4 v8(x_extent, -y_extent, -z_extent, 1.0f);
+
+			glm::mat4 transformation = CreateRotateMatrix(x_rot * 3.14159f / 180.0f, y_rot * 3.14159f / 180.0f, z_rot * 3.14159f / 180.0f);
+			transformation = CreateScaleMatrix(x_scale, y_scale, z_scale) * transformation;
+			transformation = CreateTranslateMatrix(x, y, z) * transformation;
+			transformation = CreateTranslateMatrix(tile_x, tile_y, tile_z) * transformation;
+			
+			v1 = transformation * v1;
+			v2 = transformation * v2;
+			v3 = transformation * v3;
+			v4 = transformation * v4;
+			v5 = transformation * v5;
+			v6 = transformation * v6;
+			v7 = transformation * v7;
+			v8 = transformation * v8;
+
+			uint32_t current_index = (uint32_t)(*volume)->GetPositions().size();
+			(*volume)->GetPositions().push_back(glm::vec3(v1.y, v1.x, v1.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v2.y, v2.x, v2.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v3.y, v3.x, v3.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v4.y, v4.x, v4.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v5.y, v5.x, v5.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v6.y, v6.x, v6.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v7.y, v7.x, v7.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v8.y, v8.x, v8.z));
+
+			//top
+			(*volume)->GetIndicies().push_back(current_index + 0);
+			(*volume)->GetIndicies().push_back(current_index + 1);
+			(*volume)->GetIndicies().push_back(current_index + 2);
+			(*volume)->GetIndicies().push_back(current_index + 2);
+			(*volume)->GetIndicies().push_back(current_index + 3);
+			(*volume)->GetIndicies().push_back(current_index + 0);
+
+			//back
+			(*volume)->GetIndicies().push_back(current_index + 1);
+			(*volume)->GetIndicies().push_back(current_index + 2);
+			(*volume)->GetIndicies().push_back(current_index + 6);
+			(*volume)->GetIndicies().push_back(current_index + 6);
+			(*volume)->GetIndicies().push_back(current_index + 5);
+			(*volume)->GetIndicies().push_back(current_index + 1);
+			
+			//bottom
+			(*volume)->GetIndicies().push_back(current_index + 4);
+			(*volume)->GetIndicies().push_back(current_index + 5);
+			(*volume)->GetIndicies().push_back(current_index + 6);
+			(*volume)->GetIndicies().push_back(current_index + 6);
+			(*volume)->GetIndicies().push_back(current_index + 7);
+			(*volume)->GetIndicies().push_back(current_index + 4);
+			
+			//front
+			(*volume)->GetIndicies().push_back(current_index + 0);
+			(*volume)->GetIndicies().push_back(current_index + 3);
+			(*volume)->GetIndicies().push_back(current_index + 7);
+			(*volume)->GetIndicies().push_back(current_index + 7);
+			(*volume)->GetIndicies().push_back(current_index + 4);
+			(*volume)->GetIndicies().push_back(current_index + 0);
+			
+			//left
+			(*volume)->GetIndicies().push_back(current_index + 0);
+			(*volume)->GetIndicies().push_back(current_index + 1);
+			(*volume)->GetIndicies().push_back(current_index + 5);
+			(*volume)->GetIndicies().push_back(current_index + 5);
+			(*volume)->GetIndicies().push_back(current_index + 4);
+			(*volume)->GetIndicies().push_back(current_index + 0);
+			
+			//right
+			(*volume)->GetIndicies().push_back(current_index + 3);
+			(*volume)->GetIndicies().push_back(current_index + 2);
+			(*volume)->GetIndicies().push_back(current_index + 6);
+			(*volume)->GetIndicies().push_back(current_index + 6);
+			(*volume)->GetIndicies().push_back(current_index + 7);
+			(*volume)->GetIndicies().push_back(current_index + 3);
+		}
+
+		(*volume)->Compile();
+		fclose(f);
 	}
 }

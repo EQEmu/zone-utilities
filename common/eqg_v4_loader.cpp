@@ -187,8 +187,6 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 		if (floats_all_the_same)
 			tile->SetFlat(true);
 
-		//not 100% sure on this but it seems to fit a pattern
-		//most zones have it set to -1000.0
 		SafeVarAllocParse(float, BaseWaterLevel);
 		tile->SetBaseWaterLevel(BaseWaterLevel);
 
@@ -348,17 +346,45 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			SafeVarAllocParse(float, size_y);
 			SafeVarAllocParse(float, size_z);
 
-			float area_start_y = zone_min_y + (longitude - 100000 - terrain->GetOpts().min_lng) * terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile;
-			float area_start_x = zone_min_x + (latitude - 100000 - terrain->GetOpts().min_lat) * terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile;
-
 			std::shared_ptr<EQG::Region> region(new EQG::Region());
 
 			region->SetName(s);
-			region->SetLocation(area_start_x + x, area_start_y + y, z);
+			region->SetLocation(x, y, z);
 			region->SetRotation(rot_x, rot_y, rot_z);
 			region->SetScale(scale_x, scale_y, scale_z);
 			region->SetExtents(size_x, size_y, size_z);
 			region->SetFlags(type, 0);
+
+			float terrain_height = 0.0f;
+			float adjusted_x = x;
+			float adjusted_y = y;
+
+			if (adjusted_x < 0)
+				adjusted_x = adjusted_x + (-(int)(adjusted_x / (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile)) + 1) * (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
+			else
+				adjusted_x = fmod(adjusted_x, terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
+
+			if (adjusted_y < 0)
+				adjusted_y = adjusted_y + (-(int)(adjusted_y / (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile)) + 1) * (terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
+			else
+				adjusted_y = fmod(adjusted_y, terrain->GetOpts().units_per_vert * terrain->GetOpts().quads_per_tile);
+
+			int row_number = (int)(adjusted_y / terrain->GetOpts().units_per_vert);
+			int column = (int)(adjusted_x / terrain->GetOpts().units_per_vert);
+			int quad = row_number * terrain->GetOpts().quads_per_tile + column;
+
+			float quad_vertex1Z = tile->GetFloats()[quad + row_number];
+			float quad_vertex2Z = tile->GetFloats()[quad + row_number + terrain->GetOpts().quads_per_tile + 1];
+			float quad_vertex3Z = tile->GetFloats()[quad + row_number + terrain->GetOpts().quads_per_tile + 2];
+			float quad_vertex4Z = tile->GetFloats()[quad + row_number + 1];
+
+			glm::vec3 p1(row_number * terrain->GetOpts().units_per_vert, (quad % terrain->GetOpts().quads_per_tile) * terrain->GetOpts().units_per_vert, quad_vertex1Z);
+			glm::vec3 p2(p1.x + terrain->GetOpts().units_per_vert, p1.y, quad_vertex2Z);
+			glm::vec3 p3(p1.x + terrain->GetOpts().units_per_vert, p1.y + terrain->GetOpts().units_per_vert, quad_vertex3Z);
+			glm::vec3 p4(p1.x, p1.y + terrain->GetOpts().units_per_vert, quad_vertex4Z);
+
+			terrain_height = HeightWithinQuad(p1, p2, p3, p4, adjusted_y, adjusted_x);
+			region->SetTileLocation(tile_start_y, tile_start_x, terrain_height);
 
 			terrain->AddRegion(region);
 		}

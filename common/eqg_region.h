@@ -14,6 +14,7 @@ public:
 	~Region() { }
 
 	void SetLocation(float nx, float ny, float nz) { x = nx; y = ny; z = nz; }
+	void SetTileLocation(float nx, float ny, float nz) { tile_loc_x = nx; tile_loc_y = ny; tile_loc_z = nz; }
 	void SetRotation(float nx, float ny, float nz) { x_rot = nx; y_rot = ny; z_rot = nz; }
 	void SetScale(float nx, float ny, float nz) { x_scale = nx; y_scale = ny; z_scale = nz; }
 	void SetExtents(float nx, float ny, float nz) { x_ext = nx; y_ext = ny; z_ext = nz; }
@@ -23,6 +24,9 @@ public:
 	float GetX() { return x; }
 	float GetY() { return y; }
 	float GetZ() { return z; }
+	float GetTileX() { return tile_loc_x; }
+	float GetTileY() { return tile_loc_y; }
+	float GetTileZ() { return tile_loc_z; }
 	float GetRotationX() { return x_rot; }
 	float GetRotationY() { return y_rot; }
 	float GetRotationZ() { return z_rot; }
@@ -36,6 +40,7 @@ public:
 	uint32_t GetFlag2() { return flag[1]; }
 	std::string &GetName() { return name; }
 private:
+	float tile_loc_x, tile_loc_y, tile_loc_z;
 	float x, y, z;
 	float x_ext, y_ext, z_ext;
 	float x_rot, y_rot, z_rot;

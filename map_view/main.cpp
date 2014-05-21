@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	std::string filename = "tutorialb.map";
+	std::string filename = "tutorialb";
 	if(argc >= 2) {
 		filename = argv[1];
 	}
@@ -70,16 +70,25 @@ int main(int argc, char **argv)
 
 	Model *collide = nullptr;
 	Model *invis = nullptr;
+	Model *volume = nullptr;
 	LoadMap(filename, &collide, &invis);
+	LoadWaterMap(filename, &volume);
 
 	if(collide == nullptr)
 		eqLogMessage(LogWarn, "Couldn't load zone geometry from map file.");
 
+	if (volume == nullptr)
+		eqLogMessage(LogWarn, "Couldn't load zone areas from map file.");
+
 	Camera cam(1280, 720, 45.0f, 0.1f, 15000.0f);
 
 	bool rendering = true;
+	bool r_c_pressed = false;
+	bool r_c = true;
 	bool r_nc_pressed = false;
 	bool r_nc = true;
+	bool r_vol_pressed = false;
+	bool r_vol = true;
 	do {
 		double current_frame_time = glfwGetTime();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -94,35 +103,62 @@ int main(int argc, char **argv)
 		glm::mat4 mvp = cam.GetProjMat() * cam.GetViewMat() * model;
 		uniform.SetValueMatrix4(1, false, &mvp[0][0]);
 
-		glm::vec3 tnt(0.8f, 0.8f, 0.8f);
-		tint.SetValuePtr3(1, &tnt[0]);
+		glm::vec4 tnt(0.8f, 0.8f, 0.8f, 1.0f);
+		tint.SetValuePtr4(1, &tnt[0]);
 
-		if (collide)
+		if (collide && r_c)
 			collide->Draw();
 		
 		tnt[0] = 0.5f;
 		tnt[1] = 0.7f;
 		tnt[2] = 1.0f;
-		tint.SetValuePtr3(1, &tnt[0]);
+		tint.SetValuePtr4(1, &tnt[0]);
 
 		if (invis && r_nc)
 			invis->Draw();
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		tnt[0] = 0.0f;
+		tnt[1] = 0.0f;
+		tnt[2] = 0.8f;
+		tnt[3] = 0.2f;
+		tint.SetValuePtr4(1, &tnt[0]);
+
+		if (volume && r_vol)
+			volume->Draw();
+
+		glDisable(GL_BLEND);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		tnt[0] = 0.0f;
 		tnt[1] = 0.0f;
 		tnt[2] = 0.0f;
-		tint.SetValuePtr3(1, &tnt[0]);
+		tnt[3] = 0.0f;
+		tint.SetValuePtr4(1, &tnt[0]);
 
-		if (collide)
+		if (collide && r_c)
 			collide->Draw();
 
 		if (invis && r_nc)
 			invis->Draw();
 
+		if (volume && r_vol)
+			volume->Draw();
+
 		glfwSwapBuffers(win);
 		glfwPollEvents();
+
+		if (glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS) {
+			r_c_pressed = true;
+		}
+
+		if (glfwGetKey(win, GLFW_KEY_C) == GLFW_RELEASE && r_c_pressed) {
+			r_c = !r_c;
+			r_c_pressed = false;
+		}
 
 		if (glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS) {
 			r_nc_pressed = true;
@@ -131,6 +167,15 @@ int main(int argc, char **argv)
 		if (glfwGetKey(win, GLFW_KEY_N) == GLFW_RELEASE && r_nc_pressed) {
 			r_nc = !r_nc;
 			r_nc_pressed = false;
+		}
+
+		if (glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS) {
+			r_vol_pressed = true;
+		}
+
+		if (glfwGetKey(win, GLFW_KEY_V) == GLFW_RELEASE && r_vol_pressed) {
+			r_vol = !r_vol;
+			r_vol_pressed = false;
 		}
 
 		if(glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(win) != 0)
@@ -142,6 +187,9 @@ int main(int argc, char **argv)
 
 	if (invis)
 		delete invis;
+
+	if (volume)
+		delete volume;
 
 	glfwTerminate();
 	return 0;
