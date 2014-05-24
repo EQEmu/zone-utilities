@@ -6,6 +6,7 @@ SET(common_sources
 	eqg_model_loader.cpp
 	eqg_v4_loader.cpp
 	pfs.cpp
+	pfs_crc.cpp
 	s3d_loader.cpp
 	string_util.cpp
 	wld_fragment.cpp
@@ -29,6 +30,7 @@ SET(common_headers
 	eqg_water_sheet.h
 	light.h
 	pfs.h
+	pfs_crc.h
 	placeable.h
 	placeable_group.h
 	safe_alloc.h
