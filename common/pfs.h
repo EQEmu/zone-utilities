@@ -2,6 +2,7 @@
 #define EQEMU_COMMON_PFS_ARCHIVE_HPP
 
 #include <stdint.h>
+#include <string>
 #include <vector>
 #include <map>
 

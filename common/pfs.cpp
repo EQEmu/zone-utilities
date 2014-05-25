@@ -6,6 +6,8 @@
 #include <cstring>
 #include <tuple>
 
+#define MAX_BLOCK_SIZE 8192 // the client will crash if you make this bigger, so don't.
+
 #define ReadFromBuffer(type, var, buffer, idx) if(idx + sizeof(type) > buffer.size()) { return false; } type var = *(type*)&buffer[idx];
 #define ReadFromBufferLength(var, len, buffer, idx) if(idx + len > buffer.size()) { return false; } memcpy(var, &buffer[idx], len);
 
@@ -347,9 +349,9 @@ bool EQEmu::PFS::Archive::WriteDeflatedFileBlock(const std::vector<char> &file, 
 	uint32_t remain = (uint32_t)file.size();
 	while(remain > 0) {
 		uint32_t sz;
-		if(remain >= 8192) {
-			sz = 8192;
-			remain -= 8192;
+		if (remain >= MAX_BLOCK_SIZE) {
+			sz = MAX_BLOCK_SIZE;
+			remain -= MAX_BLOCK_SIZE;
 		} else {
 			sz = remain;
 			remain = 0;

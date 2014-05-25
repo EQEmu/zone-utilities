@@ -20,6 +20,7 @@
 #define EQEMU_COMMON_PFS_CRC_HPP
 
 #include <stdint.h>
+#include <string.h>
 #include <string>
 
 namespace EQEmu
