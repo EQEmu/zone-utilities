@@ -181,6 +181,8 @@ int main(int argc, char **argv) {
 				continue;
 			}
 		}
+
+		return EXIT_SUCCESS;
 	} else if (current_command == CommandUpdate) {
 		std::vector<char> current_file;
 		for (size_t i = 0; i < files.size(); ++i) {
