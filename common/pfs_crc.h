@@ -35,7 +35,7 @@ public:
 	static CRC &Instance();
 	
 	int32_t Update(int32_t crc, int8_t *data, int32_t length);
-	int32_t GetCRC(std::string s);
+	int32_t Get(std::string s);
 private:
 	CRC() { GenerateCRCTable(); }
 	CRC(const CRC &s);

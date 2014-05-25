@@ -3,7 +3,6 @@
 #include "safe_alloc.h"
 #include "log_macros.h"
 #include <algorithm>
-#include <functional>
 #include <cctype> 
 
 EQEmu::EQGModelLoader::EQGModelLoader() {

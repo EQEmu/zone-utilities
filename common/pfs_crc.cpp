@@ -34,7 +34,7 @@ int32_t EQEmu::PFS::CRC::Update(int32_t crc, int8_t *data, int32_t length) {
 	return crc;
 }
 
-int32_t EQEmu::PFS::CRC::GetCRC(std::string s) {
+int32_t EQEmu::PFS::CRC::Get(std::string s) {
 	if(s.length() == 0)
 		return 0;
 

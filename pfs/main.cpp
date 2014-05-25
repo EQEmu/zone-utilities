@@ -25,14 +25,12 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 
-		std::list<std::string> files;
+		std::vector<std::string> files;
 		archive.GetFilenames(ext, files);
 
 		printf("Files with extension %s in %s:\n", ext.c_str(), argv[2]);
-		auto iter = files.begin();
-		while (iter != files.end()) {
-			printf("%s\n", (*iter).c_str());
-			++iter;
+		for(uint32_t i = 0; i < files.size(); ++i) {
+			printf("%s\n", files[i].c_str());
 		}
 
 	} else if(strcmp(argv[1], "-e") == 0) {

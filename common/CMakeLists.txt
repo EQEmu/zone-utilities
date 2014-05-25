@@ -14,7 +14,6 @@ SET(common_sources
 
 SET(common_headers
 	any.h
-	archive.h
 	compression.h
 	eqemu_endian.h
 	eqg_geometry.h

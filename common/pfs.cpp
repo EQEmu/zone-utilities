@@ -1,245 +1,374 @@
-/*
-	Copyright(C) 2014 EQEmu
-	
-	This program is free software; you can redistribute it and/or
-	modify it under the terms of the GNU General Public License
-	as published by the Free Software Foundation; either version 2
-	of the License, or (at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-*/
-
-#include <string.h>
-#include <stdio.h>
-#include <zlib.h>
 #include "pfs.h"
-#include "eqemu_endian.h"
-#include "string_util.h"
+#include "pfs_crc.h"
+#include "compression.h"
+#include <algorithm>
+#include <cctype>
+#include <cstring>
+#include <tuple>
 
-#define BufferRead(x, y) x = (y*)&buffer[position]; position += sizeof(y);
-#define BufferReadLength(x, y) memcpy(x, &buffer[position], y); position += y;
-#define MAX_FILENAME_SIZE 1024
+#define ReadFromBuffer(type, var, buffer, idx) if(idx + sizeof(type) > buffer.size()) { return false; } type var = *(type*)&buffer[idx];
+#define ReadFromBufferLength(var, len, buffer, idx) if(idx + len > buffer.size()) { return false; } memcpy(var, &buffer[idx], len);
 
-void decompress(const char* in, size_t in_len, char* out, size_t out_len) {
-	int status;
-	z_stream d_stream;
+#define WriteToBuffer(type, val, buffer, idx) if(idx + sizeof(type) > buffer.size()) { buffer.resize(idx + sizeof(type)); } *(type*)&buffer[idx] = val;  
+#define WriteToBufferLength(var, len, buffer, idx) if(idx + len > buffer.size()) { buffer.resize(idx + len); } memcpy(&buffer[idx], var, len);
 
-	d_stream.zalloc = (alloc_func)0;
-	d_stream.zfree = (free_func)0;
-	d_stream.opaque = (voidpf)0;
-
-	d_stream.next_in = (Bytef*)in;
-	d_stream.avail_in = (uInt)in_len;
-	d_stream.next_out = (Bytef*)out;
-	d_stream.avail_out = (uInt)out_len;
-
-	inflateInit(&d_stream);
-	status = inflate(&d_stream, Z_NO_FLUSH);
-	inflateEnd(&d_stream);
+bool EQEmu::PFS::Archive::Open() {
+	Close();
+	return true;
 }
 
-bool EQEmu::PFS::Archive::Open(std::string filename)
-{
-	if (!ReadIntoBuffer(filename)) {
-		Close();
+bool EQEmu::PFS::Archive::Open(uint32_t date) {
+	Close();
+	footer = true;
+	footer_date = date;
+	return true;
+}
+
+bool EQEmu::PFS::Archive::Open(std::string filename) {
+	Close();
+
+	std::vector<char> buffer;
+	FILE *f = fopen(filename.c_str(), "rb");
+	if (f) {
+		fseek(f, 0, SEEK_END);
+		size_t sz = ftell(f);
+		rewind(f);
+
+		buffer.resize(sz);
+		size_t res = fread(&buffer[0], 1, sz, f);
+		if (res != sz) {
+			return false;
+		}
+
+		fclose(f);
+	}
+	else {
 		return false;
 	}
 
-	Internal::Header *header = nullptr;
-	Internal::DirectoryHeader *directory_header = nullptr;
-	Internal::Directory *directory = nullptr;
-	Internal::DataBlock *data_block = nullptr;
-	Internal::FilenameHeader *filename_header = nullptr;
-	Internal::FilenameEntry *filename_entry = nullptr;
-	size_t position = 0;
+	char magic[4];
+	ReadFromBuffer(uint32_t, dir_offset, buffer, 0);
+	ReadFromBufferLength(magic, 4, buffer, 4);
 
-	BufferRead(header, Internal::Header);
-
-	if (header->magic[0] != 'P' ||
-		header->magic[1] != 'F' ||
-		header->magic[2] != 'S' ||
-		header->magic[3] != ' ')
-	{
-		Close();
+	if(magic[0] != 'P' || magic[1] != 'F' || magic[2] != 'S' || magic[3] != ' ') {
 		return false;
 	}
 
-	position = header->offset;
-	BufferRead(directory_header, Internal::DirectoryHeader);
+	ReadFromBuffer(uint32_t, dir_count, buffer, dir_offset);
+	std::vector<std::tuple<int32_t, uint32_t, uint32_t>> directory_entries;
+	std::vector<std::tuple<int32_t, std::string>> filename_entries;
+	for(uint32_t i = 0; i < dir_count; ++i) {
+		ReadFromBuffer(int32_t, crc, buffer, dir_offset + 4 + (i * 12));
+		ReadFromBuffer(uint32_t, offset, buffer, dir_offset + 8 + (i * 12));
+		ReadFromBuffer(uint32_t, size, buffer, dir_offset + 12 + (i * 12));
 
-	std::vector<uint32_t> offsets(directory_header->count, 0);
-	filenames.resize(directory_header->count);
-	file_offsets.resize(directory_header->count);
-
-	size_t i = 0;
-	size_t j = 0;
-	size_t running = 0;
-	size_t temp_position = 0;
-	size_t inflate = 0;
-	char *temp_buffer = nullptr;
-	char *temp_buffer2 = nullptr;
-	char temp_string[MAX_FILENAME_SIZE];
-	for (; i < directory_header->count; ++i) {
-		BufferRead(directory, Internal::Directory);
-		if (directory->crc == EQEmu::NetworkToHostOrder<uint32_t>(0xC90A5861)) {
-			temp_position = position;
-			position = directory->offset;
-
-			temp_buffer = new char[directory->size + 1];
-			memset(temp_buffer, 0, directory->size);
-			inflate = 0;
-
-			while (inflate < directory->size) {
-				BufferRead(data_block, Internal::DataBlock);
-				temp_buffer2 = new char[data_block->deflate_length + 1];
-				BufferReadLength(temp_buffer2, data_block->deflate_length);
-				decompress(temp_buffer2, data_block->deflate_length, temp_buffer + inflate, data_block->inflate_length);
-				inflate += data_block->inflate_length;
-				delete[] temp_buffer2;
+		if (crc == 0x61580ac9) {
+			std::vector<char> filename_buffer;
+			if(!InflateByFileOffset(offset, size, buffer, filename_buffer)) {
+				return false;
 			}
 
-			position = temp_position;
-			filename_header = (Internal::FilenameHeader*)&temp_buffer[0];
-			temp_position = sizeof(Internal::FilenameHeader);
+			uint32_t filename_pos = 0;
+			ReadFromBuffer(uint32_t, filename_count, filename_buffer, filename_pos);
+			filename_pos += 4;
+			for(uint32_t j = 0; j < filename_count; ++j) {
+				ReadFromBuffer(uint32_t, filename_length, filename_buffer, filename_pos);
+				filename_pos += 4;
 
-			for (j = 0; j < filename_header->filename_count; ++j)
-			{
-				filename_entry = (Internal::FilenameEntry*)&temp_buffer[temp_position];
-				if (filename_entry->filename_length + 1 >= MAX_FILENAME_SIZE) {
-					Close();
+				std::string filename;
+				filename.resize(filename_length - 1);
+				ReadFromBufferLength(&filename[0], filename_length, filename_buffer, filename_pos);
+				filename_pos += filename_length;
+
+				std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
+				int32_t crc = EQEmu::PFS::CRC::Instance().Get(filename);
+				filename_entries.push_back(std::make_tuple(crc, filename));
+			}
+		} else {
+			directory_entries.push_back(std::make_tuple(crc, offset, size));
+		}
+	}
+	
+	auto iter = directory_entries.begin();
+	while(iter != directory_entries.end()) {
+		int32_t crc = std::get<0>((*iter));
+
+		auto f_iter = filename_entries.begin();
+		while(f_iter != filename_entries.end()) {
+			int32_t f_crc = std::get<0>((*f_iter));
+
+			if(crc == f_crc) {
+				uint32_t offset = std::get<1>((*iter));
+				uint32_t size = std::get<2>((*iter));
+				std::string filename = std::get<1>((*f_iter));
+				std::vector<char> t_buffer;
+
+				if (!InflateByFileOffset(offset, size, buffer, t_buffer)) {
 					return false;
 				}
-				temp_string[filename_entry->filename_length] = 0;
-				memcpy(temp_string, &temp_buffer[temp_position + sizeof(Internal::FilenameEntry)], filename_entry->filename_length);
-				filenames[j] = temp_string;
-				temp_position += sizeof(Internal::FilenameEntry) + filename_entry->filename_length;
+
+				files[filename] = t_buffer;
+				break;
 			}
 
-			delete[] temp_buffer;
+			++f_iter;
 		}
-		else {
-			file_offsets[running] = position - 12;
-			offsets[running] = directory->offset;
-			++running;
-		}
+		++iter;
 	}
 
-	uint32_t temp = 0;
-	for (i = directory_header->count - 2; i > 0; i--) {
-		for (j = 0; j < i; j++) {
-			if (offsets[j] > offsets[j + 1]) {
-				temp = offsets[j];
-				offsets[j] = offsets[j + 1];
-				offsets[j + 1] = temp;
-				temp = (uint32_t)file_offsets[j];
-				file_offsets[j] = file_offsets[j + 1];
-				file_offsets[j + 1] = temp;
-			}
-		}
+	uint32_t footer_offset = dir_offset + 4 + (12 * dir_count);
+	if (footer_offset == buffer.size()) {
+		footer = false;
+	} else {
+		char magic[5];
+		ReadFromBufferLength(magic, 5, buffer, footer_offset);
+		ReadFromBuffer(uint32_t, date, buffer, footer_offset + 5);
+		footer = true;
+		footer_date = date;
 	}
 
 	return true;
 }
 
-bool EQEmu::PFS::Archive::Close() {
-	if(buffer.size() > 0) {
-		filenames.resize(0);
-		file_offsets.resize(0);
-		buffer.resize(0);
-		return true;
+bool EQEmu::PFS::Archive::Save(std::string filename) {
+	std::vector<char> buffer;
+
+	//Write Header
+	WriteToBuffer(uint32_t, 0, buffer, 0);
+	WriteToBuffer(uint8_t, 'P', buffer, 4);
+	WriteToBuffer(uint8_t, 'F', buffer, 5);
+	WriteToBuffer(uint8_t, 'S', buffer, 6);
+	WriteToBuffer(uint8_t, ' ', buffer, 7);
+	WriteToBuffer(uint32_t, 131072, buffer, 8);
+
+	std::vector<std::tuple<int32_t, uint32_t, uint32_t>> dir_entries;
+	std::vector<char> files_list;
+	uint32_t file_offset = 0;
+	uint32_t file_size = 0;
+	uint32_t dir_offset = 0;
+	uint32_t file_count = (uint32_t)files.size();
+	uint32_t file_pos = 0;
+
+	WriteToBuffer(uint32_t, file_count, files_list, file_pos);
+	file_pos += 4;
+
+	auto iter = files.begin();
+	while(iter != files.end()) {
+		int32_t crc = EQEmu::PFS::CRC::Instance().Get(iter->first);
+		uint32_t offset = (uint32_t)buffer.size();
+		if(!WriteDeflatedFileBlock(iter->second, buffer)) {
+			return false;
+		}
+
+		dir_entries.push_back(std::make_tuple(crc, offset, (uint32_t)iter->second.size()));
+
+		uint32_t filename_len = (uint32_t)iter->first.length() + 1;
+		WriteToBuffer(uint32_t, filename_len, files_list, file_pos);
+		file_pos += 4;
+
+		WriteToBufferLength(&(iter->first[0]), filename_len - 1, files_list, file_pos);
+		file_pos += filename_len;
+
+		WriteToBuffer(uint8_t, 0, files_list, file_pos - 1);
+
+		++iter;
 	}
-	return false;
+
+	file_offset = (uint32_t)buffer.size();
+	if (!WriteDeflatedFileBlock(files_list, buffer)) {
+		return false;
+	}
+
+	file_size = (uint32_t)files_list.size();
+
+	dir_offset = (uint32_t)buffer.size();
+	WriteToBuffer(uint32_t, dir_offset, buffer, 0);
+
+	uint32_t cur_dir_entry_offset = dir_offset;
+	uint32_t dir_count = (uint32_t)dir_entries.size() + 1;
+	WriteToBuffer(uint32_t, dir_count, buffer, cur_dir_entry_offset);
+
+	cur_dir_entry_offset += 4;
+	auto dir_iter = dir_entries.begin();
+	while(dir_iter != dir_entries.end())
+	{
+		int32_t crc = std::get<0>(*dir_iter);
+		uint32_t offset = std::get<1>(*dir_iter);
+		uint32_t size = std::get<2>(*dir_iter);
+
+		WriteToBuffer(int32_t, crc, buffer, cur_dir_entry_offset);
+		WriteToBuffer(uint32_t, offset, buffer, cur_dir_entry_offset + 4);
+		WriteToBuffer(uint32_t, size, buffer, cur_dir_entry_offset + 8);
+
+		cur_dir_entry_offset += 12;
+		++dir_iter;
+	}
+
+	WriteToBuffer(int32_t, 0x61580AC9, buffer, cur_dir_entry_offset);
+	WriteToBuffer(uint32_t, file_offset, buffer, cur_dir_entry_offset + 4);
+	WriteToBuffer(uint32_t, file_size, buffer, cur_dir_entry_offset + 8);
+	cur_dir_entry_offset += 12;
+
+	if(footer) {
+		WriteToBuffer(int8_t, 'S', buffer, cur_dir_entry_offset);
+		WriteToBuffer(int8_t, 'T', buffer, cur_dir_entry_offset + 1);
+		WriteToBuffer(int8_t, 'E', buffer, cur_dir_entry_offset + 2);
+		WriteToBuffer(int8_t, 'V', buffer, cur_dir_entry_offset + 3);
+		WriteToBuffer(int8_t, 'E', buffer, cur_dir_entry_offset + 4);
+		WriteToBuffer(uint32_t, footer_date, buffer, cur_dir_entry_offset + 5);
+	}
+	
+	FILE *f = fopen(filename.c_str(), "wb");
+	if(f) {
+		size_t sz = fwrite(&buffer[0], buffer.size(), 1, f);
+		if(sz != 1) {
+			fclose(f);
+			return false;
+		}
+		fclose(f);
+	} else {
+		return false;
+	}
+
+	return true;
+}
+
+void EQEmu::PFS::Archive::Close() {
+	footer = false;
+	footer_date = 0;
+	files.clear();
 }
 
 bool EQEmu::PFS::Archive::Get(std::string filename, std::vector<char> &buf) {
-	size_t sz = filenames.size();
-	for (size_t index = 0; index < sz; ++index) {
-		if (EQEmu::StringsEqual(filenames[index], filename)) {
-			Internal::Directory* directory = nullptr;
-			Internal::DataBlock* data_block = nullptr;
-			char *temp = nullptr;
+	std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
 
-			size_t position = file_offsets[index];
-			BufferRead(directory, Internal::Directory);
-			position = directory->offset;
+	auto iter = files.find(filename);
+	if(iter != files.end()) {
+		buf.clear();
+		buf = iter->second;
+		return true;
+	}
 
-			buf.resize(directory->size);
+	return false;
+}
 
-			size_t inflate = 0;
-			while (inflate < directory->size) {
-				BufferRead(data_block, Internal::DataBlock);
-				temp = new char[data_block->deflate_length];
+bool EQEmu::PFS::Archive::Set(std::string filename, const std::vector<char> &buf) {
+	std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
+	files[filename] = buf;
+	return true;
+}
 
-				memcpy(temp, &buffer[position], data_block->deflate_length);
-				position += data_block->deflate_length;
+bool EQEmu::PFS::Archive::Delete(std::string filename) {
+	std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
 
-				decompress(temp, data_block->deflate_length, &buf[inflate], data_block->inflate_length);
-				delete[] temp;
-				inflate += data_block->inflate_length;
-			}
-			return true;
-		}
+	auto iter = files.find(filename);
+	if (iter != files.end()) {
+		files.erase(iter);
+		return true;
+	}
+
+	return false;
+}
+
+bool EQEmu::PFS::Archive::Rename(std::string filename, std::string filename_new) {
+	std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
+	std::transform(filename_new.begin(), filename_new.end(), filename_new.begin(), ::tolower);
+
+	if (files.count(filename_new) != 0) {
+		return false;
+	}
+
+	auto iter = files.find(filename);
+	if (iter != files.end()) {
+		files[filename_new] = iter->second;
+		files.erase(iter);
+		return true;
 	}
 
 	return false;
 }
 
 bool EQEmu::PFS::Archive::Exists(std::string filename) {
-	size_t count = filenames.size();
-	for (size_t i = 0; i < count; ++i) {
-		if (!filenames[i].compare(filename.c_str()))
-			return true;
-	}
-	return false;
+	std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
+
+	return files.count(filename) != 0;
 }
 
-bool EQEmu::PFS::Archive::GetFilenames(std::string extension, std::list<std::string>& files) {
-	size_t elen = extension.length();
-	bool all_files = !extension.compare("*");
-	files.clear();
+bool EQEmu::PFS::Archive::GetFilenames(std::string ext, std::vector<std::string> &out_files) {
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+	out_files.clear();
 
-	size_t count = filenames.size();
-	for (size_t i = 0; i < count; ++i) {
-		size_t flen = filenames[i].length();
+	size_t elen = ext.length();
+	bool all_files = !ext.compare("*");
+
+	auto iter = files.begin();
+	while (iter != files.end()) {
+		if (all_files) {
+			out_files.push_back(iter->first);
+			++iter;
+			continue;
+		}
+
+		size_t flen = iter->first.length();
 		if (flen <= elen)
 			continue;
 
-		if (!strcmp(filenames[i].c_str() + (flen - elen), extension.c_str()) || all_files)
-			files.push_back(filenames[i]);
+		if (!strcmp(iter->first.c_str() + (flen - elen), ext.c_str())) {
+			out_files.push_back(iter->first);
+		}
+		++iter;
 	}
-
-	return files.size() > 0;
+	return out_files.size() > 0;
 }
 
-bool EQEmu::PFS::Archive::ReadIntoBuffer(std::string filename) {
-	FILE* f = fopen(filename.c_str(), "rb");
-	if (!f) {
-		return false;
+bool EQEmu::PFS::Archive::InflateByFileOffset(uint32_t offset, uint32_t size, const std::vector<char> &in_buffer, std::vector<char> &out_buffer) {
+	out_buffer.resize(size);
+	memset(&out_buffer[0], 0, size);
+
+	uint32_t position = offset;
+	uint32_t inflate = 0;
+	while (inflate < size) {
+		std::vector<char> temp_buffer;
+		ReadFromBuffer(uint32_t, deflate_length, in_buffer, position);
+		ReadFromBuffer(uint32_t, inflate_length, in_buffer, position + 4);
+		temp_buffer.resize(deflate_length + 1);
+		ReadFromBufferLength(&temp_buffer[0], deflate_length, in_buffer, position + 8);
+
+		EQEmu::InflateData(&temp_buffer[0], deflate_length, &out_buffer[inflate], inflate_length);
+		inflate += inflate_length;
+		position += deflate_length + 8;
 	}
 
-	fseek(f, 0, SEEK_END);
-	size_t total_size = ftell(f);
-	rewind(f);
+	return true;
+}
 
-	if (!total_size) {
-		fclose(f);
-		return false;
+bool EQEmu::PFS::Archive::WriteDeflatedFileBlock(const std::vector<char> &file, std::vector<char> &out_buffer) {
+	uint32_t pos = 0;
+	uint32_t remain = (uint32_t)file.size();
+	while(remain > 0) {
+		uint32_t sz;
+		if(remain >= 8192) {
+			sz = 8192;
+			remain -= 8192;
+		} else {
+			sz = remain;
+			remain = 0;
+		}
+
+		uint32_t block_len = sz + 128;
+		std::vector<char> block;
+		block.resize(block_len);
+		uint32_t deflate_size = (uint32_t)EQEmu::DeflateData(&file[pos], sz, &block[0], block_len);
+		if(deflate_size == 0)
+			return false;
+
+		pos += sz;
+
+		uint32_t idx = (uint32_t)out_buffer.size();
+		WriteToBuffer(uint32_t, deflate_size, out_buffer, idx);
+		WriteToBuffer(uint32_t, sz, out_buffer, idx + 4);
+		out_buffer.insert(out_buffer.end(), block.begin(), block.begin() + deflate_size);
 	}
 
-	buffer.resize(total_size);
-	size_t bytes_read = fread(&buffer[0], 1, total_size, f);
-
-	if (bytes_read != total_size) {
-		return false;
-	}
-
-	fclose(f);
 	return true;
 }

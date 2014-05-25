@@ -1,6 +1,5 @@
 #include "eqg_v4_loader.h"
 #include <algorithm>
-#include <functional>
 #include <cctype>
 #include "eqg_structs.h"
 #include "safe_alloc.h"
@@ -24,7 +23,7 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain> &te
 
 	std::vector<char> zon;
 	bool zon_found = true;
-	std::list<std::string> files;
+	std::vector<std::string> files;
 	archive.GetFilenames("zon", files);
 
 	if (files.size() == 0) {

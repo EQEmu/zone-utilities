@@ -21,7 +21,7 @@ bool EQEmu::EQGLoader::Load(std::string file, std::vector<std::shared_ptr<EQG::G
 
 	std::vector<char> zon;
 	bool zon_found = true;
-	std::list<std::string> files;
+	std::vector<std::string> files;
 	archive.GetFilenames("zon", files);
 
 	if(files.size() == 0) {
