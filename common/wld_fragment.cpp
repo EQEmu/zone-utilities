@@ -91,7 +91,7 @@ EQEmu::S3D::WLDFragment10::WLDFragment10(std::vector<WLDFragment> &out, char *fr
 		frag_buffer += sizeof(wld_fragment10_track_ref_entry);
 
 		std::shared_ptr<SkeletonTrack::Bone> bone(new SkeletonTrack::Bone);
-		if (ent->frag_ref2 != 0 && out[ent->frag_ref2 - 1].type == 0x2d) {
+		if (ent->frag_ref2 > 0 && out[ent->frag_ref2 - 1].type == 0x2d) {
 			WLDFragment2D &f = reinterpret_cast<WLDFragment2D&>(out[ent->frag_ref2 - 1]);
 			auto m_ref = f.GetData();
 
