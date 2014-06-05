@@ -77,6 +77,28 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 			}
 			else if (!strncmp(region->GetName().c_str(), "VWA", 3)) {
 				region_type = RegionTypeVWater;
+			} else {
+				if (!strncmp(region->GetExtendedInfo().c_str(), "WT", 2)) {
+					region_type = RegionTypeWater;
+				}
+				else if (!strncmp(region->GetExtendedInfo().c_str(), "LA", 2)) {
+					region_type = RegionTypeLava;
+				}
+				else if (!strncmp(region->GetExtendedInfo().c_str(), "DRNTP", 5)) {
+					region_type = RegionTypeZoneLine;
+				}
+				else if (!strncmp(region->GetExtendedInfo().c_str(), "DRP_", 4)) {
+					region_type = RegionTypePVP;
+				}
+				else if (!strncmp(region->GetExtendedInfo().c_str(), "SL", 2)) {
+					region_type = RegionTypeSlime;
+				}
+				else if (!strncmp(region->GetExtendedInfo().c_str(), "DRN", 3)) {
+					region_type = RegionTypeIce;
+				}
+				else if (!strncmp(region->GetExtendedInfo().c_str(), "VWA", 3)) {
+					region_type = RegionTypeVWater;
+				}
 			}
 
 			for(size_t j = 0; j < regions.size(); ++j) {
