@@ -13,7 +13,6 @@ int main(int argc, char **argv) {
 		WaterMap m;
 		eqLogMessage(LogInfo, "Building water map for zone %s", argv[i]);
 		if(!m.BuildAndWrite(argv[i])) {
-			printf("Failed to build and write water map for zone: %s\n", argv[i]);
 			eqLogMessage(LogError, "Failed to build and write water map for zone: %s", argv[i]);
 		} else {
 			eqLogMessage(LogInfo, "Built and wrote water map for zone %s", argv[i]);

@@ -240,7 +240,7 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 			auto &region = regions[i];
 
 			eqLogMessage(LogTrace, "Writing region %s.", region->GetName().c_str());
-			uint32_t region_type = 0;
+			int32_t region_type = 0;
 			float x = region->GetX();
 			float y = region->GetY();
 			float z = region->GetZ();
@@ -262,6 +262,9 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 				else if (region_code.compare("ALV") == 0) {
 					region_type = RegionTypeLava;
 				}
+				else if (region_code.compare("AVW") == 0) {
+					region_type = RegionTypeVWater;
+				}
 				else if (region_code.compare("APK") == 0) {
 					region_type = RegionTypePVP;
 				}
@@ -276,7 +279,7 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 				}
 				else {
 					eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
-					region_type = RegionTypeUnsupported;
+					region_type = RegionTypeWater;
 				}
 			}
 
@@ -394,7 +397,7 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 			auto &region = regions[i];
 
 			eqLogMessage(LogTrace, "Writing region %s.", region->GetName().c_str());
-			uint32_t region_type = 0;
+			int32_t region_type = 0;
 			float x = region->GetX();
 			float y = region->GetY();
 			float z = region->GetZ();
@@ -416,6 +419,9 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 				else if (region_code.compare("ALV") == 0) {
 					region_type = RegionTypeLava;
 				}
+				else if (region_code.compare("AVW") == 0) {
+					region_type = RegionTypeVWater;
+				}
 				else if (region_code.compare("APK") == 0) {
 					region_type = RegionTypePVP;
 				}
@@ -424,6 +430,9 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 				}
 				else if (region_code.compare("ASL") == 0) {
 					region_type = RegionTypeIce;
+				}
+				else if (region_code.compare("APV") == 0) {
+					region_type = RegionTypeGeneralArea;
 				}
 				else {
 					uint32_t flag = region->GetFlag1();
@@ -434,8 +443,7 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 					} else if(flag == 0) {
 						region_type = RegionTypeZoneLine;
 					} else {
-						eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
-						region_type = RegionTypeUnsupported;
+						region_type = RegionTypeWater;
 					}
 				}
 			}

@@ -545,14 +545,16 @@ bool Map::CompileS3D(
 		float scale_x = plac->GetScaleX();
 		float scale_y = plac->GetScaleY();
 		float scale_z = plac->GetScaleZ();
-		
+	
 		if (map_models.count(model->GetName()) == 0) {
 			map_models[model->GetName()] = model;
 		}
 		std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
 		gen_plac->SetFileName(model->GetName());
 		gen_plac->SetLocation(offset_x, offset_y, offset_z);
-		gen_plac->SetRotation(rot_x, rot_y, rot_z);
+		//y rotation seems backwards on s3ds, probably cause of the weird coord system they used back then
+		//x rotation might be too but there are literally 0 x rotated placeables in all the s3ds so who knows
+		gen_plac->SetRotation(rot_x, -rot_y, rot_z);
 		gen_plac->SetScale(scale_x, scale_y, scale_z);
 		map_placeables.push_back(gen_plac);
 
@@ -783,10 +785,10 @@ bool Map::CompileEQGv4()
 			v2.y = t;
 
 			glm::vec3 v3 = v1;
-			v3.z += 100.0;
+			v3.z += 1000.0;
 
 			glm::vec3 v4 = v2;
-			v4.z += 100.0;
+			v4.z += 1000.0;
 
 			AddFace(v3, v1, v2, true);
 			AddFace(v3, v4, v2, true);
