@@ -520,7 +520,7 @@ bool Map::CompileS3D(
 			}
 
 			if(!found) {
-				eqLogMessage(LogWarn, "Could not find model for placeable %s\n", plac->GetName().c_str());
+				eqLogMessage(LogWarn, "Could not find model for placeable %s", plac->GetName().c_str());
 			}
 		}
 	}
@@ -612,7 +612,7 @@ bool Map::CompileEQG(
 		std::shared_ptr<EQEmu::EQG::Geometry> model;
 		bool is_ter = false;
 
-		if(plac->GetName().substr(0, 3).compare("TER") == 0)
+		if(plac->GetName().substr(0, 3).compare("TER") == 0 || plac->GetFileName().substr(plac->GetFileName().length() - 4, 4).compare(".ter") == 0)
 			is_ter = true;
 
 		for(uint32_t j = 0; j < models.size(); ++j) {
