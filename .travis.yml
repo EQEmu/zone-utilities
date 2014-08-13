@@ -1,0 +1,13 @@
+language: cpp
+compiler: gcc
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y zlib1g-dev
+script:
+  - cmake -G "Unix Makefiles" -DEQEMU_ENABLE_GL=OFF
+  - make
+branches:
+  only: master
+notifications:
+  email: false
+os: linux
