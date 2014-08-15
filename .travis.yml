@@ -10,4 +10,6 @@ branches:
   only: master
 notifications:
   email: false
+  irc:
+    channels: "irc.eqemulator.net#eqemucoders"
 os: linux
