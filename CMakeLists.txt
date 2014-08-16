@@ -34,7 +34,7 @@ IF(MSVC)
 ENDIF(MSVC)
 
 IF(NOT MSVC)
-	ADD_DEFINITIONS(-std=c++0x)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 ENDIF(NOT MSVC)
 
 OPTION(EQEMU_ENABLE_GL "Enable programs that rely on OpenGL (turn off if you only want command line)" ON)
