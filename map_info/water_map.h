@@ -1,7 +1,7 @@
 #ifndef EQEMU_WATER_MAP_H
 #define EQEMU_WATER_MAP_H
 
-#include "../common/types.h"
+#include <stdint.h>
 #include <string>
 
 enum WaterRegionType {

@@ -34,7 +34,7 @@ bool WaterMapV2::InLiquid(float y, float x, float z) const {
 }
 
 bool WaterMapV2::Load(FILE *fp) {
-	uint32 region_count;
+	uint32_t region_count;
 	if (fread(&region_count, sizeof(region_count), 1, fp) != 1) {
 		return false;
 	}

@@ -9,12 +9,14 @@
 #include "lib/libwebsockets.h"
 #include "string_util.h"
 #include "map.h"
+#include "water_map.h"
 
 libwebsocket_context *context = nullptr;
 bool run = true;
 std::mutex map_mutex;
 std::map<std::string, bool> map_loaded;
 std::map<std::string, std::shared_ptr<Map>> map_ptrs;
+std::map<std::string, std::shared_ptr<WaterMap>> water_map_ptrs;
 
 void catch_signal(int sig_num) {
 	run = false;
@@ -51,12 +53,14 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 
 				//find map info here
 				std::shared_ptr<Map> m;
+				std::shared_ptr<WaterMap> wm;
 				std::string status = "ok";
 				map_mutex.lock();
 				if(map_loaded.count(zone) == 0) {
 					status = "map not loaded";
 				} else {
 					m = map_ptrs[zone];
+					wm = water_map_ptrs[zone];
 				}
 
 				double best_z = BEST_Z_INVALID;
@@ -65,10 +69,42 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 					best_z = m->FindBestZ(v, nullptr);
 				}
 
+				std::string area = "unknown";
+				if(wm) {
+					WaterRegionType region = wm->ReturnRegionType(x, y, z);
+					if(region == RegionTypeUntagged) {
+						area = "untagged";
+					}
+					else if(region == RegionTypeNormal) {
+						area = "normal";
+					}
+					else if(region == RegionTypeWater) {
+						area = "water";
+					}
+					else if(region == RegionTypeLava) {
+						area = "lava";
+					}
+					else if(region == RegionTypeZoneLine) {
+						area = "zone line";
+					}
+					else if(region == RegionTypePVP) {
+						area = "pvp";
+					}
+					else if(region == RegionTypeSlime) {
+						area = "slime";
+					}
+					else if(region == RegionTypeIce) {
+						area = "ice";
+					}
+					else if(region == RegionTypeVWater) {
+						area = "vwater";
+					}
+				}
+
 				map_mutex.unlock();
 
 				unsigned char *p = session->buffer;
-				p += sprintf((char*)p, "{status: '%s', best_z: %f, area: 'unknown'}", status.c_str(), best_z);
+				p += sprintf((char*)p, "{status: '%s', best_z: %f, area: '%s'}", status.c_str(), best_z, area.c_str());
 				session->sz = p - session->buffer;
 			}
 			else if(command.compare("load") == 0) {
@@ -87,9 +123,11 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 				map_mutex.lock();
 				std::thread t([](const std::string &z) {
 					std::shared_ptr<Map> m(Map::LoadMapFile(z));
+					std::shared_ptr<WaterMap> wm(WaterMap::LoadWaterMapfile(z));
 					map_mutex.lock();
 					map_loaded[z] = true;
 					map_ptrs[z] = m;
+					water_map_ptrs[z] = wm;
 					map_mutex.unlock();
 				}, zone);
 				t.detach();
@@ -110,6 +148,7 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 				map_mutex.lock();
 				map_loaded.erase(zone);
 				map_ptrs.erase(zone);
+				water_map_ptrs.erase(zone);
 				map_mutex.unlock();
 
 				if(zone.length() > 64) {

@@ -1,6 +1,6 @@
-#include "../common/debug.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <algorithm>
 #include <functional>
 #include <cctype>
@@ -12,11 +12,11 @@
 WaterMap* WaterMap::LoadWaterMapfile(std::string zone_name) {
 	std::transform(zone_name.begin(), zone_name.end(), zone_name.begin(), ::tolower);
 		
-	std::string file_path = MAP_DIR + std::string("/") + zone_name + std::string(".wtr");
+	std::string file_path = "maps" + std::string("/") + zone_name + std::string(".wtr");
 	FILE *f = fopen(file_path.c_str(), "rb");
 	if(f) {
 		char magic[10];
-		uint32 version;
+		uint32_t version;
 		if(fread(magic, 10, 1, f) != 1) {
 			fclose(f);
 			return nullptr;

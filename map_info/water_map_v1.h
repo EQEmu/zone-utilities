@@ -5,11 +5,11 @@
 
 #pragma pack(1)
 typedef struct ZBSP_Node {
-	int32 node_number;
+	int32_t node_number;
 	float normal[3], splitdistance;
-	int32 region;
-	int32 special;
-	int32 left, right;
+	int32_t region;
+	int32_t special;
+	int32_t left, right;
 } ZBSP_Node;
 #pragma pack()
 
@@ -29,7 +29,7 @@ protected:
 	virtual bool Load(FILE *fp);
 
 private:
-	WaterRegionType BSPReturnRegionType(int32 node_number, float y, float x, float z) const;
+	WaterRegionType BSPReturnRegionType(int32_t node_number, float y, float x, float z) const;
 	ZBSP_Node* BSP_Root;
 
 	friend class WaterMap;

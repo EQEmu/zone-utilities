@@ -31,7 +31,7 @@ bool WaterMapV1::InLiquid(float y, float x, float z) const {
 }
 
 bool WaterMapV1::Load(FILE *fp) {
-	uint32 bsp_tree_size;
+	uint32_t bsp_tree_size;
 	if (fread(&bsp_tree_size, sizeof(bsp_tree_size), 1, fp) != 1) {
 		return false;
 	}
@@ -48,7 +48,7 @@ bool WaterMapV1::Load(FILE *fp) {
 	return true;
 }
 
-WaterRegionType WaterMapV1::BSPReturnRegionType(int32 node_number, float y, float x, float z) const {
+WaterRegionType WaterMapV1::BSPReturnRegionType(int32_t node_number, float y, float x, float z) const {
 	float distance;
 
 	const ZBSP_Node *current_node = &BSP_Root[node_number - 1];
