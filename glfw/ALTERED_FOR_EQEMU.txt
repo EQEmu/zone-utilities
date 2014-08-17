@@ -1,1 +1,0 @@
-This version of glfw has been altered for use by the EQEmulator project.
