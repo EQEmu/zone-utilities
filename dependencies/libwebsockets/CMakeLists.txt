@@ -906,8 +906,8 @@ message(" LWS_WITH_HTTP2 = ${LWS_WITH_HTTP2}")
 message("---------------------------------------------------------------------")
 
 # These will be available to parent projects including libwebsockets using add_subdirectory()
-set(LIBWEBSOCKETS_LIBRARIES websocket websockets_shared CACHE STRING "Libwebsocket libraries")
-set(LIBWEBSOCKETS_LIBRARIES_STATIC websocket CACHE STRING "Libwebsocket static library")
+set(LIBWEBSOCKETS_LIBRARIES websockets websockets_shared CACHE STRING "Libwebsocket libraries")
+set(LIBWEBSOCKETS_LIBRARIES_STATIC websockets CACHE STRING "Libwebsocket static library")
 set(LIBWEBSOCKETS_LIBRARIES_SHARED websockets_shared CACHE STRING "Libwebsocket shared library")
 
 # This must always be last!
