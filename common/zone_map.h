@@ -1,5 +1,5 @@
-#ifndef EQEMU_MAP_H
-#define EQEMU_MAP_H
+#ifndef EQEMU_COMMON_ZONE_MAP_H
+#define EQEMU_COMMON_ZONE_MAP_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -7,7 +7,7 @@
 
 #define BEST_Z_INVALID -99999
 
-class Map
+class ZoneMap
 {
 public:
 #pragma pack(1)
@@ -27,15 +27,15 @@ public:
 	};
 #pragma pack()
 
-	Map();
-	~Map();
+	ZoneMap();
+	~ZoneMap();
 	
 	float FindBestZ(Vertex &start, Vertex *result) const;
 	bool LineIntersectsZone(Vertex start, Vertex end, float step, Vertex *result) const;
 	bool LineIntersectsZoneNoZLeaps(Vertex start, Vertex end, float step_mag, Vertex *result) const;
 	bool CheckLoS(Vertex myloc, Vertex oloc) const;
 	bool Load(std::string filename);
-	static Map *LoadMapFile(std::string file);
+	static ZoneMap *LoadMapFile(std::string file);
 private:
 	void RotateVertex(Vertex &v, float rx, float ry, float rz);
 	void ScaleVertex(Vertex &v, float sx, float sy, float sz);

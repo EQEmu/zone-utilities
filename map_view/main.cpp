@@ -8,8 +8,10 @@
 #include "map.h"
 #include "log_macros.h"
 #include "log_stdout.h"
-#include "../imgui/imgui.h"
+#include "imgui.h"
 #include "imgui_gflw.h"
+#include "zone_map.h"
+#include "water_map.h"
 
 int main(int argc, char **argv)
 {
@@ -72,6 +74,9 @@ int main(int argc, char **argv)
 	LoadMap(filename, &collide, &invis);
 	LoadWaterMap(filename, &volume);
 
+	std::unique_ptr<ZoneMap> z_map = std::unique_ptr<ZoneMap>(ZoneMap::LoadMapFile(filename));
+	std::unique_ptr<WaterMap> w_map = std::unique_ptr<WaterMap>(WaterMap::LoadWaterMapfile(filename));
+
 	if(collide == nullptr)
 		eqLogMessage(LogWarn, "Couldn't load zone geometry from map file.");
 
@@ -84,11 +89,8 @@ int main(int argc, char **argv)
 	ImGui_ImplGlfwGL3_Init(win, true);
 
 	bool rendering = true;
-	bool r_c_pressed = false;
 	bool r_c = true;
-	bool r_nc_pressed = false;
 	bool r_nc = true;
-	bool r_vol_pressed = false;
 	bool r_vol = true;
 	do {
 		double current_frame_time = glfwGetTime();
@@ -104,33 +106,23 @@ int main(int argc, char **argv)
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::Text("Zone: %s", filename.c_str());
 			ImGui::Text("%.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
+			if(z_map && w_map) {
+				ImGui::Text("Best Z: %.2f, In Liquid: %s", z_map->FindBestZ(ZoneMap::Vertex(loc.x, loc.z, loc.y), nullptr),
+							w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
+			} else if(z_map) {
+				ImGui::Text("Best Z: %.2f", z_map->FindBestZ(ZoneMap::Vertex(loc.x, loc.z, loc.y), nullptr));
+			}
+			else if(w_map) {
+				ImGui::Text("In Liquid: %s", w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
+			}
 		}
 
-		if(glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS) {
-			r_c_pressed = true;
-		}
-		
-		if(glfwGetKey(win, GLFW_KEY_C) == GLFW_RELEASE && r_c_pressed) {
-			r_c = !r_c;
-			r_c_pressed = false;
-		}
-		
-		if(glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS) {
-			r_nc_pressed = true;
-		}
-		
-		if(glfwGetKey(win, GLFW_KEY_N) == GLFW_RELEASE && r_nc_pressed) {
-			r_nc = !r_nc;
-			r_nc_pressed = false;
-		}
-		
-		if(glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS) {
-			r_vol_pressed = true;
-		}
-		
-		if(glfwGetKey(win, GLFW_KEY_V) == GLFW_RELEASE && r_vol_pressed) {
-			r_vol = !r_vol;
-			r_vol_pressed = false;
+		{
+			ImGui::Begin("Options");
+			ImGui::Checkbox("Render Collidable Polygons", &r_c);
+			ImGui::Checkbox("Render Non-Collidable Polygons", &r_nc);
+			ImGui::Checkbox("Render Loaded Volumes", &r_vol);
+			ImGui::End();
 		}
 		
 		if(glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(win) != 0)

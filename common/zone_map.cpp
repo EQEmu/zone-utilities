@@ -1,5 +1,5 @@
-#include "map.h"
-#include "RaycastMesh.h"
+#include "zone_map.h"
+#include "raycast_mesh.h"
 #include <algorithm>
 #include <locale>
 #include <vector>
@@ -42,22 +42,22 @@ uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_
 	}
 }
 
-struct Map::impl
+struct ZoneMap::impl
 {
 	RaycastMesh *rm;
 };
 
-Map::Map() {
+ZoneMap::ZoneMap() {
 	imp = nullptr;
 }
 
-Map::~Map() {
+ZoneMap::~ZoneMap() {
 	if(imp) {
 		imp->rm->release();
 	}
 }
 
-float Map::FindBestZ(Vertex &start, Vertex *result) const {
+float ZoneMap::FindBestZ(Vertex &start, Vertex *result) const {
 	if (!imp)
 		return false;
 
@@ -88,13 +88,13 @@ float Map::FindBestZ(Vertex &start, Vertex *result) const {
 	return BEST_Z_INVALID;
 }
 
-bool Map::LineIntersectsZone(Vertex start, Vertex end, float step, Vertex *result) const {
+bool ZoneMap::LineIntersectsZone(Vertex start, Vertex end, float step, Vertex *result) const {
 	if(!imp)
 		return false;
 	return imp->rm->raycast((const RmReal*)&start, (const RmReal*)&end, (RmReal*)result, nullptr, nullptr);
 }
 
-bool Map::LineIntersectsZoneNoZLeaps(Vertex start, Vertex end, float step_mag, Vertex *result) const {
+bool ZoneMap::LineIntersectsZoneNoZLeaps(Vertex start, Vertex end, float step_mag, Vertex *result) const {
 	if (!imp)
 		return false;
 	
@@ -179,21 +179,21 @@ bool Map::LineIntersectsZoneNoZLeaps(Vertex start, Vertex end, float step_mag, V
 	return false;
 }
 
-bool Map::CheckLoS(Vertex myloc, Vertex oloc) const {
+bool ZoneMap::CheckLoS(Vertex myloc, Vertex oloc) const {
 	if(!imp)
 		return false;
 
 	return !imp->rm->raycast((const RmReal*)&myloc, (const RmReal*)&oloc, nullptr, nullptr, nullptr);
 }
 
-Map *Map::LoadMapFile(std::string file) {
+ZoneMap *ZoneMap::LoadMapFile(std::string file) {
 	std::string filename = "maps";
 	filename += "/";
 	std::transform(file.begin(), file.end(), file.begin(), ::tolower);
 	filename += file;
 	filename += ".map";
 
-	Map *m = new Map();
+	ZoneMap *m = new ZoneMap();
 	if (m->Load(filename)) {
 		return m;
 	}
@@ -202,7 +202,7 @@ Map *Map::LoadMapFile(std::string file) {
 	return nullptr;
 }
 
-bool Map::Load(std::string filename) {
+bool ZoneMap::Load(std::string filename) {
 	FILE *f = fopen(filename.c_str(), "rb");
 	if(f) {
 		uint32_t version;
@@ -228,7 +228,7 @@ bool Map::Load(std::string filename) {
 	return false;
 }
 
-bool Map::LoadV1(FILE *f) {
+bool ZoneMap::LoadV1(FILE *f) {
 	uint32_t face_count;
 	uint16_t node_count;
 	uint32_t facelist_count;
@@ -304,11 +304,11 @@ struct ModelEntry
 		uint32_t v1, v2, v3;
 		uint8_t vis;
 	};
-	std::vector<Map::Vertex> verts;
+	std::vector<ZoneMap::Vertex> verts;
 	std::vector<Poly> polys;
 };
 
-bool Map::LoadV2(FILE *f) {
+bool ZoneMap::LoadV2(FILE *f) {
 	uint32_t data_size;
 	if (fread(&data_size, sizeof(data_size), 1, f) != 1) {
 		return false;
@@ -854,7 +854,7 @@ bool Map::LoadV2(FILE *f) {
 	return true;
 }
 
-void Map::RotateVertex(Vertex &v, float rx, float ry, float rz) {
+void ZoneMap::RotateVertex(Vertex &v, float rx, float ry, float rz) {
 	Vertex nv = v;
 
 	nv.y = (cos(rx) * v.y) - (sin(rx) * v.z);
@@ -873,13 +873,13 @@ void Map::RotateVertex(Vertex &v, float rx, float ry, float rz) {
 	v = nv;
 }
 
-void Map::ScaleVertex(Vertex &v, float sx, float sy, float sz) {
+void ZoneMap::ScaleVertex(Vertex &v, float sx, float sy, float sz) {
 	v.x = v.x * sx;
 	v.y = v.y * sy;
 	v.z = v.z * sz;
 }
 
-void Map::TranslateVertex(Vertex &v, float tx, float ty, float tz) {
+void ZoneMap::TranslateVertex(Vertex &v, float tx, float ty, float tz) {
 	v.x = v.x + tx;
 	v.y = v.y + ty;
 	v.z = v.z + tz;

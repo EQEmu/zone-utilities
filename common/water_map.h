@@ -1,5 +1,5 @@
-#ifndef EQEMU_WATER_MAP_H
-#define EQEMU_WATER_MAP_H
+#ifndef EQEMU_COMMON_WATER_MAP_H
+#define EQEMU_COMMON_WATER_MAP_H
 
 #include <stdint.h>
 #include <string>

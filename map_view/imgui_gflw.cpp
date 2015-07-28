@@ -2,7 +2,7 @@
 // https://github.com/ocornut/imgui
 // Modified for map_view from the glfw example in imgui's repo
 
-#include "../imgui/imgui.h"
+#include "imgui.h"
 #include "imgui_gflw.h"
 
 #include <GL/glew.h>

@@ -32,26 +32,6 @@ void Camera::UpdateInputs(GLFWwindow *win) {
 
 		hor_angle += 0.005f * float(width / 2 - x_pos);
 		ver_angle += 0.005f * float(height / 2 - y_pos);
-	} else {
-		if(glfwGetKey(win, GLFW_KEY_PAGE_UP) == GLFW_PRESS) {
-			ver_angle += delta_time * 3.0f;
-		}
-
-		if(glfwGetKey(win, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS) {
-			ver_angle -= delta_time * 3.0f;
-		}
-
-		if(glfwGetKey(win, GLFW_KEY_KP_5) == GLFW_PRESS) {
-			ver_angle = 0.0f;
-		}
-
-		if(glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS) {
-			hor_angle += delta_time * 3.0f;
-		}
-
-		if(glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS) {
-			hor_angle -= delta_time * 3.0f;
-		}
 	}
 
 	glm::vec3 direction(cos(ver_angle) * sin(hor_angle), sin(ver_angle), cos(ver_angle) * cos(hor_angle));
@@ -72,24 +52,14 @@ void Camera::UpdateInputs(GLFWwindow *win) {
 		pos -= direction * delta_time * speed;
 	}
 	
-	if(glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT == GLFW_PRESS)) {
-		if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS){
-			pos += right * delta_time * speed;
-		}
-		
-		if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS){
-			pos -= right * delta_time * speed;
-		}
-	} else {
-		if(glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS){
-			pos += right * delta_time * speed;
-		}
-
-		if(glfwGetKey(win, GLFW_KEY_Q) == GLFW_PRESS){
-			pos -= right * delta_time * speed;
-		}
+	if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS){
+		pos += right * delta_time * speed;
 	}
-
+	
+	if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS){
+		pos -= right * delta_time * speed;
+	}
+	
 	proj = glm::perspective(fov, (float)width / (float)height, near_clip, far_clip);
 	view = glm::lookAt(pos, pos + direction, up);
 

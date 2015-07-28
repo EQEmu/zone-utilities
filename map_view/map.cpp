@@ -9,6 +9,7 @@
 #include "compression.h"
 #include <gtc/matrix_transform.hpp>
 #include <gtx/transform.hpp>
+#include "oriented_bounding_box.h"
 
 struct ModelEntry
 {
@@ -172,45 +173,6 @@ void TranslateVertex(glm::vec3 &v, float tx, float ty, float tz) {
 	v.x = v.x + tx;
 	v.y = v.y + ty;
 	v.z = v.z + tz;
-}
-
-glm::mat4 CreateRotateMatrix(float rx, float ry, float rz) {
-	glm::mat4 rot_x(1.0f);
-	rot_x[1][1] = cos(rx);
-	rot_x[2][1] = -sin(rx);
-	rot_x[1][2] = sin(rx);
-	rot_x[2][2] = cos(rx);
-
-	glm::mat4 rot_y(1.0f);
-	rot_y[0][0] = cos(ry);
-	rot_y[2][0] = sin(ry);
-	rot_y[0][2] = -sin(ry);
-	rot_y[2][2] = cos(ry);
-
-	glm::mat4 rot_z(1.0f);
-	rot_z[0][0] = cos(rz);
-	rot_z[1][0] = -sin(rz);
-	rot_z[0][1] = sin(rz);
-	rot_z[1][1] = cos(rz);
-
-	return rot_z * rot_y * rot_x;
-}
-
-glm::mat4 CreateTranslateMatrix(float tx, float ty, float tz) {
-	glm::mat4 trans(1.0f);
-	trans[3][0] = tx;
-	trans[3][1] = ty;
-	trans[3][2] = tz;
-
-	return trans;
-}
-
-glm::mat4 CreateScaleMatrix(float sx, float sy, float sz) {
-	glm::mat4 scale(1.0f);
-	scale[0][0] = sx;
-	scale[1][1] = sy;
-	scale[2][2] = sz;
-	return scale;
 }
 
 bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices, std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
@@ -777,7 +739,7 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 }
 
 void LoadMap(std::string filename, Model **collision, Model **vision) {
-	std::string raw_filename = filename + ".map";
+	std::string raw_filename = std::string("./maps/") + filename + ".map";
 	FILE *f = fopen(raw_filename.c_str(), "rb");
 	if (f) {
 		uint32_t version;
@@ -847,7 +809,7 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 void LoadWaterMap(std::string filename, Model **volume) {
 	*volume = nullptr;
 
-	std::string raw_filename = filename + ".wtr";
+	std::string raw_filename = std::string("./maps/") + filename + ".wtr";
 	FILE *f = fopen(raw_filename.c_str(), "rb");
 	if (f) {
 		char magic[10];

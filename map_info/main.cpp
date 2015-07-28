@@ -8,14 +8,14 @@
 #include <signal.h>
 #include "lib/libwebsockets.h"
 #include "string_util.h"
-#include "map.h"
+#include "zone_map.h"
 #include "water_map.h"
 
 libwebsocket_context *context = nullptr;
 bool run = true;
 std::mutex map_mutex;
 std::map<std::string, bool> map_loaded;
-std::map<std::string, std::shared_ptr<Map>> map_ptrs;
+std::map<std::string, std::shared_ptr<ZoneMap>> map_ptrs;
 std::map<std::string, std::shared_ptr<WaterMap>> water_map_ptrs;
 
 void catch_signal(int sig_num) {
@@ -52,7 +52,7 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 				double z = stof(args[4]);
 
 				//find map info here
-				std::shared_ptr<Map> m;
+				std::shared_ptr<ZoneMap> m;
 				std::shared_ptr<WaterMap> wm;
 				std::string status = "ok";
 				map_mutex.lock();
@@ -65,7 +65,7 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 
 				double best_z = BEST_Z_INVALID;
 				if(m) {
-					Map::Vertex v(x, y, z);
+					ZoneMap::Vertex v(x, y, z);
 					best_z = m->FindBestZ(v, nullptr);
 				}
 
@@ -122,7 +122,7 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 
 				map_mutex.lock();
 				std::thread t([](const std::string &z) {
-					std::shared_ptr<Map> m(Map::LoadMapFile(z));
+					std::shared_ptr<ZoneMap> m(ZoneMap::LoadMapFile(z));
 					std::shared_ptr<WaterMap> wm(WaterMap::LoadWaterMapfile(z));
 					map_mutex.lock();
 					map_loaded[z] = true;

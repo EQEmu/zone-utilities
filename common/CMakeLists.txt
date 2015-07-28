@@ -5,11 +5,17 @@ SET(common_sources
 	eqg_loader.cpp
 	eqg_model_loader.cpp
 	eqg_v4_loader.cpp
+	oriented_bounding_box.cpp
 	pfs.cpp
 	pfs_crc.cpp
+	raycast_mesh.cpp
 	s3d_loader.cpp
 	string_util.cpp
+	water_map.cpp
+	water_map_v1.cpp
+	water_map_v2.cpp
 	wld_fragment.cpp
+	zone_map.cpp
 )
 
 SET(common_headers
@@ -28,10 +34,12 @@ SET(common_headers
 	eqg_v4_loader.h
 	eqg_water_sheet.h
 	light.h
+	oriented_bounding_box.h
 	pfs.h
 	pfs_crc.h
 	placeable.h
 	placeable_group.h
+	raycast_mesh.h
 	safe_alloc.h
 	s3d_bsp.h
 	s3d_geometry.h
@@ -41,9 +49,13 @@ SET(common_headers
 	s3d_texture_brush.h
 	s3d_texture_brush_set.h
 	string_util.h
+	water_map.h
+	water_map_v1.h
+	water_map_v2.h
 	wld_fragment_reference.h
 	wld_fragment.h
 	wld_structs.h
+	zone_map.h
 )
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})
