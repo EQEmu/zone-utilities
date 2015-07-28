@@ -8,6 +8,8 @@
 #include "map.h"
 #include "log_macros.h"
 #include "log_stdout.h"
+#include "../imgui/imgui.h"
+#include "imgui_gflw.h"
 
 int main(int argc, char **argv)
 {
@@ -55,10 +57,6 @@ int main(int argc, char **argv)
 	glfwSetInputMode(win, GLFW_STICKY_KEYS, GL_TRUE);
 	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	glfwSetCursorPos(win, 1280 / 2, 720 / 2);
-	glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
 
 #ifndef EQEMU_GL_DEP
 	ShaderProgram shader("shaders/basic.vert", "shaders/basic.frag");
@@ -82,6 +80,9 @@ int main(int argc, char **argv)
 
 	Camera cam(1280, 720, 45.0f, 0.1f, 15000.0f);
 
+	ImVec4 clear_color = ImColor(114, 144, 154);
+	ImGui_ImplGlfwGL3_Init(win, true);
+
 	bool rendering = true;
 	bool r_c_pressed = false;
 	bool r_c = true;
@@ -91,21 +92,66 @@ int main(int argc, char **argv)
 	bool r_vol = true;
 	do {
 		double current_frame_time = glfwGetTime();
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		cam.UpdateInputs(win);
 
-		shader.Use();
+		ImGuiIO& io = ImGui::GetIO();
+		glfwPollEvents();
+		ImGui_ImplGlfwGL3_NewFrame();
 
+		{
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("Zone: %s", filename.c_str());
+		}
+
+		if(glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS) {
+			r_c_pressed = true;
+		}
+		
+		if(glfwGetKey(win, GLFW_KEY_C) == GLFW_RELEASE && r_c_pressed) {
+			r_c = !r_c;
+			r_c_pressed = false;
+		}
+		
+		if(glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS) {
+			r_nc_pressed = true;
+		}
+		
+		if(glfwGetKey(win, GLFW_KEY_N) == GLFW_RELEASE && r_nc_pressed) {
+			r_nc = !r_nc;
+			r_nc_pressed = false;
+		}
+		
+		if(glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS) {
+			r_vol_pressed = true;
+		}
+		
+		if(glfwGetKey(win, GLFW_KEY_V) == GLFW_RELEASE && r_vol_pressed) {
+			r_vol = !r_vol;
+			r_vol_pressed = false;
+		}
+		
+		if(glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(win) != 0)
+			rendering = false;
+		
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+
+		glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glDisable(GL_BLEND);
+		
+		shader.Use();
+		
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		
 		glm::mat4 model = glm::mat4(1.0);
 		glm::mat4 mvp = cam.GetProjMat() * cam.GetViewMat() * model;
 		uniform.SetValueMatrix4(1, false, &mvp[0][0]);
-
+		
 		glm::vec4 tnt(0.8f, 0.8f, 0.8f, 1.0f);
 		tint.SetValuePtr4(1, &tnt[0]);
-
+		
 		if (collide && r_c)
 			collide->Draw();
 		
@@ -113,73 +159,47 @@ int main(int argc, char **argv)
 		tnt[1] = 0.7f;
 		tnt[2] = 1.0f;
 		tint.SetValuePtr4(1, &tnt[0]);
-
+		
 		if (invis && r_nc)
 			invis->Draw();
-
+		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+		
 		tnt[0] = 0.0f;
 		tnt[1] = 0.0f;
 		tnt[2] = 0.8f;
 		tnt[3] = 0.2f;
 		tint.SetValuePtr4(1, &tnt[0]);
-
+		
 		if (volume && r_vol)
 			volume->Draw();
-
+		
 		glDisable(GL_BLEND);
-
+		
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
+		
 		tnt[0] = 0.0f;
 		tnt[1] = 0.0f;
 		tnt[2] = 0.0f;
 		tnt[3] = 0.0f;
 		tint.SetValuePtr4(1, &tnt[0]);
-
+		
 		if (collide && r_c)
 			collide->Draw();
-
+		
 		if (invis && r_nc)
 			invis->Draw();
-
+		
 		if (volume && r_vol)
 			volume->Draw();
 
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+		ImGui::Render();
+
 		glfwSwapBuffers(win);
-		glfwPollEvents();
-
-		if (glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS) {
-			r_c_pressed = true;
-		}
-
-		if (glfwGetKey(win, GLFW_KEY_C) == GLFW_RELEASE && r_c_pressed) {
-			r_c = !r_c;
-			r_c_pressed = false;
-		}
-
-		if (glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS) {
-			r_nc_pressed = true;
-		}
-
-		if (glfwGetKey(win, GLFW_KEY_N) == GLFW_RELEASE && r_nc_pressed) {
-			r_nc = !r_nc;
-			r_nc_pressed = false;
-		}
-
-		if (glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS) {
-			r_vol_pressed = true;
-		}
-
-		if (glfwGetKey(win, GLFW_KEY_V) == GLFW_RELEASE && r_vol_pressed) {
-			r_vol = !r_vol;
-			r_vol_pressed = false;
-		}
-
-		if(glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(win) != 0)
-			rendering = false;
 	} while (rendering);
 
 	if(collide)

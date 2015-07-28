@@ -24,14 +24,35 @@ void Camera::UpdateInputs(GLFWwindow *win) {
 
 	double current_time = glfwGetTime();
 	float delta_time = float(current_time - last_time);
+	
+	if(glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT == GLFW_PRESS)) {
+		double x_pos, y_pos;
+		glfwGetCursorPos(win, &x_pos, &y_pos);
+		glfwSetCursorPos(win, width / 2, height / 2);
 
-	double x_pos, y_pos;
-	glfwGetCursorPos(win, &x_pos, &y_pos);
+		hor_angle += 0.005f * float(width / 2 - x_pos);
+		ver_angle += 0.005f * float(height / 2 - y_pos);
+	} else {
+		if(glfwGetKey(win, GLFW_KEY_PAGE_UP) == GLFW_PRESS) {
+			ver_angle += delta_time * 3.0f;
+		}
 
-	glfwSetCursorPos(win, width / 2, height / 2);
+		if(glfwGetKey(win, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS) {
+			ver_angle -= delta_time * 3.0f;
+		}
 
-	hor_angle += 0.005f * float(width / 2 - x_pos);
-	ver_angle += 0.005f * float(height / 2 - y_pos);
+		if(glfwGetKey(win, GLFW_KEY_KP_5) == GLFW_PRESS) {
+			ver_angle = 0.0f;
+		}
+
+		if(glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS) {
+			hor_angle += delta_time * 3.0f;
+		}
+
+		if(glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS) {
+			hor_angle -= delta_time * 3.0f;
+		}
+	}
 
 	glm::vec3 direction(cos(ver_angle) * sin(hor_angle), sin(ver_angle), cos(ver_angle) * cos(hor_angle));
 	glm::vec3 right = glm::vec3(sin(hor_angle - 3.14f / 2.0f), 0, cos(hor_angle - 3.14f / 2.0f));
@@ -51,12 +72,22 @@ void Camera::UpdateInputs(GLFWwindow *win) {
 		pos -= direction * delta_time * speed;
 	}
 	
-	if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS){
-		pos += right * delta_time * speed;
-	}
-	
-	if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS){
-		pos -= right * delta_time * speed;
+	if(glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT == GLFW_PRESS)) {
+		if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS){
+			pos += right * delta_time * speed;
+		}
+		
+		if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS){
+			pos -= right * delta_time * speed;
+		}
+	} else {
+		if(glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS){
+			pos += right * delta_time * speed;
+		}
+
+		if(glfwGetKey(win, GLFW_KEY_Q) == GLFW_PRESS){
+			pos -= right * delta_time * speed;
+		}
 	}
 
 	proj = glm::perspective(fov, (float)width / (float)height, near_clip, far_clip);
