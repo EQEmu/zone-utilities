@@ -100,8 +100,10 @@ int main(int argc, char **argv)
 		ImGui_ImplGlfwGL3_NewFrame();
 
 		{
+			glm::vec3 loc = cam.GetLoc();
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::Text("Zone: %s", filename.c_str());
+			ImGui::Text("%.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
 		}
 
 		if(glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS) {

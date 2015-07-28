@@ -15,6 +15,7 @@ public:
 	void UpdateInputs(GLFWwindow *win);
 	glm::mat4 GetViewMat() { return view; }
 	glm::mat4 GetProjMat() { return proj; }
+	glm::vec3 GetLoc();
 private:
 	glm::vec3 pos;
 	float hor_angle;

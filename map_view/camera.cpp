@@ -95,3 +95,12 @@ void Camera::UpdateInputs(GLFWwindow *win) {
 
 	last_time = current_time;
 }
+
+glm::vec3 Camera::GetLoc() {
+	glm::mat4 model = glm::mat4(1.0);
+	glm::mat4 mv = view * model;
+	glm::mat3 rm(mv);
+	glm::vec3 d(mv[3]);
+	glm::vec3 loc = -d * rm;
+	return loc;
+}
