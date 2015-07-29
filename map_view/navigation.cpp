@@ -24,10 +24,10 @@ void PathNode::Connect(PathNode *to) {
 void Navigation::FillNodes(float x, float y, float z) {
 	nodes.clear();
 
-	PathNode *start_n = new PathNode(x, y, z_map ? z_map->FindBestZ(ZoneMap::Vertex(x, y, z), nullptr) : z);
-	nodes.push_back(std::unique_ptr<PathNode>(start_n));
-
-	float step_size = 10.0f;
+	//PathNode *start_n = new PathNode(x, y, z_map ? z_map->FindBestZ(ZoneMap::Vertex(x, y, z), nullptr) : z);
+	//nodes.push_back(std::unique_ptr<PathNode>(start_n));
+	//
+	//float step_size = 10.0f;
 
 	//PathNode *c_nodes[4];
 	//

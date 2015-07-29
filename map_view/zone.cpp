@@ -45,11 +45,13 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol) {
 		ImGui::Text("Zone: %s", m_name.c_str());
 		ImGui::Text("%.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
 		if(z_map && w_map) {
-			ImGui::Text("Best Z: %.2f, In Liquid: %s", z_map->FindBestZ(ZoneMap::Vertex(loc.x, loc.z, loc.y), nullptr),
+			ZoneMap::Vertex locv(loc.x, loc.z, loc.y);
+			ImGui::Text("Best Z: %.2f, In Liquid: %s", z_map->FindBestZ(locv, nullptr),
 						w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
 		}
 		else if(z_map) {
-			ImGui::Text("Best Z: %.2f", z_map->FindBestZ(ZoneMap::Vertex(loc.x, loc.z, loc.y), nullptr));
+			ZoneMap::Vertex locv(loc.x, loc.z, loc.y);
+			ImGui::Text("Best Z: %.2f", z_map->FindBestZ(locv, nullptr));
 		}
 		else if(w_map) {
 			ImGui::Text("In Liquid: %s", w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
