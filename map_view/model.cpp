@@ -53,6 +53,32 @@ void Model::Compile() {
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ib);
 	glBindVertexArray(0);
+
+	for(auto &vert : this->positions) {
+		if(vert.x < min.x) {
+			min.x = vert.x;
+		}
+
+		if(vert.y < min.y) {
+			min.y = vert.y;
+		}
+
+		if(vert.z < min.z) {
+			min.z = vert.z;
+		}
+
+		if(vert.x > max.x) {
+			max.x = vert.x;
+		}
+
+		if(vert.y > max.y) {
+			max.y = vert.y;
+		}
+
+		if(vert.z > max.z) {
+			max.z = vert.z;
+		}
+	}
 }
 	
 void Model::Draw() {

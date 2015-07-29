@@ -45,7 +45,6 @@ int main(int argc, char **argv)
 	}
 
 	glfwSetInputMode(win, GLFW_STICKY_KEYS, GL_TRUE);
-	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	glfwSetCursorPos(win, RES_X / 2, RES_Y / 2);
 
 	std::unique_ptr<Zone> zone(new Zone(filename));
@@ -57,6 +56,7 @@ int main(int argc, char **argv)
 	bool r_c = true;
 	bool r_nc = true;
 	bool r_vol = true;
+	bool r_nav = true;
 	char zone_input[256];
 	strcpy(zone_input, filename.c_str());
 
@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 			rendering = false;
 
 		{
+			ImGui::SetNextWindowSize(ImVec2(250, 150), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("Options");
 			ImGui::InputText("Zone", zone_input, 256);
 			if(ImGui::Button("Load Zone")) {
@@ -79,6 +80,7 @@ int main(int argc, char **argv)
 			ImGui::Checkbox("Render Collidable Polygons", &r_c);
 			ImGui::Checkbox("Render Non-Collidable Polygons", &r_nc);
 			ImGui::Checkbox("Render Loaded Volumes", &r_vol);
+			ImGui::Checkbox("Render Navigation", &r_nav);
 			ImGui::End();
 		}
 		
@@ -89,7 +91,7 @@ int main(int argc, char **argv)
 		glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		zone->Render(r_c, r_nc, r_vol);
+		zone->Render(r_c, r_nc, r_vol, r_nav);
 
 		ImGui::Render();
 

@@ -16,6 +16,7 @@
 #include "log_macros.h"
 #include "log_stdout.h"
 #include "imgui.h"
+#include "navigation.h"
 
 #define RES_X 1600
 #define RES_Y 900
@@ -27,8 +28,8 @@ public:
 	~Zone() { }
 
 	void Load();
-	void Render(bool r_c, bool r_nc, bool r_vol);
-	void UpdateInputs(GLFWwindow *win, bool keyboard_inuse, bool mouse_inuse) { m_camera.UpdateInputs(win, keyboard_inuse, mouse_inuse); }
+	void Render(bool r_c, bool r_nc, bool r_vol, bool r_nav);
+	void UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use) { m_camera.UpdateInputs(win, keyboard_in_use, mouse_in_use); }
 
 private:
 	std::string m_name;
@@ -42,7 +43,7 @@ private:
 	std::unique_ptr<Model> m_volume;
 	std::unique_ptr<ZoneMap> z_map;
 	std::unique_ptr<WaterMap> w_map;
-
+	std::unique_ptr<Navigation> m_nav;
 };
 
 

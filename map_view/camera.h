@@ -12,7 +12,7 @@ public:
 	Camera(unsigned int width, unsigned int height, float fov, float near_clip, float far_clip);
 	~Camera();
 
-	void UpdateInputs(GLFWwindow *win, bool keyboard_inuse, bool mouse_inuse);
+	void UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use);
 	glm::mat4 GetViewMat() { return view; }
 	glm::mat4 GetProjMat() { return proj; }
 	glm::vec3 GetLoc();

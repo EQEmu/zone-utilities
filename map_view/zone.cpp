@@ -37,12 +37,25 @@ void Zone::Load()
 	w_map = std::unique_ptr<WaterMap>(WaterMap::LoadWaterMapfile(m_name));
 }
 
-void Zone::Render(bool r_c, bool r_nc, bool r_vol) {
+void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
+
 	glm::vec3 loc = m_camera.GetLoc();
 	{
-		ImGui::TextColored(ImVec4(1.0,0.3,0.3,1.0), "W S A D to Move, Hold RMB to rotate. ESC to exit.");
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::Text("Zone: %s", m_name.c_str());
+		glm::vec3 min;
+		glm::vec3 max;
+		if(m_collide) {
+			min = m_collide->GetAABBMin();
+		}
+
+		if(z_map) {
+			max = m_collide->GetAABBMax();
+		}
+
+		ImGui::SetNextWindowSize(ImVec2(640, 120), ImGuiSetCond_FirstUseEver);
+		ImGui::Begin("Debug");
+		ImGui::TextColored(ImVec4(0.3,1.0,0.3,1.0), "W S A D to Move, Hold RMB to rotate. Hold Shift to speed boost. ESC to exit.");
+		ImGui::Text("Application average %.2f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::Text("Zone: %s, min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)", m_name.c_str(), min.x, min.y, min.z, max.x, max.y, max.z);
 		ImGui::Text("%.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
 		if(z_map && w_map) {
 			ZoneMap::Vertex locv(loc.x, loc.z, loc.y);
@@ -56,6 +69,24 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol) {
 		else if(w_map) {
 			ImGui::Text("In Liquid: %s", w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
 		}
+		ImGui::End();
+	}
+
+	{
+		ImGui::Begin("Navigation");
+		if(ImGui::Button("Add node")) {
+			if(!m_nav && m_collide && z_map) {
+				m_nav = std::unique_ptr<Navigation>(new Navigation(z_map.get(), w_map.get(), m_collide->GetAABBMin(), m_collide->GetAABBMax()));
+			}
+
+			ZoneMap::Vertex locv(loc.x, loc.z, loc.y);
+			float best_z = z_map->FindBestZ(locv, nullptr);
+			if(best_z != BEST_Z_INVALID) {
+				m_nav->AddNode(loc.x, loc.z, best_z);
+				m_nav->BuildNodeModel();
+			}
+		}
+		ImGui::End();
 	}
 
 	glDisable(GL_BLEND);
@@ -80,6 +111,18 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol) {
 
 	if(m_invis && r_nc)
 		m_invis->Draw();
+
+	if(r_nav && m_nav) {
+		Model *m = m_nav->GetNodesModel();
+		if(m) {
+			tnt[0] = 0.5f;
+			tnt[1] = 1.0f;
+			tnt[2] = 0.7f;
+			m_tint.SetValuePtr4(1, &tnt[0]);
+
+			m->Draw();
+		}
+	}
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -111,6 +154,13 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol) {
 
 	if(m_volume && r_vol)
 		m_volume->Draw();
+
+	if(r_nav && m_nav) {
+		Model *m = m_nav->GetNodesModel();
+		if(m) {
+			m->Draw();
+		}
+	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

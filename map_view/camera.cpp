@@ -16,7 +16,7 @@ Camera::Camera(unsigned int width, unsigned int height, float fov, float near_cl
 Camera::~Camera() {
 }
 
-void Camera::UpdateInputs(GLFWwindow *win, bool keyboard_inuse, bool mouse_inuse) {
+void Camera::UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use) {
 	if(first_input) {
 		last_time = glfwGetTime();
 		first_input = false;
@@ -25,7 +25,7 @@ void Camera::UpdateInputs(GLFWwindow *win, bool keyboard_inuse, bool mouse_inuse
 	double current_time = glfwGetTime();
 	float delta_time = float(current_time - last_time);
 	
-	if(!mouse_inuse && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT == GLFW_PRESS)) {
+	if(!mouse_in_use && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT == GLFW_PRESS)) {
 		double x_pos, y_pos;
 		glfwGetCursorPos(win, &x_pos, &y_pos);
 		glfwSetCursorPos(win, width / 2, height / 2);
@@ -40,23 +40,23 @@ void Camera::UpdateInputs(GLFWwindow *win, bool keyboard_inuse, bool mouse_inuse
 
 	float speed = 50.0f;
 
-	if(!keyboard_inuse && glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+	if(!keyboard_in_use && glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
 		speed *= 6.0f;
 	}
 
-	if(!keyboard_inuse && glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS){
+	if(!keyboard_in_use && glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS){
 		pos += direction * delta_time * speed;
 	}
 
-	if(!keyboard_inuse && glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS){
+	if(!keyboard_in_use && glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS){
 		pos -= direction * delta_time * speed;
 	}
 	
-	if(!keyboard_inuse && glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS){
+	if(!keyboard_in_use && glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS){
 		pos += right * delta_time * speed;
 	}
 	
-	if(!keyboard_inuse && glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS){
+	if(!keyboard_in_use && glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS){
 		pos -= right * delta_time * speed;
 	}
 	

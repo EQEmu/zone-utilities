@@ -45,6 +45,10 @@ private:
 	
 	struct impl;
 	impl *imp;
+
+	//Dont need this to be in impl;
+	Vertex min;
+	Vertex max;
 };
 
 #endif

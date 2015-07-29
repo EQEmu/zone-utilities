@@ -285,7 +285,7 @@ bool ZoneMap::LoadV1(FILE *f) {
 	} else {
 		imp = new impl;
 	}
-	
+
 	imp->rm = createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]);
 	
 	if(!imp->rm) {
@@ -389,6 +389,7 @@ bool ZoneMap::LoadV2(FILE *f) {
 		buf += sizeof(float);
 
 		Vertex vert(x, y, z);
+
 		verts.push_back(vert);
 	}
 
