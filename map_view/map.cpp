@@ -23,6 +23,9 @@ struct ModelEntry
 };
 
 bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices) {
+	verts.clear();
+	indices.clear();
+
 	uint32_t face_count;
 	uint16_t node_count;
 	uint32_t facelist_count;
@@ -175,7 +178,8 @@ void TranslateVertex(glm::vec3 &v, float tx, float ty, float tz) {
 	v.z = v.z + tz;
 }
 
-bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices, std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
+bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &indices,
+			   std::vector<glm::vec3> &nc_verts, std::vector<uint32_t> &nc_indices) {
 	verts.clear();
 	indices.clear();
 	nc_verts.clear();
@@ -767,7 +771,8 @@ void LoadMap(std::string filename, Model **collision, Model **vision) {
 		else if (version == 0x02000000) {
 			Model *new_model = new Model();
 			Model *nc_new_model = new Model();
-			bool v = LoadMapV2(f, new_model->GetPositions(), new_model->GetIndicies(), nc_new_model->GetPositions(), nc_new_model->GetIndicies());
+			bool v = LoadMapV2(f, new_model->GetPositions(), new_model->GetIndicies(), 
+							   nc_new_model->GetPositions(), nc_new_model->GetIndicies());
 			fclose(f);
 
 			if (v) {

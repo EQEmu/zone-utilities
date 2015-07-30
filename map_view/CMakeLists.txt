@@ -7,6 +7,7 @@ SET(map_view_sources
 	map.cpp
 	model.cpp
 	navigation.cpp
+	recast_chunky_mesh.cpp
 	shader.cpp
 	zone.cpp
 )
@@ -17,6 +18,7 @@ SET(map_view_headers
 	map.h
 	model.h
 	navigation.h
+	recast_chunky_mesh.h
 	shader.h
 	zone.h
 )

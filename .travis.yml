@@ -4,7 +4,7 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y zlib1g-dev
 script:
-  - cmake -G "Unix Makefiles" -DEQEMU_ENABLE_GL=OFF
+  - cmake -G "Unix Makefiles" -DEQEMU_ENABLE_GL=ON
   - make
 branches:
   only: master

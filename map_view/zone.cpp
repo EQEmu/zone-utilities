@@ -35,10 +35,12 @@ void Zone::Load()
 
 	z_map = std::unique_ptr<ZoneMap>(ZoneMap::LoadMapFile(m_name));
 	w_map = std::unique_ptr<WaterMap>(WaterMap::LoadWaterMapfile(m_name));
+
+	if(z_map && m_collide)
+		m_nav = std::unique_ptr<Navigation>(new Navigation(z_map.get(), w_map.get(), m_collide.get()));
 }
 
 void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
-
 	glm::vec3 loc = m_camera.GetLoc();
 	{
 		glm::vec3 min;
@@ -74,16 +76,12 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 
 	{
 		ImGui::Begin("Navigation");
-		if(ImGui::Button("Add node")) {
-			if(!m_nav && m_collide && z_map) {
-				m_nav = std::unique_ptr<Navigation>(new Navigation(z_map.get(), w_map.get(), m_collide->GetAABBMin(), m_collide->GetAABBMax()));
-			}
+		if(m_nav) {
+			ImGui::SliderFloat("Cell Size", &m_nav->GetCellSize(), 0.01f, 1.0f, "%.2f");
+			ImGui::SliderFloat("Tile Size", &m_nav->GetTileSize(), 16.0f, 128.0f, "%.2f", 8.0f);
 
-			ZoneMap::Vertex locv(loc.x, loc.z, loc.y);
-			float best_z = z_map->FindBestZ(locv, nullptr);
-			if(best_z != BEST_Z_INVALID) {
-				m_nav->AddNode(loc.x, loc.z, best_z);
-				m_nav->BuildNodeModel();
+			if(ImGui::Button("Build NavMesh")) {
+				m_nav->BuildNavMesh();
 			}
 		}
 		ImGui::End();
@@ -113,7 +111,7 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		m_invis->Draw();
 
 	if(r_nav && m_nav) {
-		Model *m = m_nav->GetNodesModel();
+		Model *m = m_nav->GetNavigationModel();
 		if(m) {
 			tnt[0] = 0.5f;
 			tnt[1] = 1.0f;
@@ -156,7 +154,7 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		m_volume->Draw();
 
 	if(r_nav && m_nav) {
-		Model *m = m_nav->GetNodesModel();
+		Model *m = m_nav->GetNavigationModel();
 		if(m) {
 			m->Draw();
 		}
