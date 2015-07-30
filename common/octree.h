@@ -33,8 +33,8 @@ public:
 		AABB(const glm::vec3 &c, const float rx, float ry, float rz) 
 			: center_(c), 
 			radius_(rx, ry, rz), 
-			min_(c.x - r, c.y - r, c.z - r), 
-			max_(c.x + r, c.y + r, c.z + r) { }
+			min_(c.x - rx, c.y - ry, c.z - rz), 
+			max_(c.x + rx, c.y + ry, c.z + rz) { }
 		~AABB() { }
 
 		bool Contains(const glm::vec3 &p) const {
