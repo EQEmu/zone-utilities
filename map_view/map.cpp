@@ -265,12 +265,17 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 		verts.push_back(vert);
 	}
 	
-	for (uint32_t i = 0; i < ind_count; ++i) {
-		uint32_t index;
-		index = *(uint32_t*)buf;
+	for (uint32_t i = 0; i < ind_count; i += 3) {
+		uint32_t i1 = *(uint32_t*)buf;
 		buf += sizeof(uint32_t);
-	
-		indices.push_back(index);
+		uint32_t i2 = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+		uint32_t i3 = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+		
+		indices.push_back(i1);
+		indices.push_back(i2);
+		indices.push_back(i3);
 	}
 	
 	for (uint32_t i = 0; i < nc_vert_count; ++i) {
@@ -632,13 +637,13 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 			verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
 			verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 			
-			indices.push_back(current_vert);
-			indices.push_back(current_vert - 2);
 			indices.push_back(current_vert - 1);
-
-			indices.push_back(current_vert);
-			indices.push_back(current_vert - 3);
 			indices.push_back(current_vert - 2);
+			indices.push_back(current_vert);
+
+			indices.push_back(current_vert - 2);
+			indices.push_back(current_vert - 3);
+			indices.push_back(current_vert);
 		} else {
 			//read flags
 			for (uint32_t j = 0; j < ter_quad_count; ++j) {
@@ -728,13 +733,13 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 					cur_verts[t] = i4;
 				}
 
-				indices.push_back(i4);
-				indices.push_back(i2);
 				indices.push_back(i3);
-				
-				indices.push_back(i4);
-				indices.push_back(i1);
 				indices.push_back(i2);
+				indices.push_back(i4);
+				
+				indices.push_back(i2);
+				indices.push_back(i1);
+				indices.push_back(i4);				
 			}
 		}
 	}

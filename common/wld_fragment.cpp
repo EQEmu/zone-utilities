@@ -493,9 +493,9 @@ EQEmu::S3D::WLDFragment36::WLDFragment36(std::vector<WLDFragment> &out, char *fr
 
 		auto &p = polys[i];
 		p.flags = in->flags;
-		p.verts[0] = in->index[0];
+		p.verts[0] = in->index[2];
 		p.verts[1] = in->index[1];
-		p.verts[2] = in->index[2];
+		p.verts[2] = in->index[0];
 		frag_buffer += sizeof(wld_fragment36_poly);
 	}
 

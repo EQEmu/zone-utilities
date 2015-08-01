@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <tuple>
+#define GLM_FORCE_RADIANS
 #include <glm.hpp>
 #include "s3d_loader.h"
 #include "eqg_loader.h"

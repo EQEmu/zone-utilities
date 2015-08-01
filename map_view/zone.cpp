@@ -60,13 +60,11 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		ImGui::Text("Zone: %s, min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)", m_name.c_str(), min.x, min.y, min.z, max.x, max.y, max.z);
 		ImGui::Text("%.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
 		if(z_map && w_map) {
-			ZoneMap::Vertex locv(loc.x, loc.z, loc.y);
-			ImGui::Text("Best Z: %.2f, In Liquid: %s", z_map->FindBestZ(locv, nullptr),
+			ImGui::Text("Best Z: %.2f, In Liquid: %s", z_map->FindBestZ(loc, nullptr, nullptr),
 						w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
 		}
 		else if(z_map) {
-			ZoneMap::Vertex locv(loc.x, loc.z, loc.y);
-			ImGui::Text("Best Z: %.2f", z_map->FindBestZ(locv, nullptr));
+			ImGui::Text("Best Z: %.2f", z_map->FindBestZ(loc, nullptr, nullptr));
 		}
 		else if(w_map) {
 			ImGui::Text("In Liquid: %s", w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
@@ -74,18 +72,11 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		ImGui::End();
 	}
 
-	{
-		ImGui::Begin("Navigation");
-		if(m_nav) {
-			ImGui::SliderFloat("Cell Size", &m_nav->GetCellSize(), 0.01f, 1.0f, "%.2f");
-			ImGui::SliderFloat("Tile Size", &m_nav->GetTileSize(), 16.0f, 128.0f, "%.2f", 8.0f);
-
-			if(ImGui::Button("Build NavMesh")) {
-				m_nav->BuildNavMesh();
-			}
-		}
-		ImGui::End();
+	if(m_nav) {
+		m_nav->RenderGUI();
 	}
+
+	glEnable(GL_CULL_FACE);
 
 	glDisable(GL_BLEND);
 	m_shader.Use();
@@ -111,15 +102,7 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		m_invis->Draw();
 
 	if(r_nav && m_nav) {
-		Model *m = m_nav->GetNavigationModel();
-		if(m) {
-			tnt[0] = 0.5f;
-			tnt[1] = 1.0f;
-			tnt[2] = 0.7f;
-			m_tint.SetValuePtr4(1, &tnt[0]);
-
-			m->Draw();
-		}
+		m_nav->Draw(&m_tint, false);
 	}
 
 	glEnable(GL_BLEND);
@@ -131,9 +114,11 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 	tnt[3] = 0.2f;
 	m_tint.SetValuePtr4(1, &tnt[0]);
 
+	glDisable(GL_CULL_FACE);
 	if(m_volume && r_vol)
 		m_volume->Draw();
 
+	glEnable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -153,12 +138,8 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 	if(m_volume && r_vol)
 		m_volume->Draw();
 
-	if(r_nav && m_nav) {
-		Model *m = m_nav->GetNavigationModel();
-		if(m) {
-			m->Draw();
-		}
-	}
+	if(m_nav && r_nav)
+		m_nav->Draw(&m_tint, true);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

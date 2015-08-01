@@ -60,6 +60,8 @@ int main(int argc, char **argv)
 	char zone_input[256];
 	strcpy(zone_input, filename.c_str());
 
+	glCullFace(GL_BACK);
+
 	do {
 		auto &io = ImGui::GetIO();
 		zone->UpdateInputs(win, io.WantCaptureKeyboard, io.WantCaptureMouse);

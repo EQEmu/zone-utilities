@@ -35,6 +35,10 @@ void Model::Compile() {
 		glDeleteVertexArrays(1, &vao);
 		vao = 0;
 	}
+
+	if(positions.size() == 0 || indices.size() == 0) {
+		return;
+	}
 	
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -54,7 +58,7 @@ void Model::Compile() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ib);
 	glBindVertexArray(0);
 
-	for(auto &vert : this->positions) {
+	for(auto &vert : positions) {
 		if(vert.x < min.x) {
 			min.x = vert.x;
 		}
@@ -81,8 +85,37 @@ void Model::Compile() {
 	}
 }
 	
-void Model::Draw() {
+void Model::Draw(int type) {
+	if(!vao) {
+		return;
+	}
+
 	glBindVertexArray(vao);
-	glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(type, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+}
+
+Model *Model::Flip() {
+	Model* flipped = new Model();
+	flipped->positions = positions;
+	flipped->indices = indices;
+	flipped->min = min;
+	flipped->max = max;
+
+	float temp = 0.0f;
+	temp = flipped->min.y;
+	flipped->min.y = flipped->min.z;
+	flipped->min.z = temp;
+
+	temp = flipped->max.y;
+	flipped->max.y = flipped->max.z;
+	flipped->max.z = temp;
+
+	for(auto &vert : flipped->positions) {
+		temp = vert.y;
+		vert.y = vert.z;
+		vert.z = temp;
+	}
+
+	return flipped;
 }

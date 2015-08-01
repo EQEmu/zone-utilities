@@ -3,8 +3,10 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#define GLM_FORCE_RADIANS
 #include <glm.hpp>
 #include <vector>
+
 
 class Model
 {
@@ -12,7 +14,7 @@ public:
 	Model();
 	~Model();
 	
-	void Draw();
+	void Draw(int type = GL_TRIANGLES);
 	void Compile();
 	
 	std::vector<glm::vec3>& GetPositions() { return positions; }
@@ -20,6 +22,8 @@ public:
 
 	const glm::vec3& GetAABBMin() { return min; }
 	const glm::vec3& GetAABBMax() { return max; }
+
+	Model *Flip();
 private:
 	std::vector<glm::vec3> positions;
 	std::vector<unsigned int> indices;

@@ -1,7 +1,8 @@
 #ifndef EQEMU_COMMON_S3D_GEOMETRY_H
 #define EQEMU_COMMON_S3D_GEOMETRY_H
 
-#include "glm.hpp"
+#define GLM_FORCE_RADIANS
+#include <glm.hpp>
 #include <vector>
 #include "s3d_texture_brush_set.h"
 

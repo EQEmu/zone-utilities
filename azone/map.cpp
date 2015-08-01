@@ -790,8 +790,11 @@ bool Map::CompileEQGv4()
 			glm::vec3 v4 = v2;
 			v4.z += 1000.0;
 
-			AddFace(v3, v1, v2, true);
+			AddFace(v2, v1, v3, true);
 			AddFace(v3, v4, v2, true);
+
+			AddFace(v3, v1, v2, true);
+			AddFace(v2, v4, v3, true);
 		}
 
 	}

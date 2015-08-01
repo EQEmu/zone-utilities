@@ -1,7 +1,8 @@
 #ifndef EQEMU_EQG_GEOMETRY_H
 #define EQEMU_EQG_GEOMETRY_H
 
-#include "glm.hpp"
+#define GLM_FORCE_RADIANS
+#include <glm.hpp>
 #include <vector>
 #include "eqg_material.h"
 
