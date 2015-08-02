@@ -316,7 +316,7 @@ void Navigation::RenderGUI() {
 	ImGui::End();
 }
 
-void Navigation::RaySelection(int mouse_x, int mouse_y, glm::mat4 &view, glm::mat4 &proj) {
+void Navigation::RaySelection(int mouse_x, int mouse_y, const glm::mat4 &view, const glm::mat4 &proj) {
 	if(!z_map || !m_node_octree) {
 		return;
 	}

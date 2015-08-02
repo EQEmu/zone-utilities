@@ -73,7 +73,7 @@ public:
 	void DrawSelection(ShaderUniform *mvp, ShaderUniform *tint, glm::mat4 &view, glm::mat4 &proj);
 	void ClearSelection() { m_selection = nullptr; }
 	void SetSelection(PathNode *e) { m_selection = e; }
-	void RaySelection(int mouse_x, int mouse_y, glm::mat4 &view, glm::mat4 &proj);
+	void RaySelection(int mouse_x, int mouse_y, const glm::mat4 &view, const glm::mat4 &proj);
 private:
 	void BuildNodeModel();
 	void BuildSelectionModel();
