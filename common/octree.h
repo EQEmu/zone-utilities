@@ -75,7 +75,6 @@ public:
 			return dist <= diameter;
 		}
 
-	private:
 		glm::vec3 center_;
 		glm::vec3 radius_;
 		glm::vec3 max_;
