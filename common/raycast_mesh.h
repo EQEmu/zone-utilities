@@ -41,8 +41,6 @@ public:
 
 	virtual const RmReal * getBoundMin(void) const = 0; // return the minimum bounding box
 	virtual const RmReal * getBoundMax(void) const = 0; // return the maximum bounding box.
-	virtual void release(void) = 0;
-protected:
 	virtual ~RaycastMesh(void) { };
 };
 

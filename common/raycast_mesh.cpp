@@ -800,11 +800,6 @@ public:
 		return ret;
 	}
 
-	virtual void release(void)
-	{
-		delete this;
-	}
-
 	virtual const RmReal * getBoundMin(void) const // return the minimum bounding box
 	{
 		return mRoot->mBounds.mMin;

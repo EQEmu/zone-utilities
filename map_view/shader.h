@@ -58,6 +58,7 @@ class ShaderProgram
 {
 public:
 	ShaderProgram(std::string vertex = "", std::string fragment = "", std::string geometry = "");
+	ShaderProgram(GLuint id);
 	~ShaderProgram();
 	
 	void Use();
@@ -67,8 +68,11 @@ public:
 	const std::string &GetLinkLog() { return link_log; }
 
 	ShaderUniform GetUniformLocation(std::string name);
+
+	static ShaderProgram Current();
 private:
 	GLuint program_id;
+	bool free_program;
 	std::string vertex_log;
 	std::string fragment_log;
 	std::string geometry_log;

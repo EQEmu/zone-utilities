@@ -46,7 +46,7 @@ uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_
 
 struct ZoneMap::impl
 {
-	RaycastMesh *rm;
+	std::unique_ptr<RaycastMesh> rm;
 	int version;
 };
 
@@ -55,9 +55,6 @@ ZoneMap::ZoneMap() {
 }
 
 ZoneMap::~ZoneMap() {
-	if(imp) {
-		imp->rm->release();
-	}
 }
 
 float ZoneMap::FindBestZ(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const {
@@ -251,15 +248,11 @@ ZoneMap *ZoneMap::LoadMapFile(std::string file) {
 ZoneMap *ZoneMap::LoadMapFromData(const std::vector<glm::vec3> &positions, const std::vector<unsigned int> &indices) {
 	ZoneMap *m = new ZoneMap();
 	
-	if(m->imp) {
-		m->imp->rm->release();
-		m->imp->rm = nullptr;
-	}
-	else {
+	if(!m->imp) {
 		m->imp = new impl;
 	}
 
-	m->imp->rm = createRaycastMesh((RmUint32)positions.size(), (const RmReal*)&positions[0], (RmUint32)(indices.size() / 3), &indices[0]);
+	m->imp->rm.reset(createRaycastMesh((RmUint32)positions.size(), (const RmReal*)&positions[0], (RmUint32)(indices.size() / 3), &indices[0]));
 
 	if(!m->imp->rm) {
 		delete m;
@@ -346,10 +339,7 @@ bool ZoneMap::LoadV1(FILE *f) {
 		indices.push_back((uint32_t)sz + 2);
 	}
 	
-	if(imp) {
-		imp->rm->release();
-		imp->rm = nullptr;
-	} else {
+	if(!imp) {
 		imp = new impl;
 	}
 
@@ -360,7 +350,7 @@ bool ZoneMap::LoadV1(FILE *f) {
 		v.z = t;
 	}
 
-	imp->rm = createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]);
+	imp->rm.reset(createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]));
 	
 	if(!imp->rm) {
 		delete imp;
@@ -911,11 +901,7 @@ bool ZoneMap::LoadV2(FILE *f) {
 
 	uint32_t face_count = (uint32_t)(indices.size() / 3);
 
-	if (imp) {
-		imp->rm->release();
-		imp->rm = nullptr;
-	}
-	else {
+	if (!imp) {
 		imp = new impl;
 	}
 
@@ -926,7 +912,7 @@ bool ZoneMap::LoadV2(FILE *f) {
 		v.z = t;
 	}
 
-	imp->rm = createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]);
+	imp->rm.reset(createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]));
 
 	if (!imp->rm) {
 		delete imp;

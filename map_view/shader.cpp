@@ -11,6 +11,7 @@ ShaderUniform::~ShaderUniform() {
 
 ShaderProgram::ShaderProgram(std::string vertex, std::string fragment, std::string geometry) {
 	program_id = glCreateProgram();
+	free_program = true;
 	GLuint vertex_shader_id = 0;
 	GLuint fragment_shader_id = 0;
 	GLuint geometry_shader_id = 0;
@@ -171,8 +172,14 @@ ShaderProgram::ShaderProgram(std::string vertex, std::string fragment, std::stri
 	}
 }
 
+ShaderProgram::ShaderProgram(GLuint id) {
+	program_id = id;
+	free_program = false;
+}
+
 ShaderProgram::~ShaderProgram() {
-	glDeleteProgram(program_id);
+	if(free_program)
+		glDeleteProgram(program_id);
 }
 
 void ShaderProgram::Use() {
@@ -182,4 +189,10 @@ void ShaderProgram::Use() {
 ShaderUniform ShaderProgram::GetUniformLocation(std::string name) {
 	GLuint location_id = glGetUniformLocation(program_id, name.c_str());
 	return ShaderUniform(location_id);
+}
+
+ShaderProgram ShaderProgram::Current() {
+	GLint current_shader;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &current_shader);
+	return ShaderProgram(current_shader);
 }

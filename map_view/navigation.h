@@ -6,6 +6,7 @@
 #include <mutex>
 #include <list>
 #include <vector>
+#include "camera.h"
 #include "model.h"
 #include "shader.h"
 #include "zone_map.h"
@@ -18,15 +19,10 @@ struct PathNode
 {
 	PathNode() { 
 		id = 0;
-		x = 0.0f;
-		y = 0.0f;
-		z = 0.0f;
 	}
 
 	int id;
-	float x;
-	float y;
-	float z;
+	glm::vec3 pos;
 	std::list<PathNode*> connected_to;
 };
 
@@ -42,7 +38,7 @@ enum NavWorkStatus
 class Navigation
 {
 public:
-	Navigation(ZoneMap *z_map, WaterMap *w_map, Model *z_model) {
+	Navigation(ZoneMap *z_map, WaterMap *w_map, Model *z_model, Camera &cam) : m_camera(cam) {
 		this->z_map = z_map; 
 		this->w_map = w_map;
 		this->z_model = z_model;
@@ -52,12 +48,9 @@ public:
 		m_node_id = 0;
 		m_work_status = NavWorkNone;
 		m_selection = nullptr;
-		m_nodes_mesh = nullptr;
 		BuildSelectionModel();
 	}
-	~Navigation() { if(m_nodes_mesh) m_nodes_mesh->release(); }
-
-	void UpdateCameraLocation(const glm::vec3 &loc) { m_loc = loc; }
+	~Navigation() { }
 
 	void ClearNavigation();
 	void CalculateGraph(const glm::vec3 &min, const glm::vec3 &max);
@@ -68,12 +61,11 @@ public:
 	void BuildNavigationModel();
 
 	void RenderGUI();
-	void Draw(ShaderUniform *tint, bool wire);
+	void Draw();
 	
-	void DrawSelection(ShaderUniform *mvp, ShaderUniform *tint, glm::mat4 &view, glm::mat4 &proj);
-	void ClearSelection() { m_selection = nullptr; }
+	void DrawSelection();
 	void SetSelection(PathNode *e) { m_selection = e; }
-	void RaySelection(int mouse_x, int mouse_y, const glm::mat4 &view, const glm::mat4 &proj);
+	void RaySelection(int mouse_x, int mouse_yj);
 private:
 	void BuildNodeModel();
 	void BuildSelectionModel();
@@ -81,10 +73,10 @@ private:
 	void SetStatus(NavWorkStatus status);
 	NavWorkStatus GetStatus();
 
+	Camera &m_camera;
 	ZoneMap *z_map;
 	WaterMap *w_map;
 	Model *z_model;
-	glm::vec3 m_loc;
 
 	//selection
 	PathNode *m_selection;
@@ -98,7 +90,7 @@ private:
 	std::unique_ptr<Model> m_nav_nodes_model;
 	std::unique_ptr<Octree<PathNode>> m_node_octree;
 	std::vector<std::unique_ptr<PathNode>> m_nodes;
-	RaycastMesh *m_nodes_mesh;
+	std::unique_ptr<RaycastMesh> m_nodes_mesh;
 	int m_node_id;
 
 	//shared work

@@ -77,11 +77,9 @@ void Navigation::AddWaterNode(const glm::vec3 &at)  {
 void Navigation::AttemptToAddNode(float x, float y, float z) {
 	PathNode *node = new PathNode;
 	node->id = m_node_id++;
-	node->x = x;
-	node->y = y;
-	node->z = z;
+	node->pos = glm::vec3(x, y, z);
 	
-	m_node_octree->Insert(glm::vec3(x, y, z), node);
+	m_node_octree->Insert(node->pos, node);
 	m_nodes.push_back(std::unique_ptr<PathNode>(node));
 }
 
@@ -100,17 +98,15 @@ void Navigation::BuildNavigationModel() {
 
 void Navigation::ClearNavigation() {
 	m_nodes.clear();
-	if(m_nodes_mesh) {
-		m_nodes_mesh->release();
-		m_nodes_mesh = nullptr;
-	}
+	m_nodes_mesh.release();
 	m_selection = nullptr;
+
 	if(z_model)
 		m_node_octree.reset(new Octree<PathNode>(Octree<PathNode>::AABB(z_model->GetAABBMin(), z_model->GetAABBMax())));
 	else
-		m_node_octree.release();
-	m_nav_nodes_model.release();
+		m_node_octree.reset(new Octree<PathNode>(Octree<PathNode>::AABB(glm::vec3(-10000.0f, -10000.0f, -10000.0f), glm::vec3(10000.0f, 10000.0f, 10000.0f))));
 
+	m_nav_nodes_model.release();
 	m_node_id = 0;
 }
 
@@ -199,23 +195,15 @@ void AddCubeToModel(std::vector<glm::vec3> &positions, std::vector<unsigned int>
 }
 
 void Navigation::BuildNodeModel() {
-	if(!z_model) {
-		return;
-	}
-
-	if(m_nodes_mesh) {
-		m_nodes_mesh->release();
-		m_nodes_mesh = nullptr;
-	}
-
+	m_nodes_mesh.release();
 	auto &positions = m_nav_nodes_model->GetPositions();
 	auto &indicies = m_nav_nodes_model->GetIndicies();
 
 	for(auto &ent : m_nodes) {
-		AddCubeToModel(positions, indicies, ent->y, ent->x, ent->z, 0.6f);
+		AddCubeToModel(positions, indicies, ent->pos.y, ent->pos.x, ent->pos.z, 0.6f);
 	}
 
-	m_nodes_mesh = createRaycastMesh((RmUint32)positions.size(), (const RmReal*)&positions[0], (RmUint32)(indicies.size() / 3), &indicies[0]);
+	m_nodes_mesh.reset(createRaycastMesh((RmUint32)positions.size(), (const RmReal*)&positions[0], (RmUint32)(indicies.size() / 3), &indicies[0]));
 }
 
 void Navigation::BuildSelectionModel() {
@@ -242,14 +230,24 @@ NavWorkStatus Navigation::GetStatus() {
 	return ret;
 }
 
-void Navigation::Draw(ShaderUniform *tint, bool wire) {
+void Navigation::Draw() {
 	if(!m_nav_nodes_model) {
 		return;
 	}
+
+	bool wire = false;
+	GLint params[2];
+	glGetIntegerv(GL_POLYGON_MODE, params);
+	if(params[0] == GL_LINE) {
+		wire = true;
+	}
+
+	ShaderProgram shader = ShaderProgram::Current();
+	ShaderUniform tint = shader.GetUniformLocation("Tint");
 	
 	if(!wire) {
 		glm::vec4 tnt(0.5f, 1.0f, 0.7f, 1.0f);
-		tint->SetValuePtr4(1, &tnt[0]);
+		tint.SetValuePtr4(1, &tnt[0]);
 	}
 
 	glDisable(GL_CULL_FACE);
@@ -257,27 +255,31 @@ void Navigation::Draw(ShaderUniform *tint, bool wire) {
 	glEnable(GL_CULL_FACE);
 }
 
-void Navigation::DrawSelection(ShaderUniform *mvp, ShaderUniform *tint, glm::mat4 &view, glm::mat4 &proj) {
+void Navigation::DrawSelection() {
 	if(!m_selection_model || !m_selection) {
 		return;
 	}
 
+	ShaderProgram shader = ShaderProgram::Current();
+	ShaderUniform mvp = shader.GetUniformLocation("MVP");
+	ShaderUniform tint = shader.GetUniformLocation("Tint");
+
 	glm::vec4 tnt(1.0f, 0.5f, 0.0f, 1.0f);
-	tint->SetValuePtr4(1, &tnt[0]);
+	tint.SetValuePtr4(1, &tnt[0]);
 	
 	glm::mat4 model = glm::mat4(1.0);
-	model[3][0] = m_selection->x;
-	model[3][1] = m_selection->y;
-	model[3][2] = m_selection->z;
+	model[3][0] = m_selection->pos.x;
+	model[3][1] = m_selection->pos.y;
+	model[3][2] = m_selection->pos.z;
 	
-	glm::mat4 mvp_mat = proj * view * model;
-	mvp->SetValueMatrix4(1, false, &mvp_mat[0][0]);
+	glm::mat4 mvp_mat = m_camera.GetProjMat() * m_camera.GetViewMat() * model;
+	mvp.SetValueMatrix4(1, false, &mvp_mat[0][0]);
 	
 	glLineWidth(4.0f);
 	glDisable(GL_CULL_FACE);
 	m_selection_model->Draw();
 	glEnable(GL_CULL_FACE);
-
+	
 	glLineWidth(1.0f);
 }
 
@@ -299,7 +301,7 @@ void Navigation::RenderGUI() {
 	default:
 	{
 		if(m_selection) {
-			ImGui::Text("Selected node: %i at (%.2f, %.2f %.2f)", m_selection->id, m_selection->x, m_selection->z, m_selection->y);
+			ImGui::Text("Selected node: %i at (%.2f, %.2f %.2f)", m_selection->id, m_selection->pos.x, m_selection->pos.z, m_selection->pos.y);
 		} else {
 			ImGui::Text("Selected node:");
 		}
@@ -316,37 +318,37 @@ void Navigation::RenderGUI() {
 	ImGui::End();
 }
 
-void Navigation::RaySelection(int mouse_x, int mouse_y, const glm::mat4 &view, const glm::mat4 &proj) {
-	if(!z_map || !m_node_octree) {
+void Navigation::RaySelection(int mouse_x, int mouse_y) {
+	if(!m_node_octree) {
 		return;
 	}
 
 	glm::vec3 start;
 	glm::vec3 end;
 
-	glm::vec4 lRayStart_NDC(((float)mouse_x / (float)RES_X - 0.5f) * 2.0f, ((float)mouse_y / (float)RES_Y - 0.5f) * 2.0f, -1.0, 1.0f);
-	glm::vec4 lRayEnd_NDC(((float)mouse_x / (float)RES_X - 0.5f) * 2.0f, ((float)mouse_y / (float)RES_Y - 0.5f) * 2.0f, 0.0, 1.0f);
+	glm::vec4 start_ndc(((float)mouse_x / (float)RES_X - 0.5f) * 2.0f, ((float)mouse_y / (float)RES_Y - 0.5f) * 2.0f, -1.0, 1.0f);
+	glm::vec4 end_ndc(((float)mouse_x / (float)RES_X - 0.5f) * 2.0f, ((float)mouse_y / (float)RES_Y - 0.5f) * 2.0f, 0.0, 1.0f);
 
-	glm::mat4 InverseProjectionMatrix = glm::inverse(proj);
-	glm::mat4 InverseViewMatrix = glm::inverse(view);
+	glm::mat4 inverse_proj = glm::inverse(m_camera.GetProjMat());
+	glm::mat4 inverse_view = glm::inverse(m_camera.GetViewMat());
 
-	glm::vec4 lRayStart_camera = InverseProjectionMatrix * lRayStart_NDC;
-	lRayStart_camera /= lRayStart_camera.w;
+	glm::vec4 start_camera = inverse_proj * start_ndc;
+	start_camera /= start_camera.w;
 
-	glm::vec4 lRayStart_world = InverseViewMatrix * lRayStart_camera;
-	lRayStart_world /= lRayStart_world.w;
+	glm::vec4 start_world = inverse_view * start_camera;
+	start_world /= start_world.w;
 
-	glm::vec4 lRayEnd_camera = InverseProjectionMatrix * lRayEnd_NDC;
-	lRayEnd_camera /= lRayEnd_camera.w;
+	glm::vec4 end_camera = inverse_proj * end_ndc;
+	end_camera /= end_camera.w;
 
-	glm::vec4 lRayEnd_world = InverseViewMatrix * lRayEnd_camera;   
-	lRayEnd_world /= lRayEnd_world.w;
+	glm::vec4 end_world = inverse_view * end_camera;
+	end_world /= end_world.w;
 
-	glm::vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
-	lRayDir_world = glm::normalize(lRayDir_world);
+	glm::vec3 dir_world(end_world - start_world);
+	dir_world = glm::normalize(dir_world);
 
-	start = glm::vec3(lRayStart_world);
-	end = glm::normalize(lRayDir_world) * 100000.0f;
+	start = glm::vec3(start_world);
+	end = glm::normalize(dir_world) * 100000.0f;
 
 	glm::vec3 hit;
 	glm::vec3 normal;

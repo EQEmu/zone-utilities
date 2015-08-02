@@ -40,16 +40,12 @@ void Zone::Load()
 	}
 	w_map = std::unique_ptr<WaterMap>(WaterMap::LoadWaterMapfile(m_name));
 
-	if(z_map && m_collide)
-		m_nav = std::unique_ptr<Navigation>(new Navigation(z_map.get(), w_map.get(), m_collide.get()));
+	if(z_map && w_map && m_collide)
+		m_nav = std::unique_ptr<Navigation>(new Navigation(z_map.get(), w_map.get(), m_collide.get(), m_camera));
 }
 
 void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 	glm::vec3 loc = m_camera.GetLoc();
-	if(m_nav) {
-		m_nav->UpdateCameraLocation(loc);
-	}
-
 	{
 		glm::vec3 min;
 		glm::vec3 max;
@@ -112,7 +108,7 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		m_invis->Draw();
 
 	if(r_nav && m_nav) {
-		m_nav->Draw(&m_tint, false);
+		m_nav->Draw();
 	}
 
 	glEnable(GL_BLEND);
@@ -149,8 +145,8 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		m_volume->Draw();
 
 	if(m_nav && r_nav) {
-		m_nav->Draw(&m_tint, true);
-		m_nav->DrawSelection(&m_uniform, &m_tint, view, proj);
+		m_nav->Draw();
+		m_nav->DrawSelection();
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -160,7 +156,7 @@ void Zone::UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use
 	if(m_nav && !mouse_in_use && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)) {
 		double x_pos, y_pos;
 		glfwGetCursorPos(win, &x_pos, &y_pos);
-		m_nav->RaySelection((int)x_pos, RES_Y - (int)y_pos, m_camera.GetViewMat(), m_camera.GetProjMat());
+		m_nav->RaySelection((int)x_pos, RES_Y - (int)y_pos);
 	}
 
 	m_camera.UpdateInputs(win, keyboard_in_use, mouse_in_use);
