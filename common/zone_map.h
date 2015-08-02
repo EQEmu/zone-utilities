@@ -21,6 +21,8 @@ public:
 	bool LineIntersectsZone(glm::vec3 start, glm::vec3 end, float step, glm::vec3 *result) const;
 	bool LineIntersectsZoneNoZLeaps(glm::vec3 start, glm::vec3 end, float step_mag, glm::vec3 *result) const;
 	bool CheckLoS(glm::vec3 myloc, glm::vec3 oloc) const;
+	bool IsUnderworld(const glm::vec3 &point);
+
 	bool Load(std::string filename);
 	static ZoneMap *LoadMapFile(std::string file);
 	static ZoneMap *LoadMapFromData(const std::vector<glm::vec3> &positions, const std::vector<unsigned int> &indices);

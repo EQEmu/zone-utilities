@@ -30,7 +30,7 @@ public:
 
 	void Load();
 	void Render(bool r_c, bool r_nc, bool r_vol, bool r_nav);
-	void UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use) { m_camera.UpdateInputs(win, keyboard_in_use, mouse_in_use); }
+	void UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use);
 
 private:
 	std::string m_name;

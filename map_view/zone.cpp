@@ -46,6 +46,10 @@ void Zone::Load()
 
 void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 	glm::vec3 loc = m_camera.GetLoc();
+	if(m_nav) {
+		m_nav->UpdateCameraLocation(loc);
+	}
+
 	{
 		glm::vec3 min;
 		glm::vec3 max;
@@ -88,7 +92,9 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	glm::mat4 model = glm::mat4(1.0);
-	glm::mat4 mvp = m_camera.GetProjMat() * m_camera.GetViewMat() * model;
+	glm::mat4 proj = m_camera.GetProjMat();
+	glm::mat4 view = m_camera.GetViewMat();
+	glm::mat4 mvp = proj * view * model;
 	m_uniform.SetValueMatrix4(1, false, &mvp[0][0]);
 
 	glm::vec4 tnt(0.8f, 0.8f, 0.8f, 1.0f);
@@ -142,8 +148,20 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 	if(m_volume && r_vol)
 		m_volume->Draw();
 
-	if(m_nav && r_nav)
+	if(m_nav && r_nav) {
 		m_nav->Draw(&m_tint, true);
+		m_nav->DrawSelection(&m_uniform, &m_tint, view, proj);
+	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void Zone::UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use) {
+	if(m_nav && !mouse_in_use && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)) {
+		double x_pos, y_pos;
+		glfwGetCursorPos(win, &x_pos, &y_pos);
+		m_nav->RaySelection((int)x_pos, RES_Y - (int)y_pos, m_camera.GetViewMat(), m_camera.GetProjMat());
+	}
+
+	m_camera.UpdateInputs(win, keyboard_in_use, mouse_in_use);
 }

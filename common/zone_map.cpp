@@ -7,6 +7,8 @@
 #include <tuple>
 #include <map>
 #include <zlib.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
 	z_stream zstream;
@@ -201,6 +203,26 @@ bool ZoneMap::LineIntersectsZoneNoZLeaps(glm::vec3 start, glm::vec3 end, float s
 
 	//walked entire line and didnt run into anything...
 	return false;
+}
+
+bool ZoneMap::IsUnderworld(const glm::vec3 &point) {
+	if(!imp)
+		return false;
+
+	glm::vec3 normal;
+	glm::vec3 hit;
+	glm::vec3 to(point.x, BEST_Z_INVALID, point.z);
+	float hit_distance;
+	if(imp->rm->raycast((const RmReal*)&point, (const RmReal*)&to, (RmReal*)&hit, (RmReal*)&normal, &hit_distance)) {
+		float angle = acosf(glm::dot(normal, glm::vec3(0.0f, 1.0f, 0.0f))) * 180.0f / (float)M_PI;
+		if(angle > 90.0f) {
+			return true;
+		}
+
+		return false;
+	} else {
+		return true;
+	}
 }
 
 bool ZoneMap::CheckLoS(glm::vec3 myloc, glm::vec3 oloc) const {

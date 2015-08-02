@@ -25,7 +25,7 @@ void Camera::UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_u
 	double current_time = glfwGetTime();
 	float delta_time = float(current_time - last_time);
 	
-	if(!mouse_in_use && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT == GLFW_PRESS)) {
+	if(!mouse_in_use && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		double x_pos, y_pos;
 		glfwGetCursorPos(win, &x_pos, &y_pos);
 		glfwSetCursorPos(win, width / 2, height / 2);
