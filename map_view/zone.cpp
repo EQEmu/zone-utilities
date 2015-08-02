@@ -33,7 +33,11 @@ void Zone::Load()
 	m_invis.reset(invis);
 	m_volume.reset(volume);
 
-	z_map = std::unique_ptr<ZoneMap>(ZoneMap::LoadMapFile(m_name));
+	if(collide) {
+		z_map = std::unique_ptr<ZoneMap>(ZoneMap::LoadMapFromData(collide->GetPositions(), collide->GetIndicies()));
+	} else {
+		z_map = std::unique_ptr<ZoneMap>(ZoneMap::LoadMapFile(m_name));
+	}
 	w_map = std::unique_ptr<WaterMap>(WaterMap::LoadWaterMapfile(m_name));
 
 	if(z_map && m_collide)
@@ -57,14 +61,14 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		ImGui::Begin("Debug");
 		ImGui::TextColored(ImVec4(0.3,1.0,0.3,1.0), "W S A D to Move, Hold RMB to rotate. Hold Shift to speed boost. ESC to exit.");
 		ImGui::Text("Application average %.2f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::Text("Zone: %s, min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)", m_name.c_str(), min.x, min.y, min.z, max.x, max.y, max.z);
-		ImGui::Text("%.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
+		ImGui::Text("Zone: %s, min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)", m_name.c_str(), min.x, min.z, min.y, max.x, max.z, max.y);
+		ImGui::Text("EQ Coords: %.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
 		if(z_map && w_map) {
-			ImGui::Text("Best Z: %.2f, In Liquid: %s", z_map->FindBestZ(loc, nullptr, nullptr),
+			ImGui::Text("Floor: %.2f, In Liquid: %s", z_map->FindBestZ(loc, nullptr, nullptr),
 						w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
 		}
 		else if(z_map) {
-			ImGui::Text("Best Z: %.2f", z_map->FindBestZ(loc, nullptr, nullptr));
+			ImGui::Text("Floor: %.2f", z_map->FindBestZ(loc, nullptr, nullptr));
 		}
 		else if(w_map) {
 			ImGui::Text("In Liquid: %s", w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");

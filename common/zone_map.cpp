@@ -70,27 +70,46 @@ float ZoneMap::FindBestZ(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal)
 	if(!normal)
 		normal = &tmp_normal;
 
-	start.z += 1.0f;
+	start.y += 1.0f;
 	glm::vec3 from(start.x, start.y, start.z);
-	glm::vec3 to(start.x, start.y, BEST_Z_INVALID);
+	glm::vec3 to(start.x, BEST_Z_INVALID, start.z);
 	float hit_distance;
 	bool hit = false;
 
 	hit = imp->rm->raycast((const RmReal*)&from, (const RmReal*)&to, (RmReal*)result, (RmReal*)normal, &hit_distance);
 	if(hit) {
-		return result->z;
+		return result->y;
 	}
 	
 	// Find nearest Z above us
 	
-	to.z = -BEST_Z_INVALID;
+	to.y = -BEST_Z_INVALID;
 	hit = imp->rm->raycast((const RmReal*)&from, (const RmReal*)&to, (RmReal*)result, (RmReal*)normal, &hit_distance);
 	if (hit)
 	{
-		return result->z;
+		return result->y;
 	}
 	
 	return BEST_Z_INVALID;
+}
+
+bool ZoneMap::Raycast(const glm::vec3 &start, const glm::vec3 &end, glm::vec3 *result, glm::vec3 *normal, float *hit_distance) {
+	if(!imp)
+		return false;
+
+	glm::vec3 tmp;
+	if(!result)
+		result = &tmp;
+
+	glm::vec3 tmp_normal;
+	if(!normal)
+		normal = &tmp_normal;
+
+	float tmp_hit_distance;
+	if(!hit_distance)
+		hit_distance = &tmp_hit_distance;
+
+	return imp->rm->raycast((const RmReal*)&start, (const RmReal*)&end, (RmReal*)result, (RmReal*)normal, hit_distance);
 }
 
 bool ZoneMap::LineIntersectsZone(glm::vec3 start, glm::vec3 end, float step, glm::vec3 *result) const {
@@ -207,6 +226,28 @@ ZoneMap *ZoneMap::LoadMapFile(std::string file) {
 	return nullptr;
 }
 
+ZoneMap *ZoneMap::LoadMapFromData(const std::vector<glm::vec3> &positions, const std::vector<unsigned int> &indices) {
+	ZoneMap *m = new ZoneMap();
+	
+	if(m->imp) {
+		m->imp->rm->release();
+		m->imp->rm = nullptr;
+	}
+	else {
+		m->imp = new impl;
+	}
+
+	m->imp->rm = createRaycastMesh((RmUint32)positions.size(), (const RmReal*)&positions[0], (RmUint32)(indices.size() / 3), &indices[0]);
+
+	if(!m->imp->rm) {
+		delete m;
+		return nullptr;
+	}
+
+	m->imp->version = 2;
+	return m;
+}
+
 bool ZoneMap::Load(std::string filename) {
 	FILE *f = fopen(filename.c_str(), "rb");
 	if(f) {
@@ -288,6 +329,13 @@ bool ZoneMap::LoadV1(FILE *f) {
 		imp->rm = nullptr;
 	} else {
 		imp = new impl;
+	}
+
+	float t;
+	for(auto &v : verts) {
+		t = v.y;
+		v.y = v.z;
+		v.z = t;
 	}
 
 	imp->rm = createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]);
@@ -847,6 +895,13 @@ bool ZoneMap::LoadV2(FILE *f) {
 	}
 	else {
 		imp = new impl;
+	}
+
+	float t;
+	for(auto &v : verts) {
+		t = v.y;
+		v.y = v.z;
+		v.z = t;
 	}
 
 	imp->rm = createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]);

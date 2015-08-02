@@ -76,7 +76,7 @@ ADD_DEFINITIONS(-DEQEMU_MAP_INFO_PORT=${EQEMU_MAP_INFO_SERVER_PORT})
 
 FIND_PACKAGE(ZLIB REQUIRED)
 
-INCLUDE_DIRECTORIES("common" "log" "imgui" "recast/recast/include" "recast/detour/include" "recast/detour_tile_cache/include" "recast/debug_utils/include" "${ZLIB_INCLUDE_DIRS}" "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm/glm" "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libwebsockets")
+INCLUDE_DIRECTORIES("common" "log" "imgui" "${ZLIB_INCLUDE_DIRS}" "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm/glm" "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libwebsockets")
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(log)
@@ -98,7 +98,6 @@ IF(EQEMU_ENABLE_GL)
 	
 	ADD_SUBDIRECTORY(dependencies)
 	ADD_SUBDIRECTORY(imgui)
-	ADD_SUBDIRECTORY(recast)
 	ADD_SUBDIRECTORY(map_view)
 ELSE(EQEMU_ENABLE_GL)
 	ADD_SUBDIRECTORY(dependencies)

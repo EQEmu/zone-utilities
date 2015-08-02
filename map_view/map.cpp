@@ -144,6 +144,13 @@ bool LoadMapV1(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 		}
 	}
 
+	float t;
+	for(auto &v : verts) {
+		t = v.y;
+		v.y = v.z;
+		v.z = t;
+	}
+
 	return true;
 }
 
@@ -732,16 +739,29 @@ bool LoadMapV2(FILE *f, std::vector<glm::vec3> &verts, std::vector<uint32_t> &in
 					verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 					cur_verts[t] = i4;
 				}
+				indices.push_back(i2);
+				indices.push_back(i1);
+				indices.push_back(i4);
 
 				indices.push_back(i3);
 				indices.push_back(i2);
 				indices.push_back(i4);
 				
-				indices.push_back(i2);
-				indices.push_back(i1);
-				indices.push_back(i4);				
 			}
 		}
+	}
+
+	float t;
+	for(auto &v : verts) {
+		t = v.y;
+		v.y = v.z;
+		v.z = t;
+	}
+
+	for(auto &v : nc_verts) {
+		t = v.y;
+		v.y = v.z;
+		v.z = t;
 	}
 
 	return true;
@@ -996,14 +1016,14 @@ void LoadWaterMap(std::string filename, Model **volume) {
 			v8 = transformation * v8;
 
 			uint32_t current_index = (uint32_t)(*volume)->GetPositions().size();
-			(*volume)->GetPositions().push_back(glm::vec3(v1.y, v1.x, v1.z));
-			(*volume)->GetPositions().push_back(glm::vec3(v2.y, v2.x, v2.z));
-			(*volume)->GetPositions().push_back(glm::vec3(v3.y, v3.x, v3.z));
-			(*volume)->GetPositions().push_back(glm::vec3(v4.y, v4.x, v4.z));
-			(*volume)->GetPositions().push_back(glm::vec3(v5.y, v5.x, v5.z));
-			(*volume)->GetPositions().push_back(glm::vec3(v6.y, v6.x, v6.z));
-			(*volume)->GetPositions().push_back(glm::vec3(v7.y, v7.x, v7.z));
-			(*volume)->GetPositions().push_back(glm::vec3(v8.y, v8.x, v8.z));
+			(*volume)->GetPositions().push_back(glm::vec3(v1.y, v1.z, v1.x));
+			(*volume)->GetPositions().push_back(glm::vec3(v2.y, v2.z, v2.x));
+			(*volume)->GetPositions().push_back(glm::vec3(v3.y, v3.z, v3.x));
+			(*volume)->GetPositions().push_back(glm::vec3(v4.y, v4.z, v4.x));
+			(*volume)->GetPositions().push_back(glm::vec3(v5.y, v5.z, v5.x));
+			(*volume)->GetPositions().push_back(glm::vec3(v6.y, v6.z, v6.x));
+			(*volume)->GetPositions().push_back(glm::vec3(v7.y, v7.z, v7.x));
+			(*volume)->GetPositions().push_back(glm::vec3(v8.y, v8.z, v8.x));
 
 			//top
 			(*volume)->GetIndicies().push_back(current_index + 0);
