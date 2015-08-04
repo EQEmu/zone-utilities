@@ -371,19 +371,19 @@ void Navigation::RenderGUI() {
 		BuildNavigationModel();
 	}
 
-	ImGui::Begin("Navigation");
+	ImGui::Begin("Navigation", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	switch(status) {
 	case NavWorkLandNodePass:
-		ImGui::TextWrapped("Laying down land nodes");
+		ImGui::Text("Laying down land nodes");
 		break;
 	case NavWorkWaterNodePass:
-		ImGui::TextWrapped("Laying down water nodes");
+		ImGui::Text("Laying down water nodes");
 		break;
 	case NavWorkConnectionPass:
-		ImGui::TextWrapped("Connecting nodes");
+		ImGui::Text("Connecting nodes");
 		break;
 	case NavWorkOptimizationPass:
-		ImGui::TextWrapped("Optimizing connections");
+		ImGui::Text("Optimizing connections");
 		break;
 	default:
 	{

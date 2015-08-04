@@ -1,8 +1,10 @@
 #ifndef EQEMU_MAPVIEW_ZONE_H
 #define EQEMU_MAPVIEW_ZONE_H
 
+#include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
@@ -32,7 +34,14 @@ public:
 	void Render(bool r_c, bool r_nc, bool r_vol, bool r_nav);
 	void UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use);
 
+	void RenderDebugWindow();
+	bool& GetRenderDebugWindow() { return m_render_debug; }
 private:
+	//debug
+	bool m_render_debug;
+	std::vector<float> m_render_frame_rate_history;
+	std::chrono::system_clock::time_point prev_history_point;
+
 	std::string m_name;
 	ShaderProgram m_shader;
 	ShaderUniform m_uniform;
