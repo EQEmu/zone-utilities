@@ -160,6 +160,7 @@ void RenderMainMenu(GLFWwindow *win, bool &render_options, bool &rendering, std:
 
 void RenderOptionsWindow(bool &render_collide, bool &render_non_collide, bool &render_volumes, bool &render_navigation) {
 	ImGui::Begin("Options", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::SetNextTreeNodeOpened(true, ImGuiSetCond_Once);
 	if(ImGui::TreeNode("Rendering")) {
 		ImGui::Checkbox("Render Collidable Polygons", &render_collide);
 		ImGui::Checkbox("Render Non-Collidable Polygons", &render_non_collide);

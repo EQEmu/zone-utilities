@@ -95,9 +95,11 @@ IF(EQEMU_ENABLE_GL)
 	SET(GLFW_BINARY_DIR "${CMAKE_BINARY_DIR}/lib")
 	
 	INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glfw/include" "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glew/include")
+	INCLUDE_DIRECTORIES("recast/debug_utils/include" "recast/detour/include" "recast/detour_tile_cache/include" "recast/recast/include")
 	
 	ADD_SUBDIRECTORY(dependencies)
 	ADD_SUBDIRECTORY(imgui)
+	ADD_SUBDIRECTORY(recast)
 	ADD_SUBDIRECTORY(map_view)
 ELSE(EQEMU_ENABLE_GL)
 	ADD_SUBDIRECTORY(dependencies)

@@ -77,6 +77,8 @@ public:
 	}
 	~Navigation() { }
 
+	void Load(const std::string& zone) { }
+	void Save(const std::string& zone) { }
 	void ClearNavigation();
 	void CalculateGraph(const glm::vec3 &min, const glm::vec3 &max);
 	void AddLandNodes(const glm::vec2 &at);

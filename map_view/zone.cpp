@@ -41,8 +41,10 @@ void Zone::Load()
 	}
 	w_map = std::unique_ptr<WaterMap>(WaterMap::LoadWaterMapfile(m_name));
 
-	if(z_map && w_map && m_collide)
+	if(z_map && w_map && m_collide) {
 		m_nav = std::unique_ptr<Navigation>(new Navigation(z_map.get(), w_map.get(), m_collide.get(), m_camera));
+		m_nav->Load(m_name);
+	}
 
 	prev_history_point = std::chrono::system_clock::now();
 }

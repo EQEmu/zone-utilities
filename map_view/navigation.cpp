@@ -372,52 +372,61 @@ void Navigation::RenderGUI() {
 	}
 
 	ImGui::Begin("Navigation", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	switch(status) {
-	case NavWorkLandNodePass:
-		ImGui::Text("Laying down land nodes");
-		break;
-	case NavWorkWaterNodePass:
-		ImGui::Text("Laying down water nodes");
-		break;
-	case NavWorkConnectionPass:
-		ImGui::Text("Connecting nodes");
-		break;
-	case NavWorkOptimizationPass:
-		ImGui::Text("Optimizing connections");
-		break;
-	default:
-	{
-		if(m_selection) {
-			ImGui::Text("Selected node: %i at (%.2f, %.2f %.2f)", m_selection->id, m_selection->pos.x, m_selection->pos.z, m_selection->pos.y);
-			if(m_selection->type == PathNodeLand) {
-				glm::vec3 adjusted = m_selection->pos;
-				adjusted.y += m_agent_height;
-				ImGui::Text("Could connect: %s", z_map->CheckLosNoHazards(m_camera.GetLoc(), adjusted, m_hazard_step_size, m_max_hazard_diff) ? "true" : "false");
-			} else {
-				ImGui::Text("Could connect: %s", z_map->CheckLoS(m_camera.GetLoc(), m_selection->pos) ? "true" : "false");
-			}
+	if(m_selection) {
+		ImGui::Text("Selected node: %i at (%.2f, %.2f %.2f)", m_selection->id, m_selection->pos.x, m_selection->pos.z, m_selection->pos.y);
+		if(m_selection->type == PathNodeLand) {
+			glm::vec3 adjusted = m_selection->pos;
+			adjusted.y += m_agent_height;
+			ImGui::Text("Could connect: %s", z_map->CheckLosNoHazards(m_camera.GetLoc(), adjusted, m_hazard_step_size, m_max_hazard_diff) ? "true" : "false");
 		} else {
-			ImGui::Text("Selected node:");
-			ImGui::Text("Could connect:");
+			ImGui::Text("Could connect: %s", z_map->CheckLoS(m_camera.GetLoc(), m_selection->pos) ? "true" : "false");
 		}
-		ImGui::SliderFloat("Max voxel angle on land", &m_max_slope_on_land, 0.0f, 360.0f);
-		ImGui::SliderInt("Step size", &m_step_size, 1, 50);
-		ImGui::SliderInt("Water step size", &m_step_size_water, 1, 100);
-
-		ImGui::SliderFloat("Hazard detection step size", &m_hazard_step_size, 1.0f, 100.0f);
-		ImGui::SliderFloat("Hazard detection max diff", &m_max_hazard_diff, 0.0f, 100.0f);
-		ImGui::SliderFloat("Hazard detection agent height", &m_agent_height, 0.0f, 100.0f);
-
-		ImGui::SliderFloat("Automatic connect range (land)", &m_connect_range_land, 0.0f, 250.0f);
-		ImGui::SliderFloat("Automatic connect range (water)", &m_connect_range_water, 0.0f, 250.0f);
-
-		if(ImGui::Button("Calculate Navigation")) {
-			ClearNavigation();
-			std::thread t(&Navigation::CalculateGraph, this, z_model->GetAABBMin(), z_model->GetAABBMax());
-			//std::thread t(&Navigation::CalculateGraph, this, glm::vec3(-100.0f, -100.0f, -100.0f), glm::vec3(100.0f, 100.0f, 100.0f));
-			t.detach();
-		}
+	} else {
+		ImGui::Text("Selected node:");
+		ImGui::Text("Could connect:");
 	}
+
+	ImGui::SetNextTreeNodeOpened(true, ImGuiSetCond_Once);
+	if(ImGui::TreeNode("Nodes")) {
+		switch(status) {
+		case NavWorkLandNodePass:
+			ImGui::Text("Laying down land nodes");
+			break;
+		case NavWorkWaterNodePass:
+			ImGui::Text("Laying down water nodes");
+			break;
+		case NavWorkConnectionPass:
+			ImGui::Text("Connecting nodes");
+			break;
+		case NavWorkOptimizationPass:
+			ImGui::Text("Optimizing connections");
+			break;
+		default:
+		{
+
+			ImGui::SliderFloat("Max voxel angle on land", &m_max_slope_on_land, 0.0f, 360.0f);
+			ImGui::SliderInt("Step size", &m_step_size, 1, 50);
+			ImGui::SliderInt("Water step size", &m_step_size_water, 1, 100);
+
+			ImGui::SliderFloat("Hazard detection step size", &m_hazard_step_size, 1.0f, 100.0f);
+			ImGui::SliderFloat("Hazard detection max diff", &m_max_hazard_diff, 0.0f, 100.0f);
+			ImGui::SliderFloat("Hazard detection agent height", &m_agent_height, 0.0f, 100.0f);
+
+			ImGui::SliderFloat("Automatic connect range (land)", &m_connect_range_land, 0.0f, 250.0f);
+			ImGui::SliderFloat("Automatic connect range (water)", &m_connect_range_water, 0.0f, 250.0f);
+
+			if(ImGui::Button("Calculate Navigation")) {
+				ClearNavigation();
+				std::thread t(&Navigation::CalculateGraph, this, z_model->GetAABBMin(), z_model->GetAABBMax());
+				//std::thread t(&Navigation::CalculateGraph, this, glm::vec3(-100.0f, -100.0f, -100.0f), glm::vec3(100.0f, 100.0f, 100.0f));
+				t.detach();
+			}
+		}
+		}
+
+		if(ImGui::TreeNode("NavMesh")) {
+			ImGui::Text("NavMesh stuff here...");
+		}
 	}
 	ImGui::End();
 }
