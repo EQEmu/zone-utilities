@@ -12,19 +12,17 @@ class Model
 {
 public:
 	Model();
-	~Model();
+	virtual ~Model();
 	
-	void Draw(int type = GL_TRIANGLES);
-	void Compile();
+	virtual void Draw(int type = GL_TRIANGLES);
+	virtual void Compile();
 	
 	std::vector<glm::vec3>& GetPositions() { return positions; }
 	std::vector<unsigned int>& GetIndicies() { return indices; }
 
 	const glm::vec3& GetAABBMin() { return min; }
 	const glm::vec3& GetAABBMax() { return max; }
-
-	Model *Flip();
-private:
+protected:
 	std::vector<glm::vec3> positions;
 	std::vector<unsigned int> indices;
 	GLuint vao; //vertex array object
@@ -33,6 +31,19 @@ private:
 
 	glm::vec3 min;
 	glm::vec3 max;
+};
+
+class DynamicModel : public Model
+{
+public:
+	DynamicModel();
+	virtual ~DynamicModel();
+	
+	virtual void Draw(int type = GL_TRIANGLES);
+	virtual void Compile();
+protected:
+	size_t compiled_verts;
+	size_t compiled_ind;
 };
 
 #endif

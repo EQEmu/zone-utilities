@@ -16,12 +16,11 @@ public:
 	ZoneMap();
 	~ZoneMap();
 	
-	float FindBestZ(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const;
+	float FindBestFloor(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const;
 	bool Raycast(const glm::vec3 &start, const glm::vec3 &end, glm::vec3 *result, glm::vec3 *normal, float *hit_distance);
-	bool LineIntersectsZone(glm::vec3 start, glm::vec3 end, float step, glm::vec3 *result) const;
-	bool LineIntersectsZoneNoZLeaps(glm::vec3 start, glm::vec3 end, float step_mag, glm::vec3 *result) const;
-	bool CheckLoS(glm::vec3 myloc, glm::vec3 oloc) const;
 	bool IsUnderworld(const glm::vec3 &point);
+	bool CheckLoS(glm::vec3 myloc, glm::vec3 oloc) const;
+	bool CheckLosNoHazards(const glm::vec3 &start, const glm::vec3 &end, float step_size, float max_diff);
 
 	bool Load(std::string filename);
 	static ZoneMap *LoadMapFile(std::string file);

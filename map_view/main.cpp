@@ -44,7 +44,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	glfwSetInputMode(win, GLFW_STICKY_KEYS, GL_TRUE);
+	glfwSetInputMode(win, GLFW_STICKY_MOUSE_BUTTONS, 1);
+	glfwSetInputMode(win, GLFW_STICKY_KEYS, 1);
 	glfwSetCursorPos(win, RES_X / 2, RES_Y / 2);
 
 	std::unique_ptr<Zone> zone(new Zone(filename));

@@ -64,11 +64,11 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 		ImGui::Text("Zone: %s, min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)", m_name.c_str(), min.x, min.z, min.y, max.x, max.z, max.y);
 		ImGui::Text("EQ Coords: %.2f, %.2f, %.2f", loc.x, loc.z, loc.y);
 		if(z_map && w_map) {
-			ImGui::Text("Floor: %.2f, In Liquid: %s", z_map->FindBestZ(loc, nullptr, nullptr),
+			ImGui::Text("Floor: %.2f, In Liquid: %s", z_map->FindBestFloor(loc, nullptr, nullptr),
 						w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
 		}
 		else if(z_map) {
-			ImGui::Text("Floor: %.2f", z_map->FindBestZ(loc, nullptr, nullptr));
+			ImGui::Text("Floor: %.2f", z_map->FindBestFloor(loc, nullptr, nullptr));
 		}
 		else if(w_map) {
 			ImGui::Text("In Liquid: %s", w_map->InLiquid(loc.x, loc.z, loc.y) ? "true" : "false");
@@ -146,14 +146,18 @@ void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
 
 	if(m_nav && r_nav) {
 		m_nav->Draw();
+		glDisable(GL_DEPTH_TEST);
+		m_nav->DrawSelectionConnections();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		m_nav->DrawSelection();
+		glEnable(GL_DEPTH_TEST);
+	} else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Zone::UpdateInputs(GLFWwindow *win, bool keyboard_in_use, bool mouse_in_use) {
-	if(m_nav && !mouse_in_use && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)) {
+	if(m_nav && !mouse_in_use && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		double x_pos, y_pos;
 		glfwGetCursorPos(win, &x_pos, &y_pos);
 		m_nav->RaySelection((int)x_pos, RES_Y - (int)y_pos);

@@ -57,7 +57,7 @@ ZoneMap::ZoneMap() {
 ZoneMap::~ZoneMap() {
 }
 
-float ZoneMap::FindBestZ(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const {
+float ZoneMap::FindBestFloor(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const {
 	if (!imp)
 		return false;
 
@@ -111,97 +111,6 @@ bool ZoneMap::Raycast(const glm::vec3 &start, const glm::vec3 &end, glm::vec3 *r
 	return imp->rm->raycast((const RmReal*)&start, (const RmReal*)&end, (RmReal*)result, (RmReal*)normal, hit_distance);
 }
 
-bool ZoneMap::LineIntersectsZone(glm::vec3 start, glm::vec3 end, float step, glm::vec3 *result) const {
-	if(!imp)
-		return false;
-	return imp->rm->raycast((const RmReal*)&start, (const RmReal*)&end, (RmReal*)result, nullptr, nullptr);
-}
-
-bool ZoneMap::LineIntersectsZoneNoZLeaps(glm::vec3 start, glm::vec3 end, float step_mag, glm::vec3 *result) const {
-	if (!imp)
-		return false;
-	
-	float z = BEST_Z_INVALID;
-	glm::vec3 step;
-	glm::vec3 cur;
-	cur.x = start.x;
-	cur.y = start.y;
-	cur.z = start.z;
-
-	step.x = end.x - start.x;
-	step.y = end.y - start.y;
-	step.z = end.z - start.z;
-	float factor = step_mag / sqrt(step.x*step.x + step.y*step.y + step.z*step.z);
-
-	step.x *= factor;
-	step.y *= factor;
-	step.z *= factor;
-
-	int steps = 0;
-
-	if (step.x > 0 && step.x < 0.001f)
-		step.x = 0.001f;
-	if (step.y > 0 && step.y < 0.001f)
-		step.y = 0.001f;
-	if (step.z > 0 && step.z < 0.001f)
-		step.z = 0.001f;
-	if (step.x < 0 && step.x > -0.001f)
-		step.x = -0.001f;
-	if (step.y < 0 && step.y > -0.001f)
-		step.y = -0.001f;
-	if (step.z < 0 && step.z > -0.001f)
-		step.z = -0.001f;
-
-	//while we are not past end
-	//always do this once, even if start == end.
-	while(cur.x != end.x || cur.y != end.y || cur.z != end.z)
-	{
-		steps++;
-		glm::vec3 me;
-		me.x = cur.x;
-		me.y = cur.y;
-		me.z = cur.z;
-		glm::vec3 hit;
-
-		float best_z = FindBestZ(me, &hit, nullptr);
-		float diff = best_z - z;
-		diff = diff < 0 ? -diff : diff;
-
-		if (z <= BEST_Z_INVALID || best_z <= BEST_Z_INVALID || diff < 12.0)
-			z = best_z;
-		else
-			return true;
-
-		//look at current location
-		if(LineIntersectsZone(start, end, step_mag, result))
-		{
-			return true;
-		}
-
-		//move 1 step
-		if (cur.x != end.x)
-			cur.x += step.x;
-		if (cur.y != end.y)
-			cur.y += step.y;
-		if (cur.z != end.z)
-			cur.z += step.z;
-
-		//watch for end conditions
-		if ( (cur.x > end.x && end.x >= start.x) || (cur.x < end.x && end.x <= start.x) || (step.x == 0) ) {
-			cur.x = end.x;
-		}
-		if ( (cur.y > end.y && end.y >= start.y) || (cur.y < end.y && end.y <= start.y) || (step.y == 0) ) {
-			cur.y = end.y;
-		}
-		if ( (cur.z > end.z && end.z >= start.z) || (cur.z < end.z && end.z < start.z) || (step.z == 0) ) {
-			cur.z = end.z;
-		}
-	}
-
-	//walked entire line and didnt run into anything...
-	return false;
-}
-
 bool ZoneMap::IsUnderworld(const glm::vec3 &point) {
 	if(!imp)
 		return false;
@@ -227,6 +136,37 @@ bool ZoneMap::CheckLoS(glm::vec3 myloc, glm::vec3 oloc) const {
 		return false;
 
 	return !imp->rm->raycast((const RmReal*)&myloc, (const RmReal*)&oloc, nullptr, nullptr, nullptr);
+}
+
+bool ZoneMap::CheckLosNoHazards(const glm::vec3 &start, const glm::vec3 &end, float step_size, float max_diff) {
+	if(!imp)
+		return false;
+
+	if(imp->rm->raycast((const RmReal*)&start, (const RmReal*)&end, nullptr, nullptr, nullptr)) {
+		return false;
+	}
+
+	glm::vec3 line = end - start;
+	float dist = glm::length(line);
+	glm::vec3 dir = glm::normalize(line);
+	float min = -BEST_Z_INVALID;
+	float max = BEST_Z_INVALID;
+	for(float i = 0.0f; i < dist; i += step_size) {
+		glm::vec3 current = start + (dir * i);
+		float best_y = FindBestFloor(current, nullptr, nullptr);
+
+		if(best_y <= BEST_Z_INVALID || best_y >= (-BEST_Z_INVALID))
+		{
+			return false;
+		}
+
+		float diff = fabs(current.y - best_y);
+		if(diff > max_diff) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 ZoneMap *ZoneMap::LoadMapFile(std::string file) {

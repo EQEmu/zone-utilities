@@ -4,7 +4,6 @@
 #include <memory>
 #include <thread>
 #include <mutex>
-#include <list>
 #include <vector>
 #include "camera.h"
 #include "model.h"
@@ -15,15 +14,34 @@
 #include "octree.h"
 #include "raycast_mesh.h"
 
-struct PathNode
+enum PathNodeType
 {
+	PathNodeLand,
+	PathNodeWater
+};
+
+class PathNode;
+struct PathNodeConnection
+{
+	float weight;
+	bool teleport;
+	PathNode *connected_to;
+};
+
+class PathNode
+{
+public:
 	PathNode() { 
 		id = 0;
 	}
 
+	void Connect(PathNode *to, bool teleport); //one way connection
+	void Link(PathNode *to, bool teleport); //two way connection
+
 	int id;
 	glm::vec3 pos;
-	std::list<PathNode*> connected_to;
+	PathNodeType type;
+	std::vector<PathNodeConnection> connections;
 };
 
 enum NavWorkStatus
@@ -31,9 +49,10 @@ enum NavWorkStatus
 	NavWorkNone,
 	NavWorkNeedsCompile,
 	NavWorkLandNodePass,
-	NavWorkWaterNodePass
+	NavWorkWaterNodePass,
+	NavWorkConnectionPass,
+	NavWorkOptimizationPass
 };
-
 
 class Navigation
 {
@@ -45,6 +64,12 @@ public:
 		m_step_size = 12;
 		m_step_size_water = 12;
 		m_max_slope_on_land = 60.0f;
+		m_hazard_step_size = 3.0f;
+		m_max_hazard_diff = 10.0f;
+		m_agent_height = 1.0f;
+		m_connect_range_land = 20.0f;
+		m_connect_range_water = 20.0f;
+
 		m_node_id = 0;
 		m_work_status = NavWorkNone;
 		m_selection = nullptr;
@@ -56,7 +81,7 @@ public:
 	void CalculateGraph(const glm::vec3 &min, const glm::vec3 &max);
 	void AddLandNodes(const glm::vec2 &at);
 	void AddWaterNode(const glm::vec3 &at);
-	void AttemptToAddNode(float x, float y, float z);
+	void AttemptToAddNode(float x, float y, float z, PathNodeType type);
 
 	void BuildNavigationModel();
 
@@ -64,7 +89,8 @@ public:
 	void Draw();
 	
 	void DrawSelection();
-	void SetSelection(PathNode *e) { m_selection = e; }
+	void DrawSelectionConnections();
+	void SetSelection(PathNode *e);
 	void RaySelection(int mouse_x, int mouse_yj);
 private:
 	void BuildNodeModel();
@@ -81,12 +107,18 @@ private:
 	//selection
 	PathNode *m_selection;
 	std::unique_ptr<Model> m_selection_model;
+	std::unique_ptr<Model> m_selection_connection_model;
 
 	//nav nodes
 	int m_step_size;
 	int m_step_size_water;
 	float m_max_slope_on_land;
 	float m_max_slope_in_water;
+	float m_connect_range_land;
+	float m_connect_range_water;
+	float m_hazard_step_size;
+	float m_max_hazard_diff;
+	float m_agent_height;
 	std::unique_ptr<Model> m_nav_nodes_model;
 	std::unique_ptr<Octree<PathNode>> m_node_octree;
 	std::vector<std::unique_ptr<PathNode>> m_nodes;

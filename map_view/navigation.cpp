@@ -6,6 +6,30 @@
 #include <math.h>
 #include <gtc/matrix_transform.hpp>
 
+void PathNode::Connect(PathNode *to, bool teleport) {
+	for(auto &conn : connections) {
+		if(conn.connected_to == to) {
+			return;
+		}
+	}
+
+	float weight_x = (to->pos.x - pos.x);
+	float weight_y = (to->pos.y - pos.y);
+	float weight_z = (to->pos.z - pos.z);
+
+	PathNodeConnection conn;
+	conn.connected_to = to;
+	conn.teleport = teleport;
+	conn.weight = sqrtf((weight_x * weight_x) + (weight_y * weight_y) + (weight_z * weight_z));
+
+	connections.push_back(conn);
+}
+
+void PathNode::Link(PathNode *to, bool teleport) {
+	Connect(to, teleport);
+	to->Connect(this, teleport);
+}
+
 void Navigation::CalculateGraph(const glm::vec3 &min, const glm::vec3 &max) {
 	auto status = GetStatus();
 	if(status != NavWorkNone) {
@@ -32,6 +56,51 @@ void Navigation::CalculateGraph(const glm::vec3 &min, const glm::vec3 &max) {
 		}
 	}
 
+	SetStatus(NavWorkConnectionPass);
+	for(auto &node : m_nodes) {
+		m_node_octree->TraverseRange(node->pos, m_connect_range_land > m_connect_range_water ? m_connect_range_land : m_connect_range_water, 
+									 [&node, this](const glm::vec3& pos, PathNode *ent) {
+			if(ent == node.get()) {
+				return;
+			}
+	
+			float dist = glm::length(pos - node->pos);
+			if(node->type == PathNodeWater || ent->type == PathNodeWater) {
+				//one is a water node.
+				
+				if(dist > m_connect_range_water) {
+					return;
+				}
+
+				if(z_map->CheckLoS(glm::vec3(node->pos.x, node->pos.y + m_agent_height, node->pos.z), glm::vec3(pos.x, pos.y, pos.z))) {
+					node->Link(ent, false);
+				}
+			} else {
+				//both land nodes
+
+				if(dist > m_connect_range_land) {
+					return;
+				}
+
+				if(z_map->CheckLosNoHazards(glm::vec3(node->pos.x, node->pos.y + m_agent_height, node->pos.z), glm::vec3(pos.x, pos.y, pos.z), m_hazard_step_size, m_max_hazard_diff)) {
+					node->Link(ent, false);
+				}
+			}
+		});
+	}
+
+	//optimization pass
+	SetStatus(NavWorkOptimizationPass);
+	//basic optimization remove any nodes without *any* connections
+	auto iter = m_nodes.begin();
+	while(iter != m_nodes.end()) {
+		if((*iter)->connections.size() == 0) {
+			iter = m_nodes.erase(iter);
+			continue;
+		}
+		++iter;
+	}
+
 	SetStatus(NavWorkNeedsCompile);
 }
 
@@ -54,7 +123,7 @@ void Navigation::AddLandNodes(const glm::vec2 &at) {
 
 		if(!w_map->InLiquid(at.x, at.y, ceil(hit.y))) {
 			if(angle < m_max_slope_on_land) {
-				AttemptToAddNode(at.x, ceil(hit.y), at.y);
+				AttemptToAddNode(at.x, ceil(hit.y), at.y, PathNodeLand);
 			}
 		}
 
@@ -71,14 +140,15 @@ void Navigation::AddWaterNode(const glm::vec3 &at)  {
 		return;
 	}
 
-	AttemptToAddNode(at.x, at.z, at.y);
+	AttemptToAddNode(at.x, at.z, at.y, PathNodeWater);
 }
 
-void Navigation::AttemptToAddNode(float x, float y, float z) {
+void Navigation::AttemptToAddNode(float x, float y, float z, PathNodeType type) {
 	PathNode *node = new PathNode;
 	node->id = m_node_id++;
 	node->pos = glm::vec3(x, y, z);
-	
+	node->type = type;
+
 	m_node_octree->Insert(node->pos, node);
 	m_nodes.push_back(std::unique_ptr<PathNode>(node));
 }
@@ -101,11 +171,7 @@ void Navigation::ClearNavigation() {
 	m_nodes_mesh.release();
 	m_selection = nullptr;
 
-	if(z_model)
-		m_node_octree.reset(new Octree<PathNode>(Octree<PathNode>::AABB(z_model->GetAABBMin(), z_model->GetAABBMax())));
-	else
-		m_node_octree.reset(new Octree<PathNode>(Octree<PathNode>::AABB(glm::vec3(-10000.0f, -10000.0f, -10000.0f), glm::vec3(10000.0f, 10000.0f, 10000.0f))));
-
+	m_node_octree.reset(new Octree<PathNode>(Octree<PathNode>::AABB(z_model->GetAABBMin(), z_model->GetAABBMax())));
 	m_nav_nodes_model.release();
 	m_node_id = 0;
 }
@@ -275,11 +341,26 @@ void Navigation::DrawSelection() {
 	glm::mat4 mvp_mat = m_camera.GetProjMat() * m_camera.GetViewMat() * model;
 	mvp.SetValueMatrix4(1, false, &mvp_mat[0][0]);
 	
-	glLineWidth(4.0f);
 	glDisable(GL_CULL_FACE);
 	m_selection_model->Draw();
 	glEnable(GL_CULL_FACE);
-	
+}
+
+void Navigation::DrawSelectionConnections() {
+	if(!m_selection_connection_model || !m_selection) {
+		return;
+	}
+
+	ShaderProgram shader = ShaderProgram::Current();
+	ShaderUniform tint = shader.GetUniformLocation("Tint");
+
+	glm::vec4 tnt(0.0f, 0.5f, 1.0f, 1.0f);
+	tint.SetValuePtr4(1, &tnt[0]);
+
+	glLineWidth(3.0f);
+	glDisable(GL_CULL_FACE);
+	m_selection_connection_model->Draw(GL_LINES);
+	glEnable(GL_CULL_FACE);
 	glLineWidth(1.0f);
 }
 
@@ -298,19 +379,42 @@ void Navigation::RenderGUI() {
 	case NavWorkWaterNodePass:
 		ImGui::TextWrapped("Laying down water nodes");
 		break;
+	case NavWorkConnectionPass:
+		ImGui::TextWrapped("Connecting nodes");
+		break;
+	case NavWorkOptimizationPass:
+		ImGui::TextWrapped("Optimizing connections");
+		break;
 	default:
 	{
 		if(m_selection) {
 			ImGui::Text("Selected node: %i at (%.2f, %.2f %.2f)", m_selection->id, m_selection->pos.x, m_selection->pos.z, m_selection->pos.y);
+			if(m_selection->type == PathNodeLand) {
+				glm::vec3 adjusted = m_selection->pos;
+				adjusted.y += m_agent_height;
+				ImGui::Text("Could connect: %s", z_map->CheckLosNoHazards(m_camera.GetLoc(), adjusted, m_hazard_step_size, m_max_hazard_diff) ? "true" : "false");
+			} else {
+				ImGui::Text("Could connect: %s", z_map->CheckLoS(m_camera.GetLoc(), m_selection->pos) ? "true" : "false");
+			}
 		} else {
 			ImGui::Text("Selected node:");
+			ImGui::Text("Could connect:");
 		}
 		ImGui::SliderFloat("Max voxel angle on land", &m_max_slope_on_land, 0.0f, 360.0f);
 		ImGui::SliderInt("Step size", &m_step_size, 1, 50);
 		ImGui::SliderInt("Water step size", &m_step_size_water, 1, 100);
+
+		ImGui::SliderFloat("Hazard detection step size", &m_hazard_step_size, 1.0f, 100.0f);
+		ImGui::SliderFloat("Hazard detection max diff", &m_max_hazard_diff, 0.0f, 100.0f);
+		ImGui::SliderFloat("Hazard detection agent height", &m_agent_height, 0.0f, 100.0f);
+
+		ImGui::SliderFloat("Automatic connect range (land)", &m_connect_range_land, 0.0f, 250.0f);
+		ImGui::SliderFloat("Automatic connect range (water)", &m_connect_range_water, 0.0f, 250.0f);
+
 		if(ImGui::Button("Calculate Navigation")) {
 			ClearNavigation();
 			std::thread t(&Navigation::CalculateGraph, this, z_model->GetAABBMin(), z_model->GetAABBMax());
+			//std::thread t(&Navigation::CalculateGraph, this, glm::vec3(-100.0f, -100.0f, -100.0f), glm::vec3(100.0f, 100.0f, 100.0f));
 			t.detach();
 		}
 	}
@@ -358,4 +462,25 @@ void Navigation::RaySelection(int mouse_x, int mouse_y) {
 	m_node_octree->TraverseRange(hit, 1.1f, [this](const glm::vec3 &loc, PathNode *ent) {
 		SetSelection(ent);
 	});
+}
+
+void Navigation::SetSelection(PathNode *e) {
+	m_selection = e;
+
+	if(m_selection) {
+		m_selection_connection_model.reset(new Model());
+
+		unsigned int ind = 0;
+		auto &positions = m_selection_connection_model->GetPositions();
+		auto &inds = m_selection_connection_model->GetIndicies();
+		for(auto &connection : m_selection->connections) {
+			positions.push_back(m_selection->pos);
+			positions.push_back(connection.connected_to->pos);
+
+			inds.push_back(ind++);
+			inds.push_back(ind++);
+		}
+
+		m_selection_connection_model->Compile();
+	}
 }
