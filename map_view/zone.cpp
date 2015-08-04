@@ -48,7 +48,7 @@ void Zone::Load()
 }
 
 void Zone::Render(bool r_c, bool r_nc, bool r_vol, bool r_nav) {
-	auto now = std::chrono::steady_clock::now();
+	auto now = std::chrono::system_clock::now();
 	if(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev_history_point).count() >= 100) {
 		if(m_render_frame_rate_history.size() > 1200) {
 			m_render_frame_rate_history.erase(m_render_frame_rate_history.begin(), m_render_frame_rate_history.begin() + 200);
