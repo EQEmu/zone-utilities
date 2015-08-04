@@ -66,7 +66,7 @@ int callback_http(libwebsocket_context *context, libwebsocket *wsi, libwebsocket
 				double best_z = BEST_Z_INVALID;
 				if(m) {
 					glm::vec3 v(x, y, z);
-					best_z = m->FindBestZ(v, nullptr, nullptr);
+					best_z = m->FindBestFloor(v, nullptr, nullptr);
 				}
 
 				std::string area = "unknown";
