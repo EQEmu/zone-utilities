@@ -1,12 +1,7 @@
 #ifndef EQEMU_ORIENTED_BOUNDNG_BOX_H
 #define EQEMU_ORIENTED_BOUNDNG_BOX_H
 
-#define GLM_FORCE_RADIANS
-#include <glm.hpp>
-
-glm::mat4 CreateRotateMatrix(float rx, float ry, float rz);
-glm::mat4 CreateTranslateMatrix(float tx, float ty, float tz);
-glm::mat4 CreateScaleMatrix(float sx, float sy, float sz);
+#include "eq_math.h"
 
 class OrientedBoundingBox
 {
@@ -19,6 +14,13 @@ public:
 	
 	glm::mat4& GetTransformation() { return transformation; }
 	glm::mat4& GetInvertedTransformation() { return inverted_transformation; }
+
+	float GetMinX() const { return min_x; }
+	float GetMinY() const { return min_y; }
+	float GetMinZ() const { return min_z; }
+	float GetMaxX() const { return max_x; }
+	float GetMaxY() const { return max_y; }
+	float GetMaxZ() const { return max_z; }
 private:
 	float min_x, max_x;
 	float min_y, max_y;

@@ -112,3 +112,93 @@ bool WaterMapV2::Load(FILE *fp) {
 
 	return true;
 }
+
+void WaterMapV2::CreateMeshFrom(std::vector<glm::vec3> &verts, std::vector<unsigned int> &inds) {
+	verts.clear();
+	inds.clear();
+
+	for(auto &region : regions) {
+		float min_x = region.second.GetMinX();
+		float min_y = region.second.GetMinY();
+		float min_z = region.second.GetMinZ();
+		float max_x = region.second.GetMaxX();
+		float max_y = region.second.GetMaxY();
+		float max_z = region.second.GetMaxZ();
+
+		glm::vec4 v1(min_x, max_y, min_z, 1.0f);
+		glm::vec4 v2(min_x, max_y, max_z, 1.0f);
+		glm::vec4 v3(max_x, max_y, max_z, 1.0f);
+		glm::vec4 v4(max_x, max_y, min_z, 1.0f);
+		glm::vec4 v5(min_x, min_y, min_z, 1.0f);
+		glm::vec4 v6(min_x, min_y, max_z, 1.0f);
+		glm::vec4 v7(max_x, min_y, max_z, 1.0f);
+		glm::vec4 v8(max_x, min_y, min_z, 1.0f);
+
+		v1 = region.second.GetTransformation() * v1;
+		v2 = region.second.GetTransformation() * v2;
+		v3 = region.second.GetTransformation() * v3;
+		v4 = region.second.GetTransformation() * v4;
+		v5 = region.second.GetTransformation() * v5;
+		v6 = region.second.GetTransformation() * v6;
+		v7 = region.second.GetTransformation() * v7;
+		v8 = region.second.GetTransformation() * v8;
+
+		uint32_t current_index = (uint32_t)verts.size();
+		verts.push_back(glm::vec3(v1.y, v1.z, v1.x));
+		verts.push_back(glm::vec3(v2.y, v2.z, v2.x));
+		verts.push_back(glm::vec3(v3.y, v3.z, v3.x));
+		verts.push_back(glm::vec3(v4.y, v4.z, v4.x));
+		verts.push_back(glm::vec3(v5.y, v5.z, v5.x));
+		verts.push_back(glm::vec3(v6.y, v6.z, v6.x));
+		verts.push_back(glm::vec3(v7.y, v7.z, v7.x));
+		verts.push_back(glm::vec3(v8.y, v8.z, v8.x));
+
+		//top
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 1);
+		inds.push_back(current_index + 2);
+		inds.push_back(current_index + 2);
+		inds.push_back(current_index + 3);
+		inds.push_back(current_index + 0);
+
+		//back
+		inds.push_back(current_index + 1);
+		inds.push_back(current_index + 2);
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 5);
+		inds.push_back(current_index + 1);
+
+		//bottom
+		inds.push_back(current_index + 4);
+		inds.push_back(current_index + 5);
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 7);
+		inds.push_back(current_index + 4);
+
+		//front
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 3);
+		inds.push_back(current_index + 7);
+		inds.push_back(current_index + 7);
+		inds.push_back(current_index + 4);
+		inds.push_back(current_index + 0);
+
+		//left
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 1);
+		inds.push_back(current_index + 5);
+		inds.push_back(current_index + 5);
+		inds.push_back(current_index + 4);
+		inds.push_back(current_index + 0);
+
+		//right
+		inds.push_back(current_index + 3);
+		inds.push_back(current_index + 2);
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 7);
+		inds.push_back(current_index + 3);
+	}
+}

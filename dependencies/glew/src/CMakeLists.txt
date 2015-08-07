@@ -2,7 +2,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(glew_sources
 	glew.c
-	glewinfo.c
 	visualinfo.c
 )
 

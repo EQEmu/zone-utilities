@@ -16,8 +16,8 @@
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef EQEMU_COMMON_PFS_CRC_HPP
-#define EQEMU_COMMON_PFS_CRC_HPP
+#ifndef EQEMU_COMMON_PFS_CRC_H
+#define EQEMU_COMMON_PFS_CRC_H
 
 #include <stdint.h>
 #include <string.h>

@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
+
+#include "eq_math.h"
 
 enum WaterRegionType {
 	RegionTypeUnsupported = -2,
@@ -29,7 +32,7 @@ public:
 	virtual bool InVWater(float y, float x, float z) const { return false; }
 	virtual bool InLava(float y, float x, float z) const { return false; }
 	virtual bool InLiquid(float y, float x, float z) const { return false; }
-	
+	virtual void CreateMeshFrom(std::vector<glm::vec3> &verts, std::vector<unsigned int> &inds) { }
 protected:
 	virtual bool Load(FILE *fp) { return false; }
 };

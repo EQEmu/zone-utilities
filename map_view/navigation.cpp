@@ -105,8 +105,8 @@ void Navigation::CalculateGraph(const glm::vec3 &min, const glm::vec3 &max) {
 }
 
 void Navigation::AddLandNodes(const glm::vec2 &at) {
-	glm::vec3 start(at.x, -BEST_Z_INVALID, at.y);
-	glm::vec3 end(at.x, BEST_Z_INVALID, at.y);
+	glm::vec3 start(at.x, BEST_CEIL_INVALID, at.y);
+	glm::vec3 end(at.x, BEST_FLOOR_INVALID, at.y);
 	glm::vec3 hit;
 	glm::vec3 normal;
 	glm::vec3 normal_calc(0.0f, 1.0f, 0.0f);

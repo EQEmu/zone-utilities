@@ -1,31 +1,23 @@
 #ifndef EQEMU_COMMON_ZONE_MAP_H
 #define EQEMU_COMMON_ZONE_MAP_H
 
-#include <stdio.h>
-#include <stdint.h>
-#include <string>
 #include <vector>
-#define GLM_FORCE_RADIANS
-#include <glm.hpp>
 
-#define BEST_Z_INVALID -99999
+#include "eq_physics.h"
 
 class ZoneMap
 {
 public:
 	ZoneMap();
 	~ZoneMap();
-	
-	float FindBestFloor(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const;
-	bool Raycast(const glm::vec3 &start, const glm::vec3 &end, glm::vec3 *result, glm::vec3 *normal, float *hit_distance);
-	bool IsUnderworld(const glm::vec3 &point);
-	bool CheckLoS(glm::vec3 myloc, glm::vec3 oloc) const;
-	bool CheckLosNoHazards(const glm::vec3 &start, const glm::vec3 &end, float step_size, float max_diff);
 
 	bool Load(std::string filename);
 	static ZoneMap *LoadMapFile(std::string file);
-	static ZoneMap *LoadMapFromData(const std::vector<glm::vec3> &positions, const std::vector<unsigned int> &indices);
-	int GetVersion();
+	
+	const std::vector<glm::vec3>& GetCollidableVerts();
+	const std::vector<unsigned int>& GetCollidableInds();
+	const std::vector<glm::vec3>& GetNonCollidableVerts();
+	const std::vector<unsigned int>& GetNonCollidableInds();
 private:
 	void RotateVertex(glm::vec3 &v, float rx, float ry, float rz);
 	void ScaleVertex(glm::vec3 &v, float sx, float sy, float sz);

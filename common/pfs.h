@@ -1,5 +1,5 @@
-#ifndef EQEMU_COMMON_PFS_ARCHIVE_HPP
-#define EQEMU_COMMON_PFS_ARCHIVE_HPP
+#ifndef EQEMU_COMMON_PFS_ARCHIVE_H
+#define EQEMU_COMMON_PFS_ARCHIVE_H
 
 #include <stdint.h>
 #include <string>

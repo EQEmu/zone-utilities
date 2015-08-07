@@ -2,13 +2,14 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(common_sources
 	compression.cpp
+	eq_math.cpp
+	eq_physics.cpp
 	eqg_loader.cpp
 	eqg_model_loader.cpp
 	eqg_v4_loader.cpp
 	oriented_bounding_box.cpp
 	pfs.cpp
 	pfs_crc.cpp
-	raycast_mesh.cpp
 	s3d_loader.cpp
 	string_util.cpp
 	water_map.cpp
@@ -21,6 +22,8 @@ SET(common_sources
 SET(common_headers
 	any.h
 	compression.h
+	eq_math.h
+	eq_physics.cpp
 	eqemu_endian.h
 	eqg_geometry.h
 	eqg_invis_wall.h
@@ -39,7 +42,6 @@ SET(common_headers
 	pfs_crc.h
 	placeable.h
 	placeable_group.h
-	raycast_mesh.h
 	safe_alloc.h
 	s3d_bsp.h
 	s3d_geometry.h

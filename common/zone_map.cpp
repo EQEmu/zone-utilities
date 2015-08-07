@@ -1,14 +1,12 @@
-#include "zone_map.h"
-#include "raycast_mesh.h"
-#include <algorithm>
-#include <locale>
-#include <vector>
 #include <memory>
 #include <tuple>
 #include <map>
+#include <locale>
+#include <algorithm>
+
 #include <zlib.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
+
+#include "zone_map.h"
 
 uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
 	z_stream zstream;
@@ -46,127 +44,19 @@ uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_
 
 struct ZoneMap::impl
 {
-	std::unique_ptr<RaycastMesh> rm;
-	int version;
+	std::vector<glm::vec3> verts;
+	std::vector<unsigned int> inds;
+	
+	std::vector<glm::vec3> nc_verts;
+	std::vector<unsigned int> nc_inds;
 };
 
 ZoneMap::ZoneMap() {
-	imp = nullptr;
+	imp = new impl;
 }
 
 ZoneMap::~ZoneMap() {
-}
-
-float ZoneMap::FindBestFloor(glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const {
-	if (!imp)
-		return false;
-
-	glm::vec3 tmp;
-	if(!result)
-		result = &tmp;
-
-	glm::vec3 tmp_normal;
-	if(!normal)
-		normal = &tmp_normal;
-
-	start.y += 1.0f;
-	glm::vec3 from(start.x, start.y, start.z);
-	glm::vec3 to(start.x, BEST_Z_INVALID, start.z);
-	float hit_distance;
-	bool hit = false;
-
-	hit = imp->rm->raycast((const RmReal*)&from, (const RmReal*)&to, (RmReal*)result, (RmReal*)normal, &hit_distance);
-	if(hit) {
-		return result->y;
-	}
-	
-	// Find nearest Z above us
-	
-	to.y = -BEST_Z_INVALID;
-	hit = imp->rm->raycast((const RmReal*)&from, (const RmReal*)&to, (RmReal*)result, (RmReal*)normal, &hit_distance);
-	if (hit)
-	{
-		return result->y;
-	}
-	
-	return BEST_Z_INVALID;
-}
-
-bool ZoneMap::Raycast(const glm::vec3 &start, const glm::vec3 &end, glm::vec3 *result, glm::vec3 *normal, float *hit_distance) {
-	if(!imp)
-		return false;
-
-	glm::vec3 tmp;
-	if(!result)
-		result = &tmp;
-
-	glm::vec3 tmp_normal;
-	if(!normal)
-		normal = &tmp_normal;
-
-	float tmp_hit_distance;
-	if(!hit_distance)
-		hit_distance = &tmp_hit_distance;
-
-	return imp->rm->raycast((const RmReal*)&start, (const RmReal*)&end, (RmReal*)result, (RmReal*)normal, hit_distance);
-}
-
-bool ZoneMap::IsUnderworld(const glm::vec3 &point) {
-	if(!imp)
-		return false;
-
-	glm::vec3 normal;
-	glm::vec3 hit;
-	glm::vec3 to(point.x, BEST_Z_INVALID, point.z);
-	float hit_distance;
-	if(imp->rm->raycast((const RmReal*)&point, (const RmReal*)&to, (RmReal*)&hit, (RmReal*)&normal, &hit_distance)) {
-		float angle = acosf(glm::dot(normal, glm::vec3(0.0f, 1.0f, 0.0f))) * 180.0f / (float)M_PI;
-		if(angle > 90.0f) {
-			return true;
-		}
-
-		return false;
-	} else {
-		return true;
-	}
-}
-
-bool ZoneMap::CheckLoS(glm::vec3 myloc, glm::vec3 oloc) const {
-	if(!imp)
-		return false;
-
-	return !imp->rm->raycast((const RmReal*)&myloc, (const RmReal*)&oloc, nullptr, nullptr, nullptr);
-}
-
-bool ZoneMap::CheckLosNoHazards(const glm::vec3 &start, const glm::vec3 &end, float step_size, float max_diff) {
-	if(!imp)
-		return false;
-
-	if(imp->rm->raycast((const RmReal*)&start, (const RmReal*)&end, nullptr, nullptr, nullptr)) {
-		return false;
-	}
-
-	glm::vec3 line = end - start;
-	float dist = glm::length(line);
-	glm::vec3 dir = glm::normalize(line);
-	float min = -BEST_Z_INVALID;
-	float max = BEST_Z_INVALID;
-	for(float i = 0.0f; i < dist; i += step_size) {
-		glm::vec3 current = start + (dir * i);
-		float best_y = FindBestFloor(current, nullptr, nullptr);
-
-		if(best_y <= BEST_Z_INVALID || best_y >= (-BEST_Z_INVALID))
-		{
-			return false;
-		}
-
-		float diff = fabs(current.y - best_y);
-		if(diff > max_diff) {
-			return false;
-		}
-	}
-
-	return true;
+	delete imp;
 }
 
 ZoneMap *ZoneMap::LoadMapFile(std::string file) {
@@ -183,24 +73,6 @@ ZoneMap *ZoneMap::LoadMapFile(std::string file) {
 
 	delete m;
 	return nullptr;
-}
-
-ZoneMap *ZoneMap::LoadMapFromData(const std::vector<glm::vec3> &positions, const std::vector<unsigned int> &indices) {
-	ZoneMap *m = new ZoneMap();
-	
-	if(!m->imp) {
-		m->imp = new impl;
-	}
-
-	m->imp->rm.reset(createRaycastMesh((RmUint32)positions.size(), (const RmReal*)&positions[0], (RmUint32)(indices.size() / 3), &indices[0]));
-
-	if(!m->imp->rm) {
-		delete m;
-		return nullptr;
-	}
-
-	m->imp->version = 2;
-	return m;
 }
 
 bool ZoneMap::Load(std::string filename) {
@@ -246,8 +118,6 @@ bool ZoneMap::LoadV1(FILE *f) {
 		return false;
 	}
 	
-	std::vector<glm::vec3> verts;
-	std::vector<uint32_t> indices;
 	for(uint32_t i = 0; i < face_count; ++i) {
 		glm::vec3 a;
 		glm::vec3 b;
@@ -269,36 +139,23 @@ bool ZoneMap::LoadV1(FILE *f) {
 			return false;
 		}
 
-		size_t sz = verts.size();
-		verts.push_back(a);
-		verts.push_back(b);
-		verts.push_back(c);
+		size_t sz = imp->verts.size();
+		imp->verts.push_back(a);
+		imp->verts.push_back(b);
+		imp->verts.push_back(c);
 
-		indices.push_back((uint32_t)sz + 0);
-		indices.push_back((uint32_t)sz + 1);
-		indices.push_back((uint32_t)sz + 2);
+		imp->inds.push_back((uint32_t)sz + 0);
+		imp->inds.push_back((uint32_t)sz + 1);
+		imp->inds.push_back((uint32_t)sz + 2);
 	}
 	
-	if(!imp) {
-		imp = new impl;
-	}
-
 	float t;
-	for(auto &v : verts) {
+	for(auto &v : imp->verts) {
 		t = v.y;
 		v.y = v.z;
 		v.z = t;
 	}
 
-	imp->rm.reset(createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]));
-	
-	if(!imp->rm) {
-		delete imp;
-		imp = nullptr;
-		return false;
-	}
-	
-	imp->version = 1;
 	return true;
 }
 
@@ -376,9 +233,6 @@ bool ZoneMap::LoadV2(FILE *f) {
 	units_per_vertex = *(float*)buf;
 	buf += sizeof(float);
 
-	std::vector<glm::vec3> verts;
-	std::vector<uint32_t> indices;
-
 	for (uint32_t i = 0; i < vert_count; ++i) {
 		float x;
 		float y;
@@ -395,7 +249,7 @@ bool ZoneMap::LoadV2(FILE *f) {
 
 		glm::vec3 vert(x, y, z);
 
-		verts.push_back(vert);
+		imp->verts.push_back(vert);
 	}
 
 	for (uint32_t i = 0; i < ind_count; ++i) {
@@ -403,15 +257,34 @@ bool ZoneMap::LoadV2(FILE *f) {
 		index = *(uint32_t*)buf;
 		buf += sizeof(uint32_t);
 
-		indices.push_back(index);
+		imp->inds.push_back(index);
 	}
 
 	for (uint32_t i = 0; i < nc_vert_count; ++i) {
-		buf += sizeof(float) * 3;
+		float x;
+		float y;
+		float z;
+
+		x = *(float*)buf;
+		buf += sizeof(float);
+
+		y = *(float*)buf;
+		buf += sizeof(float);
+
+		z = *(float*)buf;
+		buf += sizeof(float);
+
+		glm::vec3 vert(x, y, z);
+
+		imp->nc_verts.push_back(vert);
 	}
 
 	for (uint32_t i = 0; i < nc_ind_count; ++i) {
+		uint32_t index;
+		index = *(uint32_t*)buf;
 		buf += sizeof(uint32_t);
+
+		imp->nc_inds.push_back(index);
 	}
 
 	std::map<std::string, std::shared_ptr<ModelEntry>> models;
@@ -522,13 +395,21 @@ bool ZoneMap::LoadV2(FILE *f) {
 			v3.y = t;
 
 			if (current_poly.vis != 0) {
-				verts.push_back(v1);
-				verts.push_back(v2);
-				verts.push_back(v3);
+				imp->verts.push_back(v1);
+				imp->verts.push_back(v2);
+				imp->verts.push_back(v3);
 
-				indices.push_back((uint32_t)verts.size() - 3);
-				indices.push_back((uint32_t)verts.size() - 2);
-				indices.push_back((uint32_t)verts.size() - 1);
+				imp->inds.push_back((uint32_t)imp->verts.size() - 3);
+				imp->inds.push_back((uint32_t)imp->verts.size() - 2);
+				imp->inds.push_back((uint32_t)imp->verts.size() - 1);
+			} else {
+				imp->nc_verts.push_back(v1);
+				imp->nc_verts.push_back(v2);
+				imp->nc_verts.push_back(v3);
+
+				imp->nc_inds.push_back((uint32_t)imp->nc_verts.size() - 3);
+				imp->nc_inds.push_back((uint32_t)imp->nc_verts.size() - 2);
+				imp->nc_inds.push_back((uint32_t)imp->nc_verts.size() - 1);
 			}
 		}
 	}
@@ -672,13 +553,21 @@ bool ZoneMap::LoadV2(FILE *f) {
 				v3.y = t;
 
 				if (poly.vis != 0) {
-					verts.push_back(v1);
-					verts.push_back(v2);
-					verts.push_back(v3);
+					imp->verts.push_back(v1);
+					imp->verts.push_back(v2);
+					imp->verts.push_back(v3);
 
-					indices.push_back((uint32_t)verts.size() - 3);
-					indices.push_back((uint32_t)verts.size() - 2);
-					indices.push_back((uint32_t)verts.size() - 1);
+					imp->inds.push_back((uint32_t)imp->verts.size() - 3);
+					imp->inds.push_back((uint32_t)imp->verts.size() - 2);
+					imp->inds.push_back((uint32_t)imp->verts.size() - 1);
+				} else {
+					imp->nc_verts.push_back(v1);
+					imp->nc_verts.push_back(v2);
+					imp->nc_verts.push_back(v3);
+
+					imp->nc_inds.push_back((uint32_t)imp->nc_verts.size() - 3);
+					imp->nc_inds.push_back((uint32_t)imp->nc_verts.size() - 2);
+					imp->nc_inds.push_back((uint32_t)imp->nc_verts.size() - 1);
 				}
 			}
 		}
@@ -724,19 +613,19 @@ bool ZoneMap::LoadV2(FILE *f) {
 			float QuadVertex4Y = QuadVertex3Y;
 			float QuadVertex4Z = QuadVertex1Z;
 
-			uint32_t current_vert = (uint32_t)verts.size() + 3;
-			verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
-			verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
-			verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
-			verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
+			uint32_t current_vert = (uint32_t)imp->verts.size() + 3;
+			imp->verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
+			imp->verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
+			imp->verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
+			imp->verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 
-			indices.push_back(current_vert);
-			indices.push_back(current_vert - 2);
-			indices.push_back(current_vert - 1);
+			imp->inds.push_back(current_vert);
+			imp->inds.push_back(current_vert - 2);
+			imp->inds.push_back(current_vert - 1);
 
-			indices.push_back(current_vert);
-			indices.push_back(current_vert - 3);
-			indices.push_back(current_vert - 2);
+			imp->inds.push_back(current_vert);
+			imp->inds.push_back(current_vert - 3);
+			imp->inds.push_back(current_vert - 2);
 		}
 		else {
 			//read flags
@@ -790,8 +679,8 @@ bool ZoneMap::LoadV2(FILE *f) {
 					i1 = iter->second;
 				}
 				else {
-					i1 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
+					i1 = (uint32_t)imp->verts.size();
+					imp->verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
 					cur_verts[std::make_tuple(QuadVertex1X, QuadVertex1Y, QuadVertex1Z)] = i1;
 				}
 
@@ -801,8 +690,8 @@ bool ZoneMap::LoadV2(FILE *f) {
 					i2 = iter->second;
 				}
 				else {
-					i2 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
+					i2 = (uint32_t)imp->verts.size();
+					imp->verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
 					cur_verts[std::make_tuple(QuadVertex2X, QuadVertex2Y, QuadVertex2Z)] = i2;
 				}
 
@@ -812,8 +701,8 @@ bool ZoneMap::LoadV2(FILE *f) {
 					i3 = iter->second;
 				}
 				else {
-					i3 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
+					i3 = (uint32_t)imp->verts.size();
+					imp->verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
 					cur_verts[std::make_tuple(QuadVertex3X, QuadVertex3Y, QuadVertex3Z)] = i3;
 				}
 
@@ -823,45 +712,52 @@ bool ZoneMap::LoadV2(FILE *f) {
 					i4 = iter->second;
 				}
 				else {
-					i4 = (uint32_t)verts.size();
-					verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
+					i4 = (uint32_t)imp->verts.size();
+					imp->verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 					cur_verts[std::make_tuple(QuadVertex4X, QuadVertex4Y, QuadVertex4Z)] = i4;
 				}
 
-				indices.push_back(i4);
-				indices.push_back(i2);
-				indices.push_back(i3);
+				imp->inds.push_back(i4);
+				imp->inds.push_back(i2);
+				imp->inds.push_back(i3);
 
-				indices.push_back(i4);
-				indices.push_back(i1);
-				indices.push_back(i2);
+				imp->inds.push_back(i4);
+				imp->inds.push_back(i1);
+				imp->inds.push_back(i2);
 			}
 		}
 	}
 
-	uint32_t face_count = (uint32_t)(indices.size() / 3);
-
-	if (!imp) {
-		imp = new impl;
-	}
-
 	float t;
-	for(auto &v : verts) {
+	for(auto &v : imp->verts) {
 		t = v.y;
 		v.y = v.z;
 		v.z = t;
 	}
 
-	imp->rm.reset(createRaycastMesh((RmUint32)verts.size(), (const RmReal*)&verts[0], face_count, &indices[0]));
-
-	if (!imp->rm) {
-		delete imp;
-		imp = nullptr;
-		return false;
+	for(auto &v : imp->nc_verts) {
+		t = v.y;
+		v.y = v.z;
+		v.z = t;
 	}
 
-	imp->version = 2;
 	return true;
+}
+
+const std::vector<glm::vec3>& ZoneMap::GetCollidableVerts() {
+	return imp->verts;
+}
+
+const std::vector<unsigned int>& ZoneMap::GetCollidableInds() {
+	return imp->inds;
+}
+
+const std::vector<glm::vec3>& ZoneMap::GetNonCollidableVerts() {
+	return imp->nc_verts;
+}
+
+const std::vector<unsigned int>& ZoneMap::GetNonCollidableInds() {
+	return imp->nc_inds;
 }
 
 void ZoneMap::RotateVertex(glm::vec3 &v, float rx, float ry, float rz) {
@@ -893,12 +789,4 @@ void ZoneMap::TranslateVertex(glm::vec3 &v, float tx, float ty, float tz) {
 	v.x = v.x + tx;
 	v.y = v.y + ty;
 	v.z = v.z + tz;
-}
-
-int ZoneMap::GetVersion() {
-	if(imp) {
-		return imp->version;
-	}
-
-	return 0;
 }
