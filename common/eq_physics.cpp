@@ -200,3 +200,43 @@ float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::v
 
 	return BEST_FLOOR_INVALID;
 }
+
+WaterRegionType EQPhysics::ReturnRegionType(const glm::vec3 &pos) const {
+	if(!imp->water_map) {
+		return RegionTypeNormal;
+	}
+
+	return imp->water_map->ReturnRegionType(pos.x, pos.z, pos.y);
+}
+
+bool EQPhysics::InWater(const glm::vec3 &pos) const {
+	if(!imp->water_map) {
+		return false;
+	}
+
+	return imp->water_map->InWater(pos.x, pos.z, pos.y);
+}
+
+bool EQPhysics::InVWater(const glm::vec3 &pos) const {
+	if(!imp->water_map) {
+		return false;
+	}
+
+	return imp->water_map->InVWater(pos.x, pos.z, pos.y);
+}
+
+bool EQPhysics::InLava(const glm::vec3 &pos) const {
+	if(!imp->water_map) {
+		return false;
+	}
+
+	return imp->water_map->InLava(pos.x, pos.z, pos.y);
+}
+
+bool EQPhysics::InLiquid(const glm::vec3 &pos) const {
+	if(!imp->water_map) {
+		return false;
+	}
+
+	return imp->water_map->InLiquid(pos.x, pos.z, pos.y);
+}

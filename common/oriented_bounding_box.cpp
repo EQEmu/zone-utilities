@@ -1,6 +1,6 @@
 #include "oriented_bounding_box.h"
 
-OrientedBoundingBox::OrientedBoundingBox(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale, glm::vec3 extents) {
+OrientedBoundingBox::OrientedBoundingBox(const glm::vec3 &pos, const glm::vec3 &rot, const glm::vec3 &scale, const glm::vec3 &extents) {
 	min_x = -extents.x;
 	max_x = extents.x;
 
@@ -40,7 +40,7 @@ OrientedBoundingBox::OrientedBoundingBox(glm::vec3 pos, glm::vec3 rot, glm::vec3
 	inverted_transformation = glm::inverse(transformation);
 }
 
-bool OrientedBoundingBox::ContainsPoint(glm::vec3 p) const {
+bool OrientedBoundingBox::ContainsPoint(const glm::vec3 &p) const {
 	glm::vec4 pt(p.x, p.y, p.z, 1);
 	glm::vec4 box_space_p = inverted_transformation * pt;
 

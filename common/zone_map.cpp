@@ -46,9 +46,13 @@ struct ZoneMap::impl
 {
 	std::vector<glm::vec3> verts;
 	std::vector<unsigned int> inds;
+	glm::vec3 min;
+	glm::vec3 max;
 	
 	std::vector<glm::vec3> nc_verts;
 	std::vector<unsigned int> nc_inds;
+	glm::vec3 nc_min;
+	glm::vec3 nc_max;
 };
 
 ZoneMap::ZoneMap() {
@@ -154,6 +158,32 @@ bool ZoneMap::LoadV1(FILE *f) {
 		t = v.y;
 		v.y = v.z;
 		v.z = t;
+	}
+
+	for(auto &vert : imp->verts) {
+		if(vert.x < imp->min.x) {
+			imp->min.x = vert.x;
+		}
+
+		if(vert.y < imp->min.y) {
+			imp->min.y = vert.y;
+		}
+
+		if(vert.z < imp->min.z) {
+			imp->min.z = vert.z;
+		}
+
+		if(vert.x > imp->max.x) {
+			imp->max.x = vert.x;
+		}
+
+		if(vert.y > imp->max.y) {
+			imp->max.y = vert.y;
+		}
+
+		if(vert.z > imp->max.z) {
+			imp->max.z = vert.z;
+		}
 	}
 
 	return true;
@@ -619,13 +649,13 @@ bool ZoneMap::LoadV2(FILE *f) {
 			imp->verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
 			imp->verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 
-			imp->inds.push_back(current_vert);
-			imp->inds.push_back(current_vert - 2);
+			imp->inds.push_back(current_vert - 0);
 			imp->inds.push_back(current_vert - 1);
-
-			imp->inds.push_back(current_vert);
-			imp->inds.push_back(current_vert - 3);
 			imp->inds.push_back(current_vert - 2);
+
+			imp->inds.push_back(current_vert - 2);
+			imp->inds.push_back(current_vert - 3);
+			imp->inds.push_back(current_vert - 0);
 		}
 		else {
 			//read flags
@@ -718,12 +748,12 @@ bool ZoneMap::LoadV2(FILE *f) {
 				}
 
 				imp->inds.push_back(i4);
-				imp->inds.push_back(i2);
 				imp->inds.push_back(i3);
-
-				imp->inds.push_back(i4);
-				imp->inds.push_back(i1);
 				imp->inds.push_back(i2);
+
+				imp->inds.push_back(i2);
+				imp->inds.push_back(i1);
+				imp->inds.push_back(i4);
 			}
 		}
 	}
@@ -735,29 +765,97 @@ bool ZoneMap::LoadV2(FILE *f) {
 		v.z = t;
 	}
 
+	for(auto &vert : imp->verts) {
+		if(vert.x < imp->min.x) {
+			imp->min.x = vert.x;
+		}
+
+		if(vert.y < imp->min.y) {
+			imp->min.y = vert.y;
+		}
+
+		if(vert.z < imp->min.z) {
+			imp->min.z = vert.z;
+		}
+
+		if(vert.x > imp->max.x) {
+			imp->max.x = vert.x;
+		}
+
+		if(vert.y > imp->max.y) {
+			imp->max.y = vert.y;
+		}
+
+		if(vert.z > imp->max.z) {
+			imp->max.z = vert.z;
+		}
+	}
+
 	for(auto &v : imp->nc_verts) {
 		t = v.y;
 		v.y = v.z;
 		v.z = t;
 	}
 
+	for(auto &vert : imp->nc_verts) {
+		if(vert.x < imp->nc_min.x) {
+			imp->nc_min.x = vert.x;
+		}
+
+		if(vert.y < imp->nc_min.y) {
+			imp->nc_min.y = vert.y;
+		}
+
+		if(vert.z < imp->nc_min.z) {
+			imp->nc_min.z = vert.z;
+		}
+
+		if(vert.x > imp->nc_max.x) {
+			imp->nc_max.x = vert.x;
+		}
+
+		if(vert.y > imp->nc_max.y) {
+			imp->nc_max.y = vert.y;
+		}
+
+		if(vert.z > imp->nc_max.z) {
+			imp->nc_max.z = vert.z;
+		}
+	}
+
 	return true;
 }
 
-const std::vector<glm::vec3>& ZoneMap::GetCollidableVerts() {
+const std::vector<glm::vec3>& ZoneMap::GetCollidableVerts() const {
 	return imp->verts;
 }
 
-const std::vector<unsigned int>& ZoneMap::GetCollidableInds() {
+const std::vector<unsigned int>& ZoneMap::GetCollidableInds() const {
 	return imp->inds;
 }
 
-const std::vector<glm::vec3>& ZoneMap::GetNonCollidableVerts() {
+const glm::vec3& ZoneMap::GetCollidableMax() const {
+	return imp->max;
+}
+
+const glm::vec3& ZoneMap::GetCollidableMin() const {
+	return imp->min;
+}
+
+const std::vector<glm::vec3>& ZoneMap::GetNonCollidableVerts() const {
 	return imp->nc_verts;
 }
 
-const std::vector<unsigned int>& ZoneMap::GetNonCollidableInds() {
+const std::vector<unsigned int>& ZoneMap::GetNonCollidableInds() const {
 	return imp->nc_inds;
+}
+
+const glm::vec3& ZoneMap::GetNonCollidableMax() const {
+	return imp->nc_max;
+}
+
+const glm::vec3& ZoneMap::GetNonCollidableMin() const {
+	return imp->nc_min;
 }
 
 void ZoneMap::RotateVertex(glm::vec3 &v, float rx, float ry, float rz) {

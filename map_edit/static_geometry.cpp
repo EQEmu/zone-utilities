@@ -29,7 +29,7 @@ void StaticGeometry::Draw() {
 }
 
 void StaticGeometry::Compile() {
-	if(m_vao) {
+	if(m_vao || m_verts.size() == 0 || m_inds.size() == 0) {
 		return;
 	}
 

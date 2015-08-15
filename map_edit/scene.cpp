@@ -8,6 +8,7 @@ Scene::Scene() {
 }
 
 Scene::~Scene() {
+	UnregisterAllModules();
 }
 
 enum MainHotkeys : int
@@ -113,9 +114,14 @@ void Scene::LoadScene(const char *zone_name) {
 		m->Compile();
 		m_volume_mesh_entity.reset(m);
 	}
+
+	for(auto &module : m_modules) {
+		module->OnSceneLoad(m_name.c_str());
+	}
 }
 
 void Scene::Render() {
+	glEnable(GL_CULL_FACE);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	ImGui_ImplGlfwGL3_NewFrame();
 
@@ -185,7 +191,14 @@ void Scene::Render() {
 	RenderModulesMenu();
 	ImGui::EndMainMenuBar();
 
+	RenderUI();
+
 	//render our modules ui stuff
+	for(auto &module : m_modules) {
+		if(module->GetRunning() && module->GetUnpaused()) {
+			module->OnDrawUI();
+		}
+	}
 
 	ImGui::Render();
 	glfwSwapBuffers(m_window);
@@ -203,15 +216,18 @@ void Scene::RenderMainMenu() {
 		if(ImGui::MenuItem("Quit", "Alt+Q")) { glfwSetWindowShouldClose(m_window, 1); }
 		ImGui::EndMenu();
 	}
+}
 
+void Scene::RenderUI() {
 	if(m_show_debug) {
 		ImGui::Begin("Debug");
 		ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::Text("Loc: (%.2f, %.2f, %.2f)", m_camera_loc.x, m_camera_loc.y, m_camera_loc.z);
 		ImGui::Text("Best floor: %.2f", m_physics->FindBestFloor(m_camera_loc, nullptr, nullptr));
+		ImGui::Text("InLiquid: %s", m_physics->InLiquid(m_camera_loc) ? "true" : "false");
 		ImGui::End();
 	}
-
+	
 	if(m_show_options) {
 		ImGui::Begin("Options");
 		ImGui::Checkbox("Render Collidable Mesh", &m_render_collide);
@@ -219,54 +235,93 @@ void Scene::RenderMainMenu() {
 		ImGui::Checkbox("Render Volumes", &m_render_volume);
 		ImGui::End();
 	}
+	
+	for(auto &module : m_modules) {
+		if(module->HasWork()) {
+			m_show_open = false;
+			m_show_save = false;
+		}
+	}
 
 	if(m_show_open) {
 		ImGui::OpenPopup("Open Zone");
 		m_show_open = false;
 	}
-	
-	if(ImGui::BeginPopupModal("Open Zone", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-		static char zone_name[256];
-		if(ImGui::InputText("Zone Name", zone_name, 256, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank))
-		{
-			ImGui::CloseCurrentPopup();
-			LoadScene(zone_name);
-			strcpy(zone_name, "");
-		}
-
-		if((glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)) {
-			strcpy(zone_name, "");
-
-			ImGui::CloseCurrentPopup();
-		}
-
-		if(ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
-			ImGui::SetKeyboardFocusHere(-1);
-
-		if(ImGui::Button("OK", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-			LoadScene(zone_name);
-			strcpy(zone_name, "");
-		}
-		ImGui::SameLine();
-		if(ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-			strcpy(zone_name, "");
-		}
-		ImGui::EndPopup();
-	}
 
 	if(m_show_save) {
+		//ImGui::OpenPopup("Save Data");
+		m_show_save = false;
+	}
+	
+	if(ImGui::BeginPopupModal("Open Zone", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+		bool use_popup = true;
+		for(auto &module : m_modules) {
+			if(module->HasWork()) {
+				ImGui::CloseCurrentPopup();
+				use_popup = false;
+				break;
+			}
+		}
+		if(use_popup) {
+			static char zone_name[256];
+			if(ImGui::InputText("Zone Name", zone_name, 256, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank))
+			{
+				ImGui::CloseCurrentPopup();
+				LoadScene(zone_name);
+				strcpy(zone_name, "");
+			}
+	
+			if((glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)) {
+				strcpy(zone_name, "");
+	
+				ImGui::CloseCurrentPopup();
+			}
+	
+			if(ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+				ImGui::SetKeyboardFocusHere(-1);
+	
+			if(ImGui::Button("OK", ImVec2(120, 0))) {
+				ImGui::CloseCurrentPopup();
+				LoadScene(zone_name);
+				strcpy(zone_name, "");
+			}
+			ImGui::SameLine();
+			if(ImGui::Button("Cancel", ImVec2(120, 0))) {
+				ImGui::CloseCurrentPopup();
+				strcpy(zone_name, "");
+			}
+		}
+		ImGui::EndPopup();
 	}
 }
 
 void Scene::RenderModulesMenu() {
 	if(ImGui::BeginMenu("Modules"))
 	{
+		for(auto &module : m_modules) {
+			if(!module->GetRunning()) {
+				ImGui::MenuItem(module->GetName(), nullptr, &module->GetRunning());
+			} else {
+				if(ImGui::MenuItem(module->GetName())) {
+					if(module->GetUnpaused()) {
+						module->OnSuspend();
+					} else {
+						module->OnResume();
+					}
+
+					module->SetUnpaused(!module->GetUnpaused());
+				}
+			}
+		}
 		ImGui::EndMenu();
 	}
 
 	//go through and render all active modules...
+	for(auto &module : m_modules) {
+		if(module->GetRunning() && module->GetUnpaused()) {
+			module->OnDrawMenu();
+		}
+	}
 }
 
 void Scene::Tick() {
@@ -421,6 +476,7 @@ void Scene::OnHotkey(int ident) {
 }
 
 void Scene::RegisterEntity(Entity *e) {
+	UnregisterEntity(e);
 	m_registered_entities.push_back(e);
 }
 
@@ -428,6 +484,33 @@ void Scene::UnregisterEntity(Entity *e) {
 	for(auto iter = m_registered_entities.begin(); iter != m_registered_entities.end(); ++iter) {
 		if((*iter) == e) {
 			m_registered_entities.erase(iter);
+			return;
 		}
 	}
+}
+
+void Scene::RegisterModule(Module *m) {
+	m->OnLoad(this);
+	m_modules.push_back(std::unique_ptr<Module>(m));
+}
+
+void Scene::UnregisterModule(Module *m) {
+	auto iter = m_modules.begin();
+	while(iter != m_modules.end()) {
+		if(m == iter->get()) {
+			m->OnShutdown();
+			m_modules.erase(iter);
+			return;
+		}
+
+		++iter;
+	}
+}
+
+void Scene::UnregisterAllModules() {
+	for(auto &module : m_modules) {
+		module->OnShutdown();
+	}
+
+	m_modules.clear();
 }

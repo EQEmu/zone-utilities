@@ -11,6 +11,7 @@
 #include <imgui.h>
 #include <glm.hpp>
 
+#include "module.h"
 #include "eq_physics.h"
 #include "zone_map.h"
 #include "entity.h"
@@ -44,6 +45,7 @@ public:
 	void LoadScene(const char *zone_name);
 	void Render();
 	void RenderMainMenu();
+	void RenderUI();
 	void RenderModulesMenu();
 	void Tick();
 	void ProcessCamera();
@@ -56,7 +58,15 @@ public:
 	//entity
 	void RegisterEntity(Entity *e);
 	void UnregisterEntity(Entity *e);
+
+	//module
+	void RegisterModule(Module *m);
+	void UnregisterModule(Module *m);
+	void UnregisterAllModules();
+
+	std::shared_ptr<ZoneMap> GetZoneGeometry() { return m_zone_geometry; }
 private:
+	friend class Module;
 	Scene(const Scene&);
 	Scene& operator=(const Scene&);
 
@@ -79,7 +89,7 @@ private:
 
 	//zone info
 	std::string m_name;
-	std::unique_ptr<ZoneMap> m_zone_geometry;
+	std::shared_ptr<ZoneMap> m_zone_geometry;
 	std::unique_ptr<EQPhysics> m_physics;
 
 	//Entity / rendering
@@ -95,6 +105,9 @@ private:
 	bool TryHotkey();
 	std::vector<HotkeyEntry> m_hotkeys;
 	int m_key_status[512];
+
+	//modules
+	std::vector<std::unique_ptr<Module>> m_modules;
 
 	//ui flags
 	bool m_show_open;

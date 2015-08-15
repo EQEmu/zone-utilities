@@ -12,6 +12,7 @@ SET(common_sources
 	pfs_crc.cpp
 	s3d_loader.cpp
 	string_util.cpp
+	thread_pool.cpp
 	water_map.cpp
 	water_map_v1.cpp
 	water_map_v2.cpp
@@ -20,6 +21,7 @@ SET(common_sources
 )
 
 SET(common_headers
+	aligned_bounding_box.h
 	any.h
 	compression.h
 	eq_math.h
@@ -51,6 +53,7 @@ SET(common_headers
 	s3d_texture_brush.h
 	s3d_texture_brush_set.h
 	string_util.h
+	thread_pool.h
 	water_map.h
 	water_map_v1.h
 	water_map_v2.h
