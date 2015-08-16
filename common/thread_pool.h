@@ -16,7 +16,7 @@ public:
 class ThreadPool
 {
 public:
-	ThreadPool();
+	ThreadPool(int t_count = 1);
 	~ThreadPool();
 	void ClearWork();
 	void AddWork(ThreadPoolWork *w);

@@ -8,6 +8,11 @@
 namespace EQEmu
 {
 
+struct eqg_v4_zone_magic_header
+{
+	char magic[5];
+};
+
 struct zon_header
 {
 	char magic[4];

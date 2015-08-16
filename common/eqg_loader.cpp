@@ -20,18 +20,24 @@ bool EQEmu::EQGLoader::Load(std::string file, std::vector<std::shared_ptr<EQG::G
 	}
 
 	std::vector<char> zon;
-	bool zon_found = true;
+	bool zon_found = false;
 	std::vector<std::string> files;
 	archive.GetFilenames("zon", files);
 
 	if(files.size() == 0) {
-		if (!GetZon(file + ".zon", zon)) {
-			zon_found = false;
+		if (GetZon(file + ".zon", zon)) {
+			zon_found = true;
 		}
 	} else {
-		auto iter = files.begin();
-		if (!archive.Get(*iter, zon)) {
-			zon_found = false;
+		for(auto &f : files) {
+			if(archive.Get(f, zon)) {
+				if(zon[0] == 'E' && zon[1] == 'Q' && zon[2] == 'T' && zon[3] == 'Z' && zon[4] == 'P') {
+					eqLogMessage(LogWarn, "Unable to parse the zone file, is a eqgv4.");
+					return false;
+				}
+
+				zon_found = true;
+			}
 		}
 	}
 

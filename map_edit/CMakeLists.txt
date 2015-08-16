@@ -4,6 +4,7 @@ SET(map_edit_sources
 	imgui_glfw.cpp
 	main.cpp
 	module_navigation.cpp
+	nav_mesh_model.cpp
 	rc_chunky_tri_mesh.cpp
 	scene.cpp
 	shader.cpp
@@ -16,6 +17,7 @@ SET(map_edit_headers
 	imgui_glfw.h
 	module.h
 	module_navigation.h
+	nav_mesh_model.h
 	rc_chunky_tri_mesh.h
 	scene.h
 	scene_module.h

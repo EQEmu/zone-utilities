@@ -31,13 +31,13 @@ inline unsigned int ilog2(unsigned int v)
 	return r;
 }
 
-ModuleNavigation::ModuleNavigation() {
-	m_cell_size = 0.3f;
+ModuleNavigation::ModuleNavigation() : m_thread_pool(4) {
+	m_cell_size = 0.7f;
 	m_cell_height = 0.2f;
-	m_agent_height = 2.0f;
-	m_agent_radius = 0.6f;
-	m_agent_max_climb = 0.9f;
-	m_agent_max_slope = 45.0f;
+	m_agent_height = 6.0f;
+	m_agent_radius = 0.9f;
+	m_agent_max_climb = 6.0f;
+	m_agent_max_slope = 60.0f;
 	m_region_min_size = 8;
 	m_region_merge_size = 20;
 	m_edge_max_len = 12.0f;
@@ -48,19 +48,9 @@ ModuleNavigation::ModuleNavigation() {
 	m_partition_type = NAVIGATION_PARTITION_WATERSHED;
 	m_max_tiles = 0;
 	m_max_polys_per_tile = 0;
-	m_tile_size = 32;
+	m_tile_size = 256;
 	m_nav_mesh = nullptr;
 	m_tiles_building = 0;
-
-	dtAllocSetCustom(
-		[](int size, dtAllocHint hint) -> void*
-		{
-			return new char[size];
-		}, 
-		[](void *ptr)
-		{
-			delete[] ptr;
-		});
 }
 
 ModuleNavigation::~ModuleNavigation() {
@@ -96,7 +86,7 @@ void ModuleNavigation::OnDrawUI() {
 	ImGui::Begin("Navigation");
 
 	if(m_tiles_building > 0) {
-		ImGui::Text(EQEmu::StringFormat("Building %u tiles", m_tiles_building).c_str());
+		ImGui::Text(EQEmu::StringFormat("Building NavMesh: %u tiles remaining", m_tiles_building).c_str());
 		ImGui::End();
 		return;
 	}
@@ -117,9 +107,9 @@ void ModuleNavigation::OnDrawUI() {
 
 	ImGui::Separator();
 	ImGui::Text("Agent");
-	ImGui::SliderFloat("Height", &m_agent_height, 0.1f, 5.0f, "%.1f");
-	ImGui::SliderFloat("Radius", &m_agent_radius, 0.1f, 5.0f, "%.1f");
-	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 5.0f, "%.1f");
+	ImGui::SliderFloat("Height", &m_agent_height, 0.1f, 15.0f, "%.1f");
+	ImGui::SliderFloat("Radius", &m_agent_radius, 0.1f, 15.0f, "%.1f");
+	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 15.0f, "%.1f");
 	ImGui::SliderFloat("Max Slope", &m_agent_max_slope, 0.0f, 90.0f, "%.0f");
 
 	ImGui::Separator();
@@ -141,7 +131,7 @@ void ModuleNavigation::OnDrawUI() {
 	
 	ImGui::Separator();
 	ImGui::Text("Detail Mesh");
-	ImGui::SliderFloat("Sample Distance", &m_detail_sample_dist, 0.0f, 16.0f, "%.0f");
+	ImGui::SliderFloat("Sample Distance", &m_detail_sample_dist, 0.0f, 32.0f, "%.0f");
 	ImGui::SliderFloat("Max Sample Error", &m_detail_sample_max_error, 0.0f, 16.0f, "%.0f");
 	ImGui::Separator();
 
@@ -169,6 +159,13 @@ void ModuleNavigation::OnDrawUI() {
 		m_max_polys_per_tile = 1 << poly_bits;
 		ImGui::Text(EQEmu::StringFormat("Max Tiles  %d", m_max_tiles).c_str());
 		ImGui::Text(EQEmu::StringFormat("Max Polys  %d", m_max_polys_per_tile).c_str());
+
+		if(m_nav_mesh_renderable) {
+			ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", (int)m_nav_mesh_renderable->GetTrianglesInds().size() / 3).c_str());
+		}
+		else {
+			ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", 0).c_str());
+		}
 	} else {
 		m_max_tiles = 0;
 		m_max_polys_per_tile = 0;
@@ -244,7 +241,7 @@ void ModuleNavigation::BuildNavigationMesh() {
 	dtNavMeshParams params;
 	rcVcopy(params.orig, (float*)&zone_geo->GetCollidableMin());
 	params.tileWidth = m_tile_size * m_cell_size;
-	params.tileHeight = m_tile_size*m_cell_size;
+	params.tileHeight = m_tile_size * m_cell_size;
 	params.maxTiles = m_max_tiles;
 	params.maxPolys = m_max_polys_per_tile;
 
@@ -277,7 +274,6 @@ void ModuleNavigation::BuildNavigationMesh() {
 			m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max));
 		}
 	}
-
 }
 
 void ModuleNavigationBuildTile::Run() {
@@ -368,6 +364,12 @@ void ModuleNavigationBuildTile::Run() {
 
 	rcFreeHeightField(solid);
 	solid = nullptr;
+
+	if(!rcErodeWalkableArea(m_ctx.get(), cfg.walkableRadius, *chf))
+	{
+		rcFreeCompactHeightfield(chf);
+		return;
+	}
 
 	if(m_nav_module->m_partition_type == NAVIGATION_PARTITION_WATERSHED)
 	{
@@ -529,7 +531,7 @@ void ModuleNavigationBuildTile::Finished() {
 	}
 	m_nav_module->m_tiles_building--;
 
-	if(m_nav_module->m_tiles_building % 1000 == 0) {
+	if(m_nav_module->m_tiles_building == 0) {
 		m_nav_module->CreateNavMeshModel();
 	}
 }
@@ -539,14 +541,16 @@ void ModuleNavigation::CreateNavMeshModel() {
 		m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
 	}
 
-	m_nav_mesh_renderable.reset(new StaticGeometry());
+	m_nav_mesh_renderable.reset(new NavMeshModel());
 	NavigationDebugDraw dd;
 	dd.nav_module = this;
 
 	duDebugDrawNavMesh(&dd, *m_nav_mesh, 0xffu);
-
-	m_nav_mesh_renderable->SetTint(glm::vec4(0.0f, 0.8f, 0.4f, 1.0f));
+	m_nav_mesh_renderable->SetTrianglesTint(glm::vec4(0.75f, 1.0f, 0.25f, 1.0f));
+	m_nav_mesh_renderable->SetLinesTint(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	m_nav_mesh_renderable->SetPointsTint(glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
 	m_nav_mesh_renderable->Compile();
+
 	m_scene->RegisterEntity(m_nav_mesh_renderable.get());
 }
 
@@ -597,46 +601,47 @@ void NavigationDebugDraw::CreatePrimitive() {
 	switch(mode) {
 	case 1:
 	{
-		//unsigned int index = (unsigned int)points->GetPositions().size();
-		//points->GetPositions().push_back(verts[0]);
-		//points->GetIndicies().push_back(index);
+		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetPointsVerts().size();
+		nav_module->m_nav_mesh_renderable->GetPointsVerts().push_back(verts[0]);
+		nav_module->m_nav_mesh_renderable->GetPointsInds().push_back(index);
 	}
 		break;
 	case 2:
 	{
-		//unsigned int index = (unsigned int)lines->GetPositions().size();
-		//lines->GetPositions().push_back(verts[0]);
-		//lines->GetPositions().push_back(verts[1]);
-		//lines->GetIndicies().push_back(index);
-		//lines->GetIndicies().push_back(index + 1);
+		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetLinesVerts().size();
+		nav_module->m_nav_mesh_renderable->GetLinesVerts().push_back(verts[0]);
+		nav_module->m_nav_mesh_renderable->GetLinesVerts().push_back(verts[1]);
+		nav_module->m_nav_mesh_renderable->GetLinesInds().push_back(index);
+		nav_module->m_nav_mesh_renderable->GetLinesInds().push_back(index + 1);
 	}
 		break;
 	case 3:
 	{
-		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetInds().size();
-		nav_module->m_nav_mesh_renderable->GetVerts().push_back(verts[0]);
-		nav_module->m_nav_mesh_renderable->GetVerts().push_back(verts[1]);
-		nav_module->m_nav_mesh_renderable->GetVerts().push_back(verts[2]);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index + 1);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index + 2);
+		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetTrianglesVerts().size();
+		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[0]);
+		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[1]);
+		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[2]);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 1);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 2);
 	}
 		break; //2 3 0
 	case 4:
 	{
-		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetInds().size();
-		nav_module->m_nav_mesh_renderable->GetVerts().push_back(verts[0]);
-		nav_module->m_nav_mesh_renderable->GetVerts().push_back(verts[1]);
-		nav_module->m_nav_mesh_renderable->GetVerts().push_back(verts[2]);
-		nav_module->m_nav_mesh_renderable->GetVerts().push_back(verts[3]);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index + 1);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index + 2);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index + 2);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index + 3);
-		nav_module->m_nav_mesh_renderable->GetInds().push_back(index);
+		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetTrianglesInds().size();
+		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[0]);
+		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[1]);
+		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[2]);
+		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[3]);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 1);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 2);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 2);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 3);
+		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index);
 	}
 		break;
 	}
+
 	verts_in_use = 0;
 }

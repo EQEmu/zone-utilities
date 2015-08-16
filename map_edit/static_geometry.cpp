@@ -4,6 +4,7 @@ StaticGeometry::StaticGeometry() {
 	m_vao = 0;
 	m_vbo = 0;
 	m_ib = 0;
+	m_draw_type = GL_TRIANGLES;
 }
 
 StaticGeometry::~StaticGeometry() {
@@ -23,7 +24,7 @@ StaticGeometry::~StaticGeometry() {
 void StaticGeometry::Draw() {
 	if(m_vao) {
 		glBindVertexArray(m_vao);
-		glDrawElements(GL_TRIANGLES, (GLsizei)m_inds.size(), GL_UNSIGNED_INT, 0);
+		glDrawElements(m_draw_type, (GLsizei)m_inds.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	}
 }

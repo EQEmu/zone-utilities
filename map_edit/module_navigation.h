@@ -13,7 +13,7 @@
 #include "volume_box.h"
 #include "rc_chunky_tri_mesh.h"
 #include "thread_pool.h"
-#include "static_geometry.h"
+#include "nav_mesh_model.h"
 
 class ModuleNavigation;
 class ModuleNavigationBuildTile : public ThreadPoolWork
@@ -98,7 +98,7 @@ private:
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
-	std::unique_ptr<StaticGeometry> m_nav_mesh_renderable;
+	std::unique_ptr<NavMeshModel> m_nav_mesh_renderable;
 
 	float m_cell_size;
 	float m_cell_height;

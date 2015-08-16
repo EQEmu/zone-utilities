@@ -121,7 +121,6 @@ void Scene::LoadScene(const char *zone_name) {
 }
 
 void Scene::Render() {
-	glEnable(GL_CULL_FACE);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	ImGui_ImplGlfwGL3_NewFrame();
 

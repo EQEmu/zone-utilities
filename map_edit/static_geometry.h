@@ -22,6 +22,8 @@ public:
 
 	const glm::vec3& GetAABBMin() { return m_min; }
 	const glm::vec3& GetAABBMax() { return m_max; }
+
+	void SetDrawType(GLenum dt) { m_draw_type = dt; }
 private:
 	GLuint m_vao;
 	GLuint m_vbo;
@@ -32,6 +34,8 @@ private:
 
 	glm::vec3 m_min;
 	glm::vec3 m_max;
+
+	GLenum m_draw_type;
 };
 
 #endif

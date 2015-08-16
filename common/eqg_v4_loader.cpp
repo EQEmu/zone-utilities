@@ -22,19 +22,23 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain> &te
 	}
 
 	std::vector<char> zon;
-	bool zon_found = true;
+	bool zon_found = false;
 	std::vector<std::string> files;
 	archive.GetFilenames("zon", files);
 
 	if (files.size() == 0) {
-		if (!GetZon(file + ".zon", zon)) {
-			zon_found = false;
+		if (GetZon(file + ".zon", zon)) {
+			zon_found = true;
 		}
 	}
 	else {
-		auto iter = files.begin();
-		if (!archive.Get(*iter, zon)) {
-			zon_found = false;
+		for(auto &f : files) {
+			if(archive.Get(f, zon)) {
+				if(zon[0] == 'E' && zon[1] == 'Q' && zon[2] == 'T' && zon[3] == 'Z' && zon[4] == 'P') {
+					zon_found = true;
+					break;
+				}
+			}
 		}
 	}
 
@@ -117,7 +121,6 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 	}
 
 	uint32_t idx = 0;
-
 	SafeVarAllocParse(v4_zone_dat_header, header);
 
 	SafeStringAllocParse(base_tile_texture);
@@ -250,6 +253,10 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			SafeVarAllocParse(float, scale_z);
 		
 			SafeVarAllocParse(uint8_t, unk);
+
+			if(unk == 0xFF) {
+				idx += sizeof(uint32_t);
+			}
 
 			if(terrain->GetModels().count(model_name) == 0) {
 				EQGModelLoader model_loader;
