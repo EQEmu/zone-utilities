@@ -1,7 +1,5 @@
 language: cpp
-compiler:
-  - gcc
-  - clang
+compiler: gcc
 sudo: false
 addons:
   apt:
@@ -11,7 +9,7 @@ addons:
     - libglu1-mesa-dev
 script:
   - cmake -G "Unix Makefiles" -DEQEMU_ENABLE_GL=ON
-  - make
+  - make -j8
 notifications:
   email: false
   irc:

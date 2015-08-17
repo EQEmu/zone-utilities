@@ -73,7 +73,7 @@ FIND_PACKAGE(ZLIB REQUIRED)
 
 INCLUDE_DIRECTORIES("common" "log" "${ZLIB_INCLUDE_DIRS}" "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm/glm" "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libwebsockets")
 INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/dependencies/bullet/src")
-SET(EQEMU_BULLET BulletCollision Bullet3Collision Bullet3Common Bullet3Dynamics BulletCollision BulletDynamics LinearMath)
+SET(EQEMU_BULLET BulletSoftBody BulletDynamics BulletCollision LinearMath)
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(log)
