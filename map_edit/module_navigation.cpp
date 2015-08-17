@@ -51,6 +51,7 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4) {
 	m_tile_size = 256;
 	m_nav_mesh = nullptr;
 	m_tiles_building = 0;
+	m_render_nav_mesh = true;
 }
 
 ModuleNavigation::~ModuleNavigation() {
@@ -173,7 +174,21 @@ void ModuleNavigation::OnDrawUI() {
 
 	ImGui::Separator();
 
-	if(ImGui::Button("Build")) {
+	ImGui::Text("Rendering");
+	if(ImGui::Checkbox("Render NavMesh", &m_render_nav_mesh)) {
+		if(!m_render_nav_mesh) {
+			if(m_nav_mesh_renderable) {
+				m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
+			}
+		} else {
+			if(m_nav_mesh_renderable) {
+				m_scene->RegisterEntity(m_nav_mesh_renderable.get());
+			}
+		}
+	}
+	ImGui::Separator();
+
+	if(ImGui::Button("Build NavMesh")) {
 		BuildNavigationMesh();
 	}
 
@@ -187,7 +202,6 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name) {
 	if(zone_geo) {
 		if(!rcCreateChunkyTriMesh((float*)zone_geo->GetCollidableVerts().data(), (int*)zone_geo->GetCollidableInds().data(), (int)zone_geo->GetCollidableInds().size() / 3, 256, m_chunky_mesh.get())) {
 			m_chunky_mesh.reset();
-			printf("Could not create chunk mesh...\n");
 		}
 	}
 
@@ -209,13 +223,20 @@ void ModuleNavigation::OnSuspend() {
 }
 
 void ModuleNavigation::OnResume() {
-	if(m_nav_mesh_renderable) {
+	if(m_render_nav_mesh && m_nav_mesh_renderable) {
 		m_scene->RegisterEntity(m_nav_mesh_renderable.get());
 	}
 }
 
 bool ModuleNavigation::HasWork() {
 	return m_tiles_building > 0;
+}
+
+bool ModuleNavigation::CanSave() {
+	return false;
+}
+
+void ModuleNavigation::Save() {
 }
 
 void ModuleNavigation::OnHotkey(int ident) {
@@ -551,7 +572,9 @@ void ModuleNavigation::CreateNavMeshModel() {
 	m_nav_mesh_renderable->SetPointsTint(glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
 	m_nav_mesh_renderable->Compile();
 
-	m_scene->RegisterEntity(m_nav_mesh_renderable.get());
+	if(m_render_nav_mesh) {
+		m_scene->RegisterEntity(m_nav_mesh_renderable.get());
+	}
 }
 
 void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {

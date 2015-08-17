@@ -26,6 +26,8 @@
 #include <stdio.h>
 #endif
 
+#include <stdarg.h>
+
 #ifndef va_copy
 #define va_copy(d,s) ((d) = (s))
 #endif

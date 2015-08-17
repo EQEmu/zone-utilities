@@ -17,6 +17,8 @@ public:
 	virtual void OnSuspend() = 0;
 	virtual void OnResume() = 0;
 	virtual bool HasWork() = 0;
+	virtual bool CanSave() = 0;
+	virtual void Save() = 0;
 
 	void SetRunning(bool v) { m_running = v; }
 	bool& GetRunning() { return m_running; }

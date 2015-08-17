@@ -89,6 +89,8 @@ public:
 	virtual void OnSuspend();
 	virtual void OnResume();
 	virtual bool HasWork();
+	virtual bool CanSave();
+	virtual void Save();
 	virtual void OnHotkey(int ident);
 private:
 	friend class ModuleNavigationBuildTile;
@@ -117,6 +119,8 @@ private:
 	int m_max_tiles;
 	int m_max_polys_per_tile;
 	float m_tile_size;
+
+	bool m_render_nav_mesh;
 
 	dtNavMesh *m_nav_mesh;
 

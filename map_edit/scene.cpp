@@ -39,7 +39,6 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 	}
 
 	m_show_open = false;
-	m_show_save = false;
 	m_show_options = false;
 	m_show_debug = false;
 	m_render_collide = true;
@@ -207,7 +206,21 @@ void Scene::RenderMainMenu() {
 	if(ImGui::BeginMenu("File"))
 	{
 		ImGui::MenuItem("Open", "Ctrl+O", &m_show_open);
-		ImGui::MenuItem("Save", "Ctrl+S", &m_show_save);
+		bool can_save = false;
+		for(auto &module : m_modules) {
+			if(module->GetRunning() && module->GetUnpaused() && module->CanSave()) {
+				can_save = true;
+				break;
+			}
+		}
+
+		if(ImGui::MenuItem("Save", "Ctrl+S", nullptr, can_save)) {
+			for(auto &module : m_modules) {
+				if(module->GetRunning() && module->GetUnpaused() && module->CanSave()) {
+					module->Save();
+				}
+			}
+		}
 		ImGui::Separator();
 		ImGui::MenuItem("Show Options", "Alt+O", &m_show_options);
 		ImGui::MenuItem("Show Debug", "Alt+G", &m_show_debug);
@@ -238,7 +251,6 @@ void Scene::RenderUI() {
 	for(auto &module : m_modules) {
 		if(module->HasWork()) {
 			m_show_open = false;
-			m_show_save = false;
 		}
 	}
 
@@ -247,11 +259,6 @@ void Scene::RenderUI() {
 		m_show_open = false;
 	}
 
-	if(m_show_save) {
-		//ImGui::OpenPopup("Save Data");
-		m_show_save = false;
-	}
-	
 	if(ImGui::BeginPopupModal("Open Zone", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 		bool use_popup = true;
 		for(auto &module : m_modules) {
@@ -462,8 +469,13 @@ void Scene::OnHotkey(int ident) {
 		case MainHotkeyOpen:
 			m_show_open = true;
 			break;
-		case MainHotkeySave:
-			m_show_save = true;
+		case MainHotkeySave: {
+			for(auto &module : m_modules) {
+				 if(module->GetRunning() && module->GetUnpaused() && module->CanSave()) {
+					 module->Save();
+				 }
+			}
+		}
 			break;
 		case MainHotkeyToggleOptions:
 			m_show_options = !m_show_options;
