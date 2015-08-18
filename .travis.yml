@@ -1,5 +1,7 @@
 language: cpp
-compiler: gcc
+compiler: 
+  - gcc
+  - clang
 sudo: false
 addons:
   apt:
@@ -7,6 +9,7 @@ addons:
     - zlib1g-dev
     - xorg-dev
     - libglu1-mesa-dev
+    - clang-3.5
 script:
   - cmake -G "Unix Makefiles" -DEQEMU_ENABLE_GL=ON
   - make -j8
