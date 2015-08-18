@@ -122,6 +122,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 
 	uint32_t idx = 0;
 	SafeVarAllocParse(v4_zone_dat_header, header);
+	eqLogMessage(LogError, "Header info for %s.eqg v4 %d %d %d", filename.c_str(), header.unk000, header.unk004, header.unk008);
 
 	SafeStringAllocParse(base_tile_texture);
 	SafeVarAllocParse(uint32_t, tile_count);
@@ -254,7 +255,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 		
 			SafeVarAllocParse(uint8_t, unk);
 
-			if(unk == 0xFF) {
+			if(header.unk000 & 2) {
 				idx += sizeof(uint32_t);
 			}
 
