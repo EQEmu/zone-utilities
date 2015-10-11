@@ -39,6 +39,7 @@ SET(common_headers
 	eqg_v4_loader.h
 	eqg_water_sheet.h
 	light.h
+	octree.h
 	oriented_bounding_box.h
 	pfs.h
 	pfs_crc.h

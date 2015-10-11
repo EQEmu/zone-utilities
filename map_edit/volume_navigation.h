@@ -2,7 +2,7 @@
 #define EQEMU_MAP_VIEW_VOLUME_NAVIGATION_H
 
 #include "aligned_bounding_box.h"
-#include "volume_box.h"
+#include "line_model.h"
 
 enum VolumeNavigationType
 {
@@ -27,7 +27,7 @@ public:
 		}
 	}
 
-	void AppendToModel(VolumeBox *vb) {
+	void AppendToModel(LineModel *vb) {
 		vb->AddBox(m_aabb.min_, m_aabb.max_);
 
 		if(m_children) {
@@ -106,7 +106,7 @@ public:
 		m_root->SubDivide(n, 0);
 	}
 
-	void CreateModel(VolumeBox *vb) {
+	void CreateModel(LineModel *vb) {
 		m_root->AppendToModel(vb);
 	}
 

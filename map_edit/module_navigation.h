@@ -10,7 +10,7 @@
 
 #include "module.h"
 #include "scene.h"
-#include "volume_box.h"
+#include "line_model.h"
 #include "rc_chunky_tri_mesh.h"
 #include "thread_pool.h"
 #include "nav_mesh_model.h"
@@ -19,7 +19,7 @@ class ModuleNavigation;
 class ModuleNavigationBuildTile : public ThreadPoolWork
 {
 public:
-	ModuleNavigationBuildTile(ModuleNavigation *nav_module, int x, int y, glm::vec3 tile_min, glm::vec3 tile_max) { 
+	ModuleNavigationBuildTile(ModuleNavigation *nav_module, int x, int y, glm::vec3 tile_min, glm::vec3 tile_max, std::shared_ptr<EQPhysics> physics) {
 		m_nav_module = nav_module;
 		m_x = x;
 		m_y = y;
@@ -29,6 +29,8 @@ public:
 
 		m_nav_data = nullptr;
 		m_nav_data_size = 0;
+
+		m_physics = physics;
 	}
 	~ModuleNavigationBuildTile() { if(m_nav_data) { dtFree(m_nav_data); m_nav_data = nullptr; } }
 
@@ -45,6 +47,8 @@ private:
 
 	unsigned char* m_nav_data;
 	int m_nav_data_size;
+
+	std::shared_ptr<EQPhysics> m_physics;
 };
 
 class NavigationDebugDraw : public duDebugDraw
@@ -74,6 +78,14 @@ enum NavigationPartitionType
 	NAVIGATION_PARTITION_LAYERS,
 };
 
+enum NavigationPolyFlags
+{
+	NavigationPolyFlagWalk = 0x01,
+	NavigationPolyFlagSwim = 0x02,
+	NavigationPolyFlagDisabled = 0x10,
+	NavigationPolyFlagAll = 0xFFFF
+};
+
 class ModuleNavigation : public Module, public SceneHotkeyListener
 {
 public:
@@ -96,11 +108,14 @@ private:
 	friend class ModuleNavigationBuildTile;
 	friend class NavigationDebugDraw;
 	void BuildNavigationMesh();
+	void BuildWaterPortals();
 	void CreateNavMeshModel();
+	void CreateWaterPortalModel();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
 	std::unique_ptr<NavMeshModel> m_nav_mesh_renderable;
+	std::unique_ptr<LineModel> m_water_portal_renderable;
 
 	float m_cell_size;
 	float m_cell_height;

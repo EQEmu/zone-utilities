@@ -65,6 +65,7 @@ public:
 	void UnregisterAllModules();
 
 	std::shared_ptr<ZoneMap> GetZoneGeometry() { return m_zone_geometry; }
+	std::shared_ptr<EQPhysics> GetZonePhysics() { return m_physics; }
 private:
 	friend class Module;
 	Scene(const Scene&);
@@ -90,11 +91,13 @@ private:
 	//zone info
 	std::string m_name;
 	std::shared_ptr<ZoneMap> m_zone_geometry;
-	std::unique_ptr<EQPhysics> m_physics;
+	std::shared_ptr<EQPhysics> m_physics;
 
 	//Entity / rendering
 	std::unique_ptr<ShaderProgram> m_shader;
-	ShaderUniform m_mvp;
+	ShaderUniform m_model;
+	ShaderUniform m_view;
+	ShaderUniform m_proj;
 	ShaderUniform m_tint;
 	std::unique_ptr<Entity> m_collide_mesh_entity;
 	std::unique_ptr<Entity> m_non_collide_mesh_entity;

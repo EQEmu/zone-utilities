@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(map_edit_sources
 	imgui_glfw.cpp
+	line_model.cpp
 	main.cpp
 	module_navigation.cpp
 	nav_mesh_model.cpp
@@ -9,12 +10,13 @@ SET(map_edit_sources
 	scene.cpp
 	shader.cpp
 	static_geometry.cpp
-	volume_box.cpp
+	water_portal.cpp
 )
 
 SET(map_edit_headers
 	entity.h
 	imgui_glfw.h
+	line_model.h
 	module.h
 	module_navigation.h
 	nav_mesh_model.h
@@ -23,7 +25,7 @@ SET(map_edit_headers
 	scene_module.h
 	shader.h
 	static_geometry.h
-	volume_box.h
+	water_portal.h
 	volume_navigation.h
 )
 

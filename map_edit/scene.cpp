@@ -69,7 +69,9 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 	m_shader.reset(new ShaderProgram("shaders/basic130.vert", "shaders/basic130.frag"));
 #endif
 
-	m_mvp = m_shader->GetUniformLocation("MVP");
+	m_model = m_shader->GetUniformLocation("Model");
+	m_view = m_shader->GetUniformLocation("View");
+	m_proj = m_shader->GetUniformLocation("Proj");
 	m_tint = m_shader->GetUniformLocation("Tint");
 }
 
@@ -126,8 +128,10 @@ void Scene::Render() {
 	m_shader->Use();
 
 	glm::mat4 model = glm::mat4(1.0);
-	glm::mat4 mvp = m_camera_proj * m_camera_view * model;
-	m_mvp.SetValueMatrix4(1, false, &mvp[0][0]);
+
+	m_model.SetValueMatrix4(1, false, &model[0][0]);
+	m_view.SetValueMatrix4(1, false, &m_camera_view[0][0]);
+	m_proj.SetValueMatrix4(1, false, &m_camera_proj[0][0]);
 
 	//render all our models here
 	if(m_render_collide && m_collide_mesh_entity) {
@@ -178,8 +182,7 @@ void Scene::Render() {
 		model[3][0] = pos.x;
 		model[3][1] = pos.y;
 		model[3][2] = pos.z;
-		mvp = m_camera_proj * m_camera_view * model;
-		m_mvp.SetValueMatrix4(1, false, &mvp[0][0]);
+		m_model.SetValueMatrix4(1, false, &model[0][0]);
 		e->Draw();
 	}
 
@@ -237,6 +240,11 @@ void Scene::RenderUI() {
 		ImGui::Text("Loc: (%.2f, %.2f, %.2f)", m_camera_loc.x, m_camera_loc.y, m_camera_loc.z);
 		ImGui::Text("Best floor: %.2f", m_physics->FindBestFloor(m_camera_loc, nullptr, nullptr));
 		ImGui::Text("InLiquid: %s", m_physics->InLiquid(m_camera_loc) ? "true" : "false");
+		if(GetZoneGeometry()) {
+			auto zone_geo = GetZoneGeometry();
+			ImGui::Text("Min: (%.2f, %.2f, %.2f)", zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMin().z);
+			ImGui::Text("Max: (%.2f, %.2f, %.2f)", zone_geo->GetCollidableMax().x, zone_geo->GetCollidableMax().y, zone_geo->GetCollidableMax().z);
+		}
 		ImGui::End();
 	}
 	
@@ -369,19 +377,19 @@ void Scene::ProcessCamera() {
 		speed *= 6.0f;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS){
+	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS) {
 		m_camera_loc += direction * delta_time * speed;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS){
+	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS) {
 		m_camera_loc -= direction * delta_time * speed;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS){
+	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS) {
 		m_camera_loc += right * delta_time * speed;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS){
+	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS) {
 		m_camera_loc -= right * delta_time * speed;
 	}
 

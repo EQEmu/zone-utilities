@@ -1,11 +1,14 @@
-#include "string_util.h"
+#include <algorithm>
 
 #include <DetourNavMeshBuilder.h>
 
+#include "string_util.h"
 #include "imgui.h"
 #include "module_navigation.h"
 #include "thread_pool.h"
 #include "log_macros.h"
+
+#include "water_portal.h"
 
 inline unsigned int nextPow2(unsigned int v)
 {
@@ -35,7 +38,7 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4) {
 	m_cell_size = 0.7f;
 	m_cell_height = 0.2f;
 	m_agent_height = 6.0f;
-	m_agent_radius = 0.9f;
+	m_agent_radius = 0.7f;
 	m_agent_max_climb = 6.0f;
 	m_agent_max_slope = 60.0f;
 	m_region_min_size = 8;
@@ -68,6 +71,11 @@ void ModuleNavigation::OnShutdown() {
 	if(m_nav_mesh_renderable) {
 		m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
 		m_nav_mesh_renderable.release();
+	}
+
+	if(m_water_portal_renderable) {
+		m_scene->UnregisterEntity(m_water_portal_renderable.get());
+		m_water_portal_renderable.release();
 	}
 }
 
@@ -180,9 +188,17 @@ void ModuleNavigation::OnDrawUI() {
 			if(m_nav_mesh_renderable) {
 				m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
 			}
+
+			if(m_water_portal_renderable) {
+				m_scene->UnregisterEntity(m_water_portal_renderable.get());
+			}
 		} else {
 			if(m_nav_mesh_renderable) {
 				m_scene->RegisterEntity(m_nav_mesh_renderable.get());
+			}
+
+			if(m_water_portal_renderable) {
+				m_scene->RegisterEntity(m_water_portal_renderable.get());
 			}
 		}
 	}
@@ -190,6 +206,10 @@ void ModuleNavigation::OnDrawUI() {
 
 	if(ImGui::Button("Build NavMesh")) {
 		BuildNavigationMesh();
+	}
+
+	if(ImGui::Button("Build Water Portals")) {
+		BuildWaterPortals();
 	}
 
 	ImGui::End();
@@ -214,17 +234,30 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name) {
 			m_nav_mesh_renderable.release();
 		}
 	}
+
+	if(m_water_portal_renderable) {
+		m_scene->UnregisterEntity(m_water_portal_renderable.get());
+		m_water_portal_renderable.release();
+	}
 }
 
 void ModuleNavigation::OnSuspend() {
 	if(m_nav_mesh_renderable) {
 		m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
 	}
+
+	if(m_water_portal_renderable) {
+		m_scene->UnregisterEntity(m_water_portal_renderable.get());
+	}
 }
 
 void ModuleNavigation::OnResume() {
 	if(m_render_nav_mesh && m_nav_mesh_renderable) {
 		m_scene->RegisterEntity(m_nav_mesh_renderable.get());
+	}
+
+	if(m_render_nav_mesh && m_water_portal_renderable) {
+		m_scene->RegisterEntity(m_water_portal_renderable.get());
 	}
 }
 
@@ -249,6 +282,11 @@ void ModuleNavigation::BuildNavigationMesh() {
 
 	auto zone_geo = m_scene->GetZoneGeometry();
 	if(!zone_geo) {
+		return;
+	}
+
+	std::shared_ptr<EQPhysics> phys = m_scene->GetZonePhysics();
+	if(!phys) {
 		return;
 	}
 
@@ -292,7 +330,7 @@ void ModuleNavigation::BuildNavigationMesh() {
 			glm::vec3 tile_max(bmin[0] + (x + 1) * tcs, bmax[1], bmin[2] + (y + 1) * tcs);
 
 			m_tiles_building++;
-			m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max));
+			m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max, phys));
 		}
 	}
 }
@@ -469,26 +507,14 @@ void ModuleNavigationBuildTile::Run() {
 			return;
 		}
 
-		// Update poly flags from areas.
+		const int nvp = pmesh->nvp;
+		const float cs = pmesh->cs;
+		const float ch = pmesh->ch;
+		const float* orig = pmesh->bmin;
+
 		for(int i = 0; i < pmesh->npolys; ++i)
 		{
-			//if(pmesh->areas[i] == RC_WALKABLE_AREA)
-			//	m_pmesh->areas[i] = SAMPLE_POLYAREA_GROUND;
-			//
-			//if(m_pmesh->areas[i] == SAMPLE_POLYAREA_GROUND ||
-			//   m_pmesh->areas[i] == SAMPLE_POLYAREA_GRASS ||
-			//   m_pmesh->areas[i] == SAMPLE_POLYAREA_ROAD)
-			//{
-			//	m_pmesh->flags[i] = SAMPLE_POLYFLAGS_WALK;
-			//}
-			//else if(m_pmesh->areas[i] == SAMPLE_POLYAREA_WATER)
-			//{
-			//	m_pmesh->flags[i] = SAMPLE_POLYFLAGS_SWIM;
-			//}
-			//else if(m_pmesh->areas[i] == SAMPLE_POLYAREA_DOOR)
-			//{
-			//	m_pmesh->flags[i] = SAMPLE_POLYFLAGS_WALK | SAMPLE_POLYFLAGS_DOOR;
-			//}
+			pmesh->flags[i] = NavigationPolyFlagWalk;
 		}
 
 		dtNavMeshCreateParams params;
@@ -667,4 +693,28 @@ void NavigationDebugDraw::CreatePrimitive() {
 	}
 
 	verts_in_use = 0;
+}
+
+void ModuleNavigation::BuildWaterPortals() {
+	if(m_render_nav_mesh && m_water_portal_renderable)
+		m_scene->UnregisterEntity(m_water_portal_renderable.get());
+
+	glm::vec3 min_pt = m_scene->GetZoneGeometry()->GetCollidableMin();
+	glm::vec3 max_pt = m_scene->GetZoneGeometry()->GetCollidableMax();
+	auto physics = m_scene->GetZonePhysics();
+
+	//WaterPortalManager wpm(physics, min_pt, max_pt);
+	//wpm.Subdivide();
+	m_water_portal_renderable.reset(new LineModel());
+
+	//wpm.AppendModel(m_water_portal_renderable.get());
+
+	m_water_portal_renderable->Update();
+	
+	if(m_render_nav_mesh)
+		m_scene->RegisterEntity(m_water_portal_renderable.get());
+}
+
+void ModuleNavigation::CreateWaterPortalModel() {
+	
 }

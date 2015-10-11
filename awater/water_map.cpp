@@ -55,7 +55,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 			auto regions = region->GetRegions();
 			WaterMapRegionType region_type = RegionTypeUntagged;
 
-			eqLogMessage(LogTrace, "Processing region %s for s3d.", region->GetName().c_str());
+			eqLogMessage(LogTrace, "Processing region '%s' '%s' for s3d.", region->GetName().c_str(), region->GetExtendedInfo().c_str());
 
 			if (!strncmp(region->GetName().c_str(), "WT", 2)) {
 				region_type = RegionTypeWater;

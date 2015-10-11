@@ -3,6 +3,7 @@
 
 #include <btBulletDynamicsCommon.h>
 
+#include "log_macros.h"
 #include "eq_physics.h"
 
 struct EQPhysics::impl {
@@ -66,6 +67,7 @@ void EQPhysics::SetCollidableWorld(const std::vector<glm::vec3>& verts, const st
 	}
 
 	imp->collidable_mesh.reset(new btTriangleMesh());
+
 	//add our triangles...
 	int face_count = (int)inds.size() / 3;
 	for(int i = 0; i < face_count; ++i) {
@@ -239,4 +241,21 @@ bool EQPhysics::InLiquid(const glm::vec3 &pos) const {
 	}
 
 	return imp->water_map->InLiquid(pos.x, pos.z, pos.y);
+}
+
+bool EQPhysics::IsUnderworld(const glm::vec3 &point) const {
+	btVector3 from(point.x, point.y + 1.0f, point.z);
+	btVector3 to(point.x, BEST_FLOOR_INVALID, point.z);
+
+	btCollisionWorld::AllHitsRayResultCallback hit_below(from, to);
+	hit_below.m_collisionFilterGroup = (short)CollidableWorld;
+	hit_below.m_collisionFilterMask = (short)CollidableWorld;
+
+	imp->collision_world->rayTest(from, to, hit_below);
+
+	if(hit_below.hasHit()) {
+		return false;
+	}
+
+	return true;
 }

@@ -20,12 +20,11 @@ struct ThreadPool::impl
 
 ThreadPool::ThreadPool(int t_count) {
 	imp = new impl;
+	imp->m_running = true;
 
 	for(int i = 0; i < t_count; ++i) {
 		imp->m_threads.push_back(std::thread(&ThreadPool::WorkerThread, this));
 	}
-
-	imp->m_running = true;
 }
 
 ThreadPool::~ThreadPool() {
