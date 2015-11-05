@@ -111,11 +111,14 @@ private:
 	void BuildWaterPortals();
 	void CreateNavMeshModel();
 	void CreateWaterPortalModel();
+	void CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo);
+	void CreateBoundingModel();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
 	std::unique_ptr<NavMeshModel> m_nav_mesh_renderable;
 	std::unique_ptr<LineModel> m_water_portal_renderable;
+	std::unique_ptr<LineModel> m_bounding_box_renderable;
 
 	float m_cell_size;
 	float m_cell_height;
@@ -135,7 +138,12 @@ private:
 	int m_max_polys_per_tile;
 	float m_tile_size;
 
+	glm::vec3 m_bounding_box_min;
+	glm::vec3 m_bounding_box_max;
+
 	bool m_render_nav_mesh;
+	bool m_render_zone_bounding_box;
+	bool m_render_water_portals;
 
 	dtNavMesh *m_nav_mesh;
 

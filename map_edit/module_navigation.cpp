@@ -35,8 +35,8 @@ inline unsigned int ilog2(unsigned int v)
 }
 
 ModuleNavigation::ModuleNavigation() : m_thread_pool(4) {
-	m_cell_size = 0.7f;
-	m_cell_height = 0.2f;
+	m_cell_size = 0.6f;
+	m_cell_height = 0.3f;
 	m_agent_height = 6.0f;
 	m_agent_radius = 0.7f;
 	m_agent_max_climb = 6.0f;
@@ -55,6 +55,8 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4) {
 	m_nav_mesh = nullptr;
 	m_tiles_building = 0;
 	m_render_nav_mesh = true;
+	m_render_water_portals = true;
+	m_render_zone_bounding_box = true;
 }
 
 ModuleNavigation::~ModuleNavigation() {
@@ -76,6 +78,11 @@ void ModuleNavigation::OnShutdown() {
 	if(m_water_portal_renderable) {
 		m_scene->UnregisterEntity(m_water_portal_renderable.get());
 		m_water_portal_renderable.release();
+	}
+
+	if (m_bounding_box_renderable) {
+		m_scene->UnregisterEntity(m_bounding_box_renderable.get());
+		m_bounding_box_renderable.release();
 	}
 }
 
@@ -107,8 +114,8 @@ void ModuleNavigation::OnDrawUI() {
 	auto zone_geo = m_scene->GetZoneGeometry();
 
 	if(zone_geo) {
-		const float* bmin = (float*)&zone_geo->GetCollidableMin();
-		const float* bmax = (float*)&zone_geo->GetCollidableMax();
+		const float* bmin = (float*)&m_bounding_box_min;
+		const float* bmax = (float*)&m_bounding_box_max;
 		int gw = 0, gh = 0;
 		rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
 		ImGui::Text(EQEmu::StringFormat("Voxels  %d x %d", gw, gh).c_str());
@@ -152,7 +159,7 @@ void ModuleNavigation::OnDrawUI() {
 		const float* bmax = (float*)&zone_geo->GetCollidableMax();
 
 		int gw = 0, gh = 0;
-		rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
+		rcCalcGridSize((float*)&m_bounding_box_min, (float*)&m_bounding_box_max, m_cell_size, &gw, &gh);
 
 		const int ts = (int)m_tile_size;
 		const int tw = (gw + ts - 1) / ts;
@@ -175,53 +182,113 @@ void ModuleNavigation::OnDrawUI() {
 		else {
 			ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", 0).c_str());
 		}
+
+		ImGui::Separator();
+		ImGui::Text("Bounding Box");
+
+		ImGui::SliderFloat("Min x", &m_bounding_box_min.x, bmin[0], bmax[0], "%.1f");
+		ImGui::SliderFloat("Min y", &m_bounding_box_min.y, bmin[1], bmax[1], "%.1f");
+		ImGui::SliderFloat("Min z", &m_bounding_box_min.z, bmin[2], bmax[2], "%.1f");
+		ImGui::SliderFloat("Max x", &m_bounding_box_max.x, bmin[0], bmax[0], "%.1f");
+		ImGui::SliderFloat("Max y", &m_bounding_box_max.y, bmin[1], bmax[1], "%.1f");
+		ImGui::SliderFloat("Max z", &m_bounding_box_max.z, bmin[2], bmax[2], "%.1f");
+
+		if (ImGui::Button("Apply bounds")) {
+			if (m_bounding_box_renderable) {
+				m_scene->UnregisterEntity(m_bounding_box_renderable.get());
+			}
+
+			CreateChunkyTriMesh(zone_geo);
+			CreateBoundingModel();
+
+			if (m_bounding_box_renderable && m_render_zone_bounding_box) {
+				m_scene->RegisterEntity(m_bounding_box_renderable.get());
+			}
+		}
 	} else {
 		m_max_tiles = 0;
 		m_max_polys_per_tile = 0;
 	}
 
-	ImGui::Separator();
 
+	ImGui::Separator();
 	ImGui::Text("Rendering");
-	if(ImGui::Checkbox("Render NavMesh", &m_render_nav_mesh)) {
-		if(!m_render_nav_mesh) {
-			if(m_nav_mesh_renderable) {
+
+	if (ImGui::Checkbox("Render NavMesh", &m_render_nav_mesh)) {
+		if (!m_render_nav_mesh) {
+			if (m_nav_mesh_renderable) {
 				m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
 			}
-
-			if(m_water_portal_renderable) {
-				m_scene->UnregisterEntity(m_water_portal_renderable.get());
-			}
-		} else {
-			if(m_nav_mesh_renderable) {
+		}
+		else {
+			if (m_nav_mesh_renderable) {
 				m_scene->RegisterEntity(m_nav_mesh_renderable.get());
 			}
+		}
+	}
 
-			if(m_water_portal_renderable) {
+	if (ImGui::Checkbox("Render Water Portals", &m_render_water_portals)) {
+		if (!m_render_water_portals) {
+			if (m_water_portal_renderable) {
+				m_scene->UnregisterEntity(m_water_portal_renderable.get());
+			}
+		}
+		else {
+			if (m_water_portal_renderable) {
 				m_scene->RegisterEntity(m_water_portal_renderable.get());
 			}
 		}
 	}
+
+	if (ImGui::Checkbox("Render Navigation Bounding Box", &m_render_zone_bounding_box)) {
+		if (!m_render_zone_bounding_box) {
+			if (m_bounding_box_renderable) {
+				m_scene->UnregisterEntity(m_bounding_box_renderable.get());
+			}
+		}
+		else {
+			if (m_bounding_box_renderable) {
+				m_scene->RegisterEntity(m_bounding_box_renderable.get());
+			}
+		}
+	}
+
 	ImGui::Separator();
 
 	if(ImGui::Button("Build NavMesh")) {
 		BuildNavigationMesh();
 	}
 
-	if(ImGui::Button("Build Water Portals")) {
-		BuildWaterPortals();
-	}
+	//Crashes atm, will fix later but for now need to 
+	//if(ImGui::Button("Build Water Portals")) {
+	//	BuildWaterPortals();
+	//}
 
 	ImGui::End();
 }
 
 void ModuleNavigation::OnSceneLoad(const char *zone_name) {
 	auto zone_geo = m_scene->GetZoneGeometry();
-	m_chunky_mesh.reset(new rcChunkyTriMesh());
-
 	if(zone_geo) {
-		if(!rcCreateChunkyTriMesh((float*)zone_geo->GetCollidableVerts().data(), (int*)zone_geo->GetCollidableInds().data(), (int)zone_geo->GetCollidableInds().size() / 3, 256, m_chunky_mesh.get())) {
-			m_chunky_mesh.reset();
+		auto &bmin = zone_geo->GetCollidableMin();
+		auto &bmax = zone_geo->GetCollidableMax();
+
+		m_bounding_box_min.x = bmin.x;
+		m_bounding_box_min.y = bmin.y;
+		m_bounding_box_min.z = bmin.z;
+		m_bounding_box_max.x = bmax.x;
+		m_bounding_box_max.y = bmax.y;
+		m_bounding_box_max.z = bmax.z;
+
+		if (m_bounding_box_renderable) {
+			m_scene->UnregisterEntity(m_bounding_box_renderable.get());
+		}
+
+		CreateChunkyTriMesh(zone_geo);
+		CreateBoundingModel();
+
+		if (GetRunning() && GetUnpaused() && m_bounding_box_renderable && m_render_zone_bounding_box) {
+			m_scene->RegisterEntity(m_bounding_box_renderable.get());
 		}
 	}
 
@@ -249,6 +316,10 @@ void ModuleNavigation::OnSuspend() {
 	if(m_water_portal_renderable) {
 		m_scene->UnregisterEntity(m_water_portal_renderable.get());
 	}
+
+	if (m_bounding_box_renderable) {
+		m_scene->UnregisterEntity(m_bounding_box_renderable.get());
+	}
 }
 
 void ModuleNavigation::OnResume() {
@@ -256,8 +327,12 @@ void ModuleNavigation::OnResume() {
 		m_scene->RegisterEntity(m_nav_mesh_renderable.get());
 	}
 
-	if(m_render_nav_mesh && m_water_portal_renderable) {
+	if(m_render_water_portals && m_water_portal_renderable) {
 		m_scene->RegisterEntity(m_water_portal_renderable.get());
+	}
+
+	if (m_render_zone_bounding_box && m_bounding_box_renderable) {
+		m_scene->RegisterEntity(m_bounding_box_renderable.get());
 	}
 }
 
@@ -298,7 +373,7 @@ void ModuleNavigation::BuildNavigationMesh() {
 	m_nav_mesh = dtAllocNavMesh();
 
 	dtNavMeshParams params;
-	rcVcopy(params.orig, (float*)&zone_geo->GetCollidableMin());
+	rcVcopy(params.orig, (float*)&m_bounding_box_min);
 	params.tileWidth = m_tile_size * m_cell_size;
 	params.tileHeight = m_tile_size * m_cell_size;
 	params.maxTiles = m_max_tiles;
@@ -313,8 +388,8 @@ void ModuleNavigation::BuildNavigationMesh() {
 	}
 
 
-	const float* bmin = (float*)&zone_geo->GetCollidableMin();
-	const float* bmax = (float*)&zone_geo->GetCollidableMax();
+	const float* bmin = (float*)&m_bounding_box_min;
+	const float* bmax = (float*)&m_bounding_box_max;
 	int gw = 0, gh = 0;
 	rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
 	const int ts = (int)m_tile_size;
@@ -584,7 +659,7 @@ void ModuleNavigationBuildTile::Finished() {
 }
 
 void ModuleNavigation::CreateNavMeshModel() {
-	if(m_nav_mesh_renderable) {
+	if(m_render_nav_mesh && m_nav_mesh_renderable) {
 		m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
 	}
 
@@ -696,11 +771,11 @@ void NavigationDebugDraw::CreatePrimitive() {
 }
 
 void ModuleNavigation::BuildWaterPortals() {
-	if(m_render_nav_mesh && m_water_portal_renderable)
+	if(m_render_water_portals && m_water_portal_renderable)
 		m_scene->UnregisterEntity(m_water_portal_renderable.get());
 
-	glm::vec3 min_pt = m_scene->GetZoneGeometry()->GetCollidableMin();
-	glm::vec3 max_pt = m_scene->GetZoneGeometry()->GetCollidableMax();
+	glm::vec3 min_pt = m_bounding_box_min;
+	glm::vec3 max_pt = m_bounding_box_max;
 	auto physics = m_scene->GetZonePhysics();
 
 	//WaterPortalManager wpm(physics, min_pt, max_pt);
@@ -711,10 +786,83 @@ void ModuleNavigation::BuildWaterPortals() {
 
 	m_water_portal_renderable->Update();
 	
-	if(m_render_nav_mesh)
+	if(m_render_water_portals)
 		m_scene->RegisterEntity(m_water_portal_renderable.get());
 }
 
 void ModuleNavigation::CreateWaterPortalModel() {
 	
 }
+
+bool VertexWithinBounds(const glm::vec3 &v, glm::vec3 &min, glm::vec3 &max) {
+	if (v.x < min.x || v.x > max.x)
+		return false;
+
+	if (v.y < min.y || v.y > max.y)
+		return false;
+
+	if (v.z < min.z || v.z > max.z)
+		return false;
+
+	return true;
+}
+
+void ModuleNavigation::CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo)
+{
+
+	//only include tris within bb of zone
+	std::vector<int> inds;
+	inds.reserve(zone_geo->GetCollidableInds().size());
+
+	size_t sz = zone_geo->GetCollidableInds().size();
+	size_t tris_out = 0;
+
+	for (size_t i = 0; i < sz; i += 3) {
+		auto i1 = zone_geo->GetCollidableInds()[i];
+		auto i2 = zone_geo->GetCollidableInds()[i + 1];
+		auto i3 = zone_geo->GetCollidableInds()[i + 2];
+		auto &v1 = zone_geo->GetCollidableVerts()[i1];
+		auto &v2 = zone_geo->GetCollidableVerts()[i2];
+		auto &v3 = zone_geo->GetCollidableVerts()[i3];
+
+		if (!VertexWithinBounds(v1, m_bounding_box_min, m_bounding_box_max)) {
+			continue;
+		}
+
+		if (!VertexWithinBounds(v2, m_bounding_box_min, m_bounding_box_max)) {
+			continue;
+		}
+
+		if (!VertexWithinBounds(v3, m_bounding_box_min, m_bounding_box_max)) {
+			continue;
+		}
+
+		inds.push_back(i1);
+		inds.push_back(i2);
+		inds.push_back(i3);
+	}
+
+	m_chunky_mesh.reset(new rcChunkyTriMesh());
+	if (!rcCreateChunkyTriMesh(
+		(float*)zone_geo->GetCollidableVerts().data(), 
+		(int*)inds.data(),
+		(int)inds.size() / 3,
+		512, 
+		m_chunky_mesh.get())) 
+	{
+		m_chunky_mesh.reset();
+	}
+}
+
+void ModuleNavigation::CreateBoundingModel()
+{
+	if (m_bounding_box_renderable) {
+		m_scene->UnregisterEntity(m_bounding_box_renderable.get());
+	}
+
+	m_bounding_box_renderable.reset(new LineModel());
+	m_bounding_box_renderable->AddBox(m_bounding_box_min, m_bounding_box_max);
+	m_bounding_box_renderable->SetTint(glm::vec4(0.0, 1.0, 1.0, 1.0));
+	m_bounding_box_renderable->Update();
+}
+

@@ -314,7 +314,9 @@ void Scene::RenderModulesMenu() {
 	{
 		for(auto &module : m_modules) {
 			if(!module->GetRunning()) {
-				ImGui::MenuItem(module->GetName(), nullptr, &module->GetRunning());
+				if (ImGui::MenuItem(module->GetName(), nullptr, &module->GetRunning())) {
+					module->OnResume();
+				}
 			} else {
 				if(ImGui::MenuItem(module->GetName())) {
 					if(module->GetUnpaused()) {
