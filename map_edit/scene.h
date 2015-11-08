@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -56,8 +57,9 @@ public:
 	virtual void OnHotkey(int ident);
 
 	//entity
-	void RegisterEntity(Entity *e);
-	void UnregisterEntity(Entity *e);
+	void RegisterEntity(Module *m, Entity *e);
+	void UnregisterEntity(Module *m, Entity *e);
+	void UnregisterEntitiesByModule(Module *m);
 
 	//module
 	void RegisterModule(Module *m);
@@ -102,7 +104,7 @@ private:
 	std::unique_ptr<Entity> m_collide_mesh_entity;
 	std::unique_ptr<Entity> m_non_collide_mesh_entity;
 	std::unique_ptr<Entity> m_volume_mesh_entity;
-	std::vector<Entity*> m_registered_entities;
+	std::map<Module*, std::vector<Entity*>> m_registered_entities;
 
 	//hotkeys
 	bool TryHotkey();

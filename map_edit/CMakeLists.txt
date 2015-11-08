@@ -1,10 +1,12 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(map_edit_sources
+	dynamic_geometry.cpp
 	imgui_glfw.cpp
 	line_model.cpp
 	main.cpp
 	module_navigation.cpp
+	module_navigation_build_tile.cpp
 	nav_mesh_model.cpp
 	rc_chunky_tri_mesh.cpp
 	scene.cpp
@@ -14,11 +16,13 @@ SET(map_edit_sources
 )
 
 SET(map_edit_headers
+	dynamic_geometry.h
 	entity.h
 	imgui_glfw.h
 	line_model.h
 	module.h
 	module_navigation.h
+	module_navigation_build_tile.h
 	nav_mesh_model.h
 	rc_chunky_tri_mesh.h
 	scene.h
