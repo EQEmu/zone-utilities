@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "entity.h"
-#include "static_geometry.h"
+#include "dynamic_geometry.h"
 
 class NavMeshModel : public Entity
 {
@@ -16,7 +16,7 @@ public:
 	virtual ~NavMeshModel();
 
 	virtual void Draw();
-	void Compile();
+	void Update();
 
 	const glm::vec4& GetPointsTint() { return m_points.GetTint(); }
 	void SetPointsTint(const glm::vec4 &tint) { m_points.SetTint(tint); }
@@ -34,9 +34,9 @@ public:
 	std::vector<unsigned int>& GetTrianglesInds() { return m_triangles.GetInds(); }
 
 private:
-	StaticGeometry m_points;
-	StaticGeometry m_lines;
-	StaticGeometry m_triangles;
+	DynamicGeometry m_points;
+	DynamicGeometry m_lines;
+	DynamicGeometry m_triangles;
 };
 
 #endif

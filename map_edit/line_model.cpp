@@ -5,6 +5,7 @@ LineModel::LineModel() {
 	m_vao = 0;
 	m_vbo = 0;
 	m_ib = 0;
+	m_tint = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 }
 
 LineModel::~LineModel() {
@@ -25,8 +26,7 @@ void LineModel::Draw() {
 	if(m_vao) {
 		ShaderProgram shader = ShaderProgram::Current();
 		auto tint = shader.GetUniformLocation("Tint");
-		glm::vec4 tint_c(1.0f, 0.0f, 0.0f, 1.0f);
-		tint.SetValuePtr4(1, &tint_c[0]);
+		tint.SetValuePtr4(1, &m_tint[0]);
 
 		glBindVertexArray(m_vao);
 		glDrawElements(GL_LINES, (GLsizei)m_inds.size(), GL_UNSIGNED_INT, 0);

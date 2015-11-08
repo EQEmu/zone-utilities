@@ -28,14 +28,16 @@ void NavMeshModel::Draw() {
 	glDepthMask(GL_TRUE);
 }
 
-void NavMeshModel::Compile() {
-	m_points.Compile();
+void NavMeshModel::Update()
+{
+	m_points.Update();
 	m_points.SetDrawType(GL_POINTS);
-
-	m_lines.Compile();
+	
+	m_lines.Update();
 	m_lines.SetDrawType(GL_LINES);
-
-	m_triangles.Compile();
+	
+	m_triangles.Update();
 	m_triangles.SetDrawType(GL_TRIANGLES);
 }
+
 

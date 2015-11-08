@@ -1,14 +1,11 @@
 #include <algorithm>
-
-#include <DetourNavMeshBuilder.h>
-
 #include "string_util.h"
 #include "imgui.h"
 #include "module_navigation.h"
 #include "thread_pool.h"
 #include "log_macros.h"
 
-#include "water_portal.h"
+#include "module_navigation_build_tile.h"
 
 inline unsigned int nextPow2(unsigned int v)
 {
@@ -34,85 +31,212 @@ inline unsigned int ilog2(unsigned int v)
 	return r;
 }
 
-ModuleNavigation::ModuleNavigation() : m_thread_pool(4) {
-	m_cell_size = 0.7f;
+void calcChunkSize(const float* bmin, const float* bmax, float cs, int* x, int* y, int *z)
+{
+	*x = (int)((bmax[0] - bmin[0]) / cs + 0.5f);
+	*y = (int)((bmax[1] - bmin[1]) / cs + 0.5f);
+	*z = (int)((bmax[2] - bmin[2]) / cs + 0.5f);
+}
+
+ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
+{
+	m_mode = 0;
+
+	m_cell_size = 0.4f;
 	m_cell_height = 0.2f;
 	m_agent_height = 6.0f;
 	m_agent_radius = 0.7f;
-	m_agent_max_climb = 6.0f;
-	m_agent_max_slope = 60.0f;
+	m_agent_max_climb = 5.0f;
+	m_agent_max_slope = 55.0f;
 	m_region_min_size = 8;
 	m_region_merge_size = 20;
 	m_edge_max_len = 12.0f;
 	m_edge_max_error = 1.3f;
 	m_verts_per_poly = 6.0f;
-	m_detail_sample_dist = 6.0f;
+	m_detail_sample_dist = 18.0f;
 	m_detail_sample_max_error = 1.0f;
 	m_partition_type = NAVIGATION_PARTITION_WATERSHED;
 	m_max_tiles = 0;
 	m_max_polys_per_tile = 0;
-	m_tile_size = 256;
-	m_nav_mesh = nullptr;
+	m_tile_size = 64;
+
 	m_tiles_building = 0;
-	m_render_nav_mesh = true;
+	m_nav_mesh = nullptr;
 }
 
-ModuleNavigation::~ModuleNavigation() {
-	if(m_nav_mesh) {
+ModuleNavigation::~ModuleNavigation()
+{
+	if (m_nav_mesh) {
 		dtFreeNavMesh(m_nav_mesh);
 	}
+
+	m_scene->UnregisterEntitiesByModule(this);
 }
 
-void ModuleNavigation::OnLoad(Scene *s) {
+void ModuleNavigation::OnLoad(Scene *s)
+{
 	m_scene = s;
 }
 
-void ModuleNavigation::OnShutdown() {
-	if(m_nav_mesh_renderable) {
-		m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
-		m_nav_mesh_renderable.release();
-	}
-
-	if(m_water_portal_renderable) {
-		m_scene->UnregisterEntity(m_water_portal_renderable.get());
-		m_water_portal_renderable.release();
-	}
+void ModuleNavigation::OnShutdown()
+{
+	m_scene->UnregisterEntitiesByModule(this);
 }
 
-void ModuleNavigation::OnDrawMenu() {
-	if(ImGui::BeginMenu("Navigation"))
+void ModuleNavigation::OnDrawMenu()
+{
+	if (ImGui::BeginMenu("Navigation"))
 	{
-		if(ImGui::MenuItem("Clear")) {
+		if (ImGui::MenuItem("Clear")) {
 
 		}
 		ImGui::EndMenu();
 	}
 }
 
-void ModuleNavigation::OnDrawUI() {
-	m_thread_pool.Process();
-
-	ImGui::Begin("Navigation");
-
-	if(m_tiles_building > 0) {
-		ImGui::Text(EQEmu::StringFormat("Building NavMesh: %u tiles remaining", m_tiles_building).c_str());
-		ImGui::End();
+void ModuleNavigation::OnDrawUI()
+{
+	auto zone_geo = m_scene->GetZoneGeometry();
+	if (!zone_geo) {
 		return;
 	}
+
+	const float* bmin = (float*)&zone_geo->GetCollidableMin();
+	const float* bmax = (float*)&zone_geo->GetCollidableMax();
+	
+	ImGui::Begin("Navigation");
+	
+	ImGui::Text("Bounding Box");
+	bool update_bb = false;
+	if (ImGui::SliderFloat("Min x", &m_bounding_box_min.x, bmin[0], bmax[0], "%.1f")) {
+		update_bb = true;
+	}
+	
+	if (ImGui::SliderFloat("Min y", &m_bounding_box_min.y, bmin[1], bmax[1], "%.1f")) {
+		update_bb = true;
+	}
+	
+	if (ImGui::SliderFloat("Min z", &m_bounding_box_min.z, bmin[2], bmax[2], "%.1f")) {
+		update_bb = true;
+	}
+	
+	if (ImGui::SliderFloat("Max x", &m_bounding_box_max.x, bmin[0], bmax[0], "%.1f")) {
+		update_bb = true;
+	}
+	
+	if (ImGui::SliderFloat("Max y", &m_bounding_box_max.y, bmin[1], bmax[1], "%.1f")) {
+		update_bb = true;
+	}
+	
+	if (ImGui::SliderFloat("Max z", &m_bounding_box_max.z, bmin[2], bmax[2], "%.1f")) {
+		update_bb = true;
+	}
+	
+	if (update_bb) {
+		UpdateBoundingBox();
+	}
+	
+	ImGui::Separator();
+
+	ImGui::Text("Tools");
+	ImGui::RadioButton("NavMesh Generation", &m_mode, 1); 
+	//ImGui::SameLine();
+	//ImGui::RadioButton("Mode 2", &m_mode, 2); 
+	//ImGui::SameLine();
+	//ImGui::RadioButton("Mode 3", &m_mode, 3);
+	
+	ImGui::End();
+
+	if (m_mode == 1) {
+		DrawNavMeshGenerationUI();
+	}
+}
+
+void ModuleNavigation::OnSceneLoad(const char *zone_name)
+{
+	auto zone_geo = m_scene->GetZoneGeometry();
+	if (zone_geo) {
+		auto &bmin = zone_geo->GetCollidableMin();
+		auto &bmax = zone_geo->GetCollidableMax();
+
+		m_bounding_box_min.x = bmin.x;
+		m_bounding_box_min.y = bmin.y;
+		m_bounding_box_min.z = bmin.z;
+		m_bounding_box_max.x = bmax.x;
+		m_bounding_box_max.y = bmax.y;
+		m_bounding_box_max.z = bmax.z;
+		UpdateBoundingBox();
+	}
+}
+
+void ModuleNavigation::OnSuspend()
+{
+	m_scene->UnregisterEntitiesByModule(this);
+}
+
+void ModuleNavigation::OnResume()
+{
+	if (m_bounding_box_renderable) {
+		m_scene->RegisterEntity(this, m_bounding_box_renderable.get());
+	}
+
+	if (m_nav_mesh_renderable) {
+		m_scene->RegisterEntity(this, m_nav_mesh_renderable.get());
+	}
+}
+
+bool ModuleNavigation::HasWork()
+{
+	if (m_tiles_building > 0) {
+		return true;
+	}
+
+	return false;
+}
+
+bool ModuleNavigation::CanSave()
+{
+	return true;
+}
+
+void ModuleNavigation::Save()
+{
+}
+
+void ModuleNavigation::OnHotkey(int ident)
+{
+}
+
+void ModuleNavigation::UpdateBoundingBox()
+{
+	if (!m_bounding_box_renderable)
+		m_bounding_box_renderable.reset(new LineModel());
+
+	m_bounding_box_renderable->Clear();
+	m_bounding_box_renderable->AddBox(m_bounding_box_min, m_bounding_box_max);
+	m_bounding_box_renderable->Update();
+}
+
+void ModuleNavigation::DrawNavMeshGenerationUI()
+{
+	m_thread_pool.Process();
+	
+	auto zone_geo = m_scene->GetZoneGeometry();
+	const float* bmin = (float*)&m_bounding_box_min;
+	const float* bmax = (float*)&m_bounding_box_max;
+	int gw = 0, gh = 0;
+	if (!zone_geo) {
+		return;
+	}
+
+	ImGui::Begin("NavMesh Generation");
 
 	ImGui::Text("Rasterization");
 	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 1.0f, "%.1f");
 	ImGui::SliderFloat("Cell Height", &m_cell_height, 0.1f, 1.0f, "%.1f");
-	
-	auto zone_geo = m_scene->GetZoneGeometry();
 
-	if(zone_geo) {
-		const float* bmin = (float*)&zone_geo->GetCollidableMin();
-		const float* bmax = (float*)&zone_geo->GetCollidableMax();
-		int gw = 0, gh = 0;
-		rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
-		ImGui::Text(EQEmu::StringFormat("Voxels  %d x %d", gw, gh).c_str());
-	}
+	rcCalcGridSize((float*)&m_bounding_box_min, (float*)&m_bounding_box_max, m_cell_size, &gw, &gh);
+	ImGui::Text(EQEmu::StringFormat("Voxels  %d x %d", gw, gh).c_str());
 
 	ImGui::Separator();
 	ImGui::Text("Agent");
@@ -125,19 +249,19 @@ void ModuleNavigation::OnDrawUI() {
 	ImGui::Text("Region");
 	ImGui::SliderFloat("Min Region Size", &m_region_min_size, 0.0f, 150.0f, "%.0f");
 	ImGui::SliderFloat("Merged Region Size", &m_region_merge_size, 0.0f, 150.0f, "%.0f");
-	
+
 	ImGui::Separator();
 	ImGui::Text("Partitioning");
 	const char *partition_types[] = { "Watershed", "Monotone", "Layers" };
 
 	ImGui::Combo("Type", &m_partition_type, partition_types, 3);
-	
+
 	ImGui::Separator();
 	ImGui::Text("Polygonization");
 	ImGui::SliderFloat("Max Edge Length", &m_edge_max_len, 0.0f, 50.0f, "%.0f");
 	ImGui::SliderFloat("Max Edge Error", &m_edge_max_error, 0.1f, 3.0f, "%.1f");
 	ImGui::SliderFloat("Verts Per Poly", &m_verts_per_poly, 3.0f, 12.0f, "%.0f");
-	
+
 	ImGui::Separator();
 	ImGui::Text("Detail Mesh");
 	ImGui::SliderFloat("Sample Distance", &m_detail_sample_dist, 0.0f, 32.0f, "%.0f");
@@ -147,158 +271,66 @@ void ModuleNavigation::OnDrawUI() {
 	ImGui::Text("Tiling");
 	ImGui::SliderFloat("TileSize", &m_tile_size, 16.0f, 1024.0f, "%.0f");
 
-	if(zone_geo) {
-		const float* bmin = (float*)&zone_geo->GetCollidableMin();
-		const float* bmax = (float*)&zone_geo->GetCollidableMax();
+	const int ts = (int)m_tile_size;
+	const int tw = (gw + ts - 1) / ts;
+	const int th = (gh + ts - 1) / ts;
+	
+	ImGui::Text(EQEmu::StringFormat("Tiles  %d x %d", tw, th).c_str());
+	int tile_bits = rcMin((int)ilog2(nextPow2(tw*th)), 14);
+	
+	if (tile_bits > 14)
+		tile_bits = 14;
+	int poly_bits = 22 - tile_bits;
+	m_max_tiles = 1 << tile_bits;
+	m_max_polys_per_tile = 1 << poly_bits;
+	ImGui::Text(EQEmu::StringFormat("Max Tiles  %d", m_max_tiles).c_str());
+	ImGui::Text(EQEmu::StringFormat("Max Polys  %d", m_max_polys_per_tile).c_str());
 
-		int gw = 0, gh = 0;
-		rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
-
-		const int ts = (int)m_tile_size;
-		const int tw = (gw + ts - 1) / ts;
-		const int th = (gh + ts - 1) / ts;
-
-		ImGui::Text(EQEmu::StringFormat("Tiles  %d x %d", tw, th).c_str());
-		int tile_bits = rcMin((int)ilog2(nextPow2(tw*th)), 14);
-
-		if(tile_bits > 14)
-			tile_bits = 14;
-		int poly_bits = 22 - tile_bits;
-		m_max_tiles = 1 << tile_bits;
-		m_max_polys_per_tile = 1 << poly_bits;
-		ImGui::Text(EQEmu::StringFormat("Max Tiles  %d", m_max_tiles).c_str());
-		ImGui::Text(EQEmu::StringFormat("Max Polys  %d", m_max_polys_per_tile).c_str());
-
-		if(m_nav_mesh_renderable) {
-			ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", (int)m_nav_mesh_renderable->GetTrianglesInds().size() / 3).c_str());
-		}
-		else {
-			ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", 0).c_str());
-		}
-	} else {
-		m_max_tiles = 0;
-		m_max_polys_per_tile = 0;
+	if (m_nav_mesh_renderable) {
+		ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", (int)m_nav_mesh_renderable->GetTrianglesInds().size() / 3).c_str());
+	}
+	else {
+		ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", 0).c_str());
 	}
 
-	ImGui::Separator();
-
-	ImGui::Text("Rendering");
-	if(ImGui::Checkbox("Render NavMesh", &m_render_nav_mesh)) {
-		if(!m_render_nav_mesh) {
-			if(m_nav_mesh_renderable) {
-				m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
-			}
-
-			if(m_water_portal_renderable) {
-				m_scene->UnregisterEntity(m_water_portal_renderable.get());
-			}
-		} else {
-			if(m_nav_mesh_renderable) {
-				m_scene->RegisterEntity(m_nav_mesh_renderable.get());
-			}
-
-			if(m_water_portal_renderable) {
-				m_scene->RegisterEntity(m_water_portal_renderable.get());
-			}
+	if (m_tiles_building > 0) {
+		ImGui::Text(EQEmu::StringFormat("Building NavMesh... %u tiles remaining.", m_tiles_building).c_str());
+	}
+	else {
+		if (ImGui::Button("Build NavMesh")) {
+			BuildNavigationMesh();
 		}
-	}
-	ImGui::Separator();
-
-	if(ImGui::Button("Build NavMesh")) {
-		BuildNavigationMesh();
-	}
-
-	if(ImGui::Button("Build Water Portals")) {
-		BuildWaterPortals();
 	}
 
 	ImGui::End();
 }
 
-void ModuleNavigation::OnSceneLoad(const char *zone_name) {
-	auto zone_geo = m_scene->GetZoneGeometry();
-	m_chunky_mesh.reset(new rcChunkyTriMesh());
-
-	if(zone_geo) {
-		if(!rcCreateChunkyTriMesh((float*)zone_geo->GetCollidableVerts().data(), (int*)zone_geo->GetCollidableInds().data(), (int)zone_geo->GetCollidableInds().size() / 3, 256, m_chunky_mesh.get())) {
-			m_chunky_mesh.reset();
-		}
-	}
-
-	if(m_nav_mesh) {
-		dtFreeNavMesh(m_nav_mesh);
-		m_nav_mesh = nullptr;
-
-		if(m_nav_mesh_renderable) {
-			m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
-			m_nav_mesh_renderable.release();
-		}
-	}
-
-	if(m_water_portal_renderable) {
-		m_scene->UnregisterEntity(m_water_portal_renderable.get());
-		m_water_portal_renderable.release();
-	}
-}
-
-void ModuleNavigation::OnSuspend() {
-	if(m_nav_mesh_renderable) {
-		m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
-	}
-
-	if(m_water_portal_renderable) {
-		m_scene->UnregisterEntity(m_water_portal_renderable.get());
-	}
-}
-
-void ModuleNavigation::OnResume() {
-	if(m_render_nav_mesh && m_nav_mesh_renderable) {
-		m_scene->RegisterEntity(m_nav_mesh_renderable.get());
-	}
-
-	if(m_render_nav_mesh && m_water_portal_renderable) {
-		m_scene->RegisterEntity(m_water_portal_renderable.get());
-	}
-}
-
-bool ModuleNavigation::HasWork() {
-	return m_tiles_building > 0;
-}
-
-bool ModuleNavigation::CanSave() {
-	return false;
-}
-
-void ModuleNavigation::Save() {
-}
-
-void ModuleNavigation::OnHotkey(int ident) {
-}
-
-void ModuleNavigation::BuildNavigationMesh() {
-	if(m_tiles_building > 0) {
+void ModuleNavigation::BuildNavigationMesh()
+{
+	if (HasWork()) {
 		return;
 	}
 
 	auto zone_geo = m_scene->GetZoneGeometry();
-	if(!zone_geo) {
+	if (!zone_geo) {
 		return;
 	}
 
 	std::shared_ptr<EQPhysics> phys = m_scene->GetZonePhysics();
-	if(!phys) {
+	if (!phys) {
 		return;
 	}
 
-	if(m_nav_mesh) {
+	CreateChunkyTriMesh(zone_geo);
+
+	if (m_nav_mesh) {
 		dtFreeNavMesh(m_nav_mesh);
-		m_nav_mesh = nullptr;
 	}
 
 	m_nav_mesh = dtAllocNavMesh();
 
 	dtNavMeshParams params;
-	rcVcopy(params.orig, (float*)&zone_geo->GetCollidableMin());
+	rcVcopy(params.orig, (float*)&m_bounding_box_min);
 	params.tileWidth = m_tile_size * m_cell_size;
 	params.tileHeight = m_tile_size * m_cell_size;
 	params.maxTiles = m_max_tiles;
@@ -306,15 +338,19 @@ void ModuleNavigation::BuildNavigationMesh() {
 
 	dtStatus status;
 	status = m_nav_mesh->init(&params);
-	if(dtStatusFailed(status)) {
+	if (dtStatusFailed(status)) {
 		dtFreeNavMesh(m_nav_mesh);
 		m_nav_mesh = nullptr;
 		return;
 	}
 
+	if(m_nav_mesh_renderable) {
+		m_scene->UnregisterEntity(this, m_nav_mesh_renderable.get());
+		m_nav_mesh_renderable.release();
+	}
 
-	const float* bmin = (float*)&zone_geo->GetCollidableMin();
-	const float* bmax = (float*)&zone_geo->GetCollidableMax();
+	const float* bmin = (float*)&m_bounding_box_min;
+	const float* bmax = (float*)&m_bounding_box_max;
 	int gw = 0, gh = 0;
 	rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
 	const int ts = (int)m_tile_size;
@@ -322,9 +358,9 @@ void ModuleNavigation::BuildNavigationMesh() {
 	const int th = (gh + ts - 1) / ts;
 	const float tcs = m_tile_size * m_cell_size;
 
-	for(int y = 0; y < th; ++y)
+	for (int y = 0; y < th; ++y)
 	{
-		for(int x = 0; x < tw; ++x)
+		for (int x = 0; x < tw; ++x)
 		{
 			glm::vec3 tile_min(bmin[0] + x * tcs, bmin[1], bmin[2] + y * tcs);
 			glm::vec3 tile_max(bmin[0] + (x + 1) * tcs, bmax[1], bmin[2] + (y + 1) * tcs);
@@ -335,277 +371,88 @@ void ModuleNavigation::BuildNavigationMesh() {
 	}
 }
 
-void ModuleNavigationBuildTile::Run() {
-	if(!m_nav_module->m_scene->GetZoneGeometry() || !m_nav_module->m_chunky_mesh) {
-		return;
-	}
+bool VertexWithinBounds(const glm::vec3 &v, glm::vec3 &min, glm::vec3 &max) {
+	if (v.x < min.x || v.x > max.x)
+		return false;
 
-	const float* verts = (float*)m_nav_module->m_scene->GetZoneGeometry()->GetCollidableVerts().data();
-	const int nverts = (int)m_nav_module->m_scene->GetZoneGeometry()->GetCollidableVerts().size();
-	const int ntris = (int)m_nav_module->m_scene->GetZoneGeometry()->GetCollidableInds().size() / 3;
-	const rcChunkyTriMesh* chunky_mesh = m_nav_module->m_chunky_mesh.get();
+	if (v.y < min.y || v.y > max.y)
+		return false;
 
-	rcConfig cfg;
-	memset(&cfg, 0, sizeof(cfg));
-	cfg.cs = m_nav_module->m_cell_size;
-	cfg.ch = m_nav_module->m_cell_height;
-	cfg.walkableSlopeAngle = m_nav_module->m_agent_max_slope;
-	cfg.walkableHeight = (int)ceilf(m_nav_module->m_agent_height / cfg.ch);
-	cfg.walkableClimb = (int)floorf(m_nav_module->m_agent_max_climb / cfg.ch);
-	cfg.walkableRadius = (int)ceilf(m_nav_module->m_agent_radius / cfg.cs);
-	cfg.maxEdgeLen = (int)(m_nav_module->m_edge_max_len / m_nav_module->m_cell_size);
-	cfg.maxSimplificationError = m_nav_module->m_edge_max_error;
-	cfg.minRegionArea = (int)rcSqr(m_nav_module->m_region_min_size);
-	cfg.mergeRegionArea = (int)rcSqr(m_nav_module->m_region_merge_size);
-	cfg.maxVertsPerPoly = (int)m_nav_module->m_verts_per_poly;
-	cfg.tileSize = (int)m_nav_module->m_tile_size;
-	cfg.borderSize = cfg.walkableRadius + 3;
-	cfg.width = cfg.tileSize + cfg.borderSize * 2;
-	cfg.height = cfg.tileSize + cfg.borderSize * 2;
-	cfg.detailSampleDist = m_nav_module->m_detail_sample_dist < 0.9f ? 0 : m_nav_module->m_cell_size * m_nav_module->m_detail_sample_dist;
-	cfg.detailSampleMaxError = m_nav_module->m_cell_height * m_nav_module->m_detail_sample_max_error;
+	if (v.z < min.z || v.z > max.z)
+		return false;
 
-	rcVcopy(cfg.bmin, (float*)&m_tile_min);
-	rcVcopy(cfg.bmax, (float*)&m_tile_max);
-	cfg.bmin[0] -= cfg.borderSize * cfg.cs;
-	cfg.bmin[2] -= cfg.borderSize * cfg.cs;
-	cfg.bmax[0] += cfg.borderSize * cfg.cs;
-	cfg.bmax[2] += cfg.borderSize * cfg.cs;
-
-	rcHeightfield *solid = rcAllocHeightfield();
-	if(!rcCreateHeightfield(m_ctx.get(), *solid, cfg.width, cfg.height, cfg.bmin, cfg.bmax, cfg.cs, cfg.ch)) {
-		rcFreeHeightField(solid);
-		return;
-	}
-
-	unsigned char *triareas = new unsigned char[chunky_mesh->maxTrisPerChunk];
-
-	float tbmin[2], tbmax[2];
-	tbmin[0] = cfg.bmin[0];
-	tbmin[1] = cfg.bmin[2];
-	tbmax[0] = cfg.bmax[0];
-	tbmax[1] = cfg.bmax[2];
-	int cid[512];
-	const int ncid = rcGetChunksOverlappingRect(chunky_mesh, tbmin, tbmax, cid, 512);
-	if(!ncid) {
-		rcFreeHeightField(solid);
-		delete[] triareas;
-		return;
-	}
-
-	for(int i = 0; i < ncid; ++i)
-	{
-		const rcChunkyTriMeshNode& node = chunky_mesh->nodes[cid[i]];
-		const int* ctris = &chunky_mesh->tris[node.i * 3];
-		const int nctris = node.n;
-
-		memset(triareas, 0, nctris * sizeof(unsigned char));
-		rcMarkWalkableTriangles(m_ctx.get(), cfg.walkableSlopeAngle,
-								verts, nverts, ctris, nctris, triareas);
-
-		rcRasterizeTriangles(m_ctx.get(), verts, nverts, ctris, triareas, nctris, *solid, cfg.walkableClimb);
-	}
-
-	delete[] triareas;
-	triareas = nullptr;
-
-	rcFilterLowHangingWalkableObstacles(m_ctx.get(), cfg.walkableClimb, *solid);
-	rcFilterLedgeSpans(m_ctx.get(), cfg.walkableHeight, cfg.walkableClimb, *solid);
-	rcFilterWalkableLowHeightSpans(m_ctx.get(), cfg.walkableHeight, *solid);
-
-	rcCompactHeightfield *chf = rcAllocCompactHeightfield();
-
-	if(!rcBuildCompactHeightfield(m_ctx.get(), cfg.walkableHeight, cfg.walkableClimb, *solid, *chf)) {
-		rcFreeHeightField(solid);
-		rcFreeCompactHeightfield(chf);
-		return;
-	}
-
-	rcFreeHeightField(solid);
-	solid = nullptr;
-
-	if(!rcErodeWalkableArea(m_ctx.get(), cfg.walkableRadius, *chf))
-	{
-		rcFreeCompactHeightfield(chf);
-		return;
-	}
-
-	if(m_nav_module->m_partition_type == NAVIGATION_PARTITION_WATERSHED)
-	{
-		// Prepare for region partitioning, by calculating distance field along the walkable surface.
-		if(!rcBuildDistanceField(m_ctx.get(), *chf))
-		{
-			rcFreeCompactHeightfield(chf);
-			return;
-		}
-
-		// Partition the walkable surface into simple regions without holes.
-		if(!rcBuildRegions(m_ctx.get(), *chf, cfg.borderSize, cfg.minRegionArea, cfg.mergeRegionArea))
-		{
-			rcFreeCompactHeightfield(chf);
-			return;
-		}
-	}
-	else if(m_nav_module->m_partition_type == NAVIGATION_PARTITION_MONOTONE) {
-		if(!rcBuildRegionsMonotone(m_ctx.get(), *chf, cfg.borderSize, cfg.minRegionArea, cfg.mergeRegionArea))
-		{
-			rcFreeCompactHeightfield(chf);
-			return;
-		}
-	} else {
-		if(!rcBuildLayerRegions(m_ctx.get(), *chf, cfg.borderSize, cfg.minRegionArea))
-		{
-			rcFreeCompactHeightfield(chf);
-			return;
-		}
-	}
-
-	rcContourSet *cset = rcAllocContourSet();
-	if(!rcBuildContours(m_ctx.get(), *chf, cfg.maxSimplificationError, cfg.maxEdgeLen, *cset)) {
-		rcFreeCompactHeightfield(chf);
-		rcFreeContourSet(cset);
-		return;
-	}
-
-	if(cset->nconts == 0) {
-		rcFreeCompactHeightfield(chf);
-		rcFreeContourSet(cset);
-		return;
-	}
-
-	rcPolyMesh *pmesh = rcAllocPolyMesh();
-	if(!rcBuildPolyMesh(m_ctx.get(), *cset, cfg.maxVertsPerPoly, *pmesh)) {
-		rcFreeCompactHeightfield(chf);
-		rcFreeContourSet(cset);
-		rcFreePolyMesh(pmesh);
-		return;
-	}
-
-	rcPolyMeshDetail *dmesh = rcAllocPolyMeshDetail();
-	if(!rcBuildPolyMeshDetail(m_ctx.get(), *pmesh, *chf,
-		cfg.detailSampleDist, cfg.detailSampleMaxError,
-		*dmesh))
-	{
-		rcFreeCompactHeightfield(chf);
-		rcFreeContourSet(cset);
-		rcFreePolyMesh(pmesh);
-		rcFreePolyMeshDetail(dmesh);
-		return;
-	}
-
-	rcFreeCompactHeightfield(chf);
-	chf = nullptr;
-	rcFreeContourSet(cset);
-	cset = nullptr;
-
-	if(cfg.maxVertsPerPoly <= DT_VERTS_PER_POLYGON)
-	{
-		if(pmesh->nverts >= 0xffff)
-		{
-			rcFreePolyMesh(pmesh);
-			rcFreePolyMeshDetail(dmesh);
-			return;
-		}
-
-		const int nvp = pmesh->nvp;
-		const float cs = pmesh->cs;
-		const float ch = pmesh->ch;
-		const float* orig = pmesh->bmin;
-
-		for(int i = 0; i < pmesh->npolys; ++i)
-		{
-			pmesh->flags[i] = NavigationPolyFlagWalk;
-		}
-
-		dtNavMeshCreateParams params;
-		memset(&params, 0, sizeof(params));
-		params.verts = pmesh->verts;
-		params.vertCount = pmesh->nverts;
-		params.polys = pmesh->polys;
-		params.polyAreas = pmesh->areas;
-		params.polyFlags = pmesh->flags;
-		params.polyCount = pmesh->npolys;
-		params.nvp = pmesh->nvp;
-		params.detailMeshes = dmesh->meshes;
-		params.detailVerts = dmesh->verts;
-		params.detailVertsCount = dmesh->nverts;
-		params.detailTris = dmesh->tris;
-		params.detailTriCount = dmesh->ntris;
-		params.offMeshConVerts = nullptr;
-		params.offMeshConRad = nullptr;
-		params.offMeshConDir = nullptr;
-		params.offMeshConAreas = nullptr;
-		params.offMeshConFlags = nullptr;
-		params.offMeshConUserID = nullptr;
-		params.offMeshConCount = 0;
-		params.walkableHeight = m_nav_module->m_agent_height;
-		params.walkableRadius = m_nav_module->m_agent_radius;
-		params.walkableClimb = m_nav_module->m_agent_max_climb;
-		params.tileX = m_x;
-		params.tileY = m_y;
-		params.tileLayer = 0;
-		rcVcopy(params.bmin, pmesh->bmin);
-		rcVcopy(params.bmax, pmesh->bmax);
-		params.cs = cfg.cs;
-		params.ch = cfg.ch;
-		params.buildBvTree = true;
-
-		m_nav_data = nullptr;
-		m_nav_data_size = 0;
-
-		if(!dtCreateNavMeshData(&params, &m_nav_data, &m_nav_data_size))
-		{
-			rcFreePolyMesh(pmesh);
-			rcFreePolyMeshDetail(dmesh);
-			return;
-		}
-	}
-
-	rcFreePolyMesh(pmesh);
-	rcFreePolyMeshDetail(dmesh);
+	return true;
 }
 
-void ModuleNavigationBuildTile::Finished() {
-	if(m_nav_data) {
-		m_nav_module->m_nav_mesh->removeTile(m_nav_module->m_nav_mesh->getTileRefAt(m_x, m_y, 0), 0, 0);
-		dtStatus status = m_nav_module->m_nav_mesh->addTile(m_nav_data, m_nav_data_size, DT_TILE_FREE_DATA, 0, 0);
-		if(dtStatusFailed(status)) {
-			dtFree(m_nav_data);
-			m_nav_data = nullptr;
-		} else {
-			m_nav_data = nullptr;
-		}
-	}
-	m_nav_module->m_tiles_building--;
+void ModuleNavigation::CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo)
+{
 
-	if(m_nav_module->m_tiles_building == 0) {
-		m_nav_module->CreateNavMeshModel();
+	//only include tris within bb of zone
+	std::vector<int> inds;
+	inds.reserve(zone_geo->GetCollidableInds().size());
+
+	size_t sz = zone_geo->GetCollidableInds().size();
+	size_t tris_out = 0;
+
+	for (size_t i = 0; i < sz; i += 3) {
+		auto i1 = zone_geo->GetCollidableInds()[i];
+		auto i2 = zone_geo->GetCollidableInds()[i + 1];
+		auto i3 = zone_geo->GetCollidableInds()[i + 2];
+		auto &v1 = zone_geo->GetCollidableVerts()[i1];
+		auto &v2 = zone_geo->GetCollidableVerts()[i2];
+		auto &v3 = zone_geo->GetCollidableVerts()[i3];
+
+		if (!VertexWithinBounds(v1, m_bounding_box_min, m_bounding_box_max)) {
+			continue;
+		}
+
+		if (!VertexWithinBounds(v2, m_bounding_box_min, m_bounding_box_max)) {
+			continue;
+		}
+
+		if (!VertexWithinBounds(v3, m_bounding_box_min, m_bounding_box_max)) {
+			continue;
+		}
+
+		inds.push_back(i1);
+		inds.push_back(i2);
+		inds.push_back(i3);
+	}
+
+	m_chunky_mesh.reset(new rcChunkyTriMesh());
+	if (!rcCreateChunkyTriMesh(
+		(float*)zone_geo->GetCollidableVerts().data(),
+		(int*)inds.data(),
+		(int)inds.size() / 3,
+		512,
+		m_chunky_mesh.get()))
+	{
+		m_chunky_mesh.reset();
 	}
 }
 
-void ModuleNavigation::CreateNavMeshModel() {
-	if(m_nav_mesh_renderable) {
-		m_scene->UnregisterEntity(m_nav_mesh_renderable.get());
+void ModuleNavigation::CreateNavMeshModel()
+{
+	if (m_nav_mesh_renderable) {
+		m_scene->UnregisterEntity(this, m_nav_mesh_renderable.get());
 	}
 
 	m_nav_mesh_renderable.reset(new NavMeshModel());
+
 	NavigationDebugDraw dd;
 	dd.nav_module = this;
-
 	duDebugDrawNavMesh(&dd, *m_nav_mesh, 0xffu);
+	m_nav_mesh_renderable->Update();
 	m_nav_mesh_renderable->SetTrianglesTint(glm::vec4(0.75f, 1.0f, 0.25f, 1.0f));
 	m_nav_mesh_renderable->SetLinesTint(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	m_nav_mesh_renderable->SetPointsTint(glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
-	m_nav_mesh_renderable->Compile();
 
-	if(m_render_nav_mesh) {
-		m_scene->RegisterEntity(m_nav_mesh_renderable.get());
-	}
+	m_scene->RegisterEntity(this, m_nav_mesh_renderable.get());
 }
 
 void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {
 	verts_in_use = 0;
-	switch(prim)
+	switch (prim)
 	{
 	case DU_DRAW_POINTS:
 		mode = 1;
@@ -643,18 +490,18 @@ void NavigationDebugDraw::vertex(const float x, const float y, const float z, un
 }
 
 void NavigationDebugDraw::CreatePrimitive() {
-	if(mode == 0 || verts_in_use != mode) {
+	if (mode == 0 || verts_in_use != mode) {
 		return;
 	}
 
-	switch(mode) {
+	switch (mode) {
 	case 1:
 	{
 		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetPointsVerts().size();
 		nav_module->m_nav_mesh_renderable->GetPointsVerts().push_back(verts[0]);
 		nav_module->m_nav_mesh_renderable->GetPointsInds().push_back(index);
 	}
-		break;
+	break;
 	case 2:
 	{
 		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetLinesVerts().size();
@@ -663,7 +510,7 @@ void NavigationDebugDraw::CreatePrimitive() {
 		nav_module->m_nav_mesh_renderable->GetLinesInds().push_back(index);
 		nav_module->m_nav_mesh_renderable->GetLinesInds().push_back(index + 1);
 	}
-		break;
+	break;
 	case 3:
 	{
 		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetTrianglesVerts().size();
@@ -674,7 +521,7 @@ void NavigationDebugDraw::CreatePrimitive() {
 		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 1);
 		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 2);
 	}
-		break; //2 3 0
+	break; //2 3 0
 	case 4:
 	{
 		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetTrianglesInds().size();
@@ -689,32 +536,9 @@ void NavigationDebugDraw::CreatePrimitive() {
 		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 3);
 		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index);
 	}
-		break;
+	break;
 	}
 
 	verts_in_use = 0;
 }
 
-void ModuleNavigation::BuildWaterPortals() {
-	if(m_render_nav_mesh && m_water_portal_renderable)
-		m_scene->UnregisterEntity(m_water_portal_renderable.get());
-
-	glm::vec3 min_pt = m_scene->GetZoneGeometry()->GetCollidableMin();
-	glm::vec3 max_pt = m_scene->GetZoneGeometry()->GetCollidableMax();
-	auto physics = m_scene->GetZonePhysics();
-
-	//WaterPortalManager wpm(physics, min_pt, max_pt);
-	//wpm.Subdivide();
-	m_water_portal_renderable.reset(new LineModel());
-
-	//wpm.AppendModel(m_water_portal_renderable.get());
-
-	m_water_portal_renderable->Update();
-	
-	if(m_render_nav_mesh)
-		m_scene->RegisterEntity(m_water_portal_renderable.get());
-}
-
-void ModuleNavigation::CreateWaterPortalModel() {
-	
-}

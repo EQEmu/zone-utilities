@@ -324,8 +324,10 @@ bool EQEmu::PFS::Archive::GetFilenames(std::string ext, std::vector<std::string>
 		}
 
 		size_t flen = iter->first.length();
-		if (flen <= elen)
+		if (flen <= elen) {
+			++iter;
 			continue;
+		}
 
 		if (!strcmp(iter->first.c_str() + (flen - elen), ext.c_str())) {
 			out_files.push_back(iter->first);

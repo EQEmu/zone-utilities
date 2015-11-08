@@ -174,16 +174,18 @@ void Scene::Render() {
 		glDisable(GL_BLEND);
 	}
 
-	for(auto &e : m_registered_entities) {
-		glm::vec4 tint = e->GetTint();
-		m_tint.SetValuePtr4(1, &tint[0]);
-
-		auto &pos = e->GetLocation();
-		model[3][0] = pos.x;
-		model[3][1] = pos.y;
-		model[3][2] = pos.z;
-		m_model.SetValueMatrix4(1, false, &model[0][0]);
-		e->Draw();
+	for (auto &l : m_registered_entities) {
+		for (auto &e : l.second) {
+			glm::vec4 tint = e->GetTint();
+			m_tint.SetValuePtr4(1, &tint[0]);
+			
+			auto &pos = e->GetLocation();
+			model[3][0] = pos.x;
+			model[3][1] = pos.y;
+			model[3][2] = pos.z;
+			m_model.SetValueMatrix4(1, false, &model[0][0]);
+			e->Draw();
+		}
 	}
 
 	//render our main menu
@@ -314,7 +316,9 @@ void Scene::RenderModulesMenu() {
 	{
 		for(auto &module : m_modules) {
 			if(!module->GetRunning()) {
-				ImGui::MenuItem(module->GetName(), nullptr, &module->GetRunning());
+				if (ImGui::MenuItem(module->GetName(), nullptr, &module->GetRunning())) {
+					module->OnResume();
+				}
 			} else {
 				if(ImGui::MenuItem(module->GetName())) {
 					if(module->GetUnpaused()) {
@@ -494,17 +498,38 @@ void Scene::OnHotkey(int ident) {
 	}
 }
 
-void Scene::RegisterEntity(Entity *e) {
-	UnregisterEntity(e);
-	m_registered_entities.push_back(e);
+void Scene::RegisterEntity(Module *m, Entity *e) {
+	UnregisterEntity(m, e);
+
+	auto iter = m_registered_entities.find(m);
+	if (iter == m_registered_entities.end()) {
+		std::vector<Entity*> vec;
+		vec.push_back(e);
+		m_registered_entities[m] = vec;
+	}
+	else {
+		iter->second.push_back(e);
+	}
 }
 
-void Scene::UnregisterEntity(Entity *e) {
-	for(auto iter = m_registered_entities.begin(); iter != m_registered_entities.end(); ++iter) {
-		if((*iter) == e) {
-			m_registered_entities.erase(iter);
-			return;
-		}
+void Scene::UnregisterEntity(Module *m, Entity *e) {
+	auto iter = m_registered_entities.find(m);
+	if (iter != m_registered_entities.end()) {
+		auto &lst = iter->second;
+		for(auto ent_iter = lst.begin(); ent_iter != lst.end(); ++ent_iter) {
+			if((*ent_iter) == e) {
+				lst.erase(ent_iter);
+				return;
+			}
+		}	
+	}
+}
+
+void Scene::UnregisterEntitiesByModule(Module *m)
+{
+	auto iter = m_registered_entities.find(m);
+	if (iter != m_registered_entities.end()) {
+		iter->second.clear();
 	}
 }
 
