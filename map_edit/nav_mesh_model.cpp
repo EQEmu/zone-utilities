@@ -28,6 +28,13 @@ void NavMeshModel::Draw() {
 	glDepthMask(GL_TRUE);
 }
 
+void NavMeshModel::Clear()
+{
+	m_triangles.Clear();
+	m_lines.Clear();
+	m_points.Clear();
+}
+
 void NavMeshModel::Update()
 {
 	m_points.Update();

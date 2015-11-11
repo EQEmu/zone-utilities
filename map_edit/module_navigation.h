@@ -85,6 +85,9 @@ private:
 	void BuildNavigationMesh();
 	void CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo);
 	void CreateNavMeshModel();
+	void SetNavigationTestNodeStart(const glm::vec3 &p);
+	void SetNavigationTestNodeEnd(const glm::vec3 &p);
+	void CalcPath();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
@@ -120,6 +123,17 @@ private:
 
 	//debug
 	std::unique_ptr<LineModel> m_debug_renderable;
+
+	//path
+	std::unique_ptr<LineModel> m_start_path_renderable;
+	std::unique_ptr<LineModel> m_end_path_renderable;
+	std::unique_ptr<LineModel> m_path_renderable;
+
+	glm::vec3 m_path_start;
+	bool m_path_start_set;
+
+	glm::vec3 m_path_end;
+	bool m_path_end_set;
 
 	int m_tiles_building;
 	ThreadPool m_thread_pool;

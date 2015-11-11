@@ -16,6 +16,7 @@ public:
 	virtual ~NavMeshModel();
 
 	virtual void Draw();
+	void Clear();
 	void Update();
 
 	const glm::vec4& GetPointsTint() { return m_points.GetTint(); }

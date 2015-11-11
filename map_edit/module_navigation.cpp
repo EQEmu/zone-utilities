@@ -7,6 +7,8 @@
 
 #include "module_navigation_build_tile.h"
 
+#include <DetourNavMeshQuery.h>
+
 inline unsigned int nextPow2(unsigned int v)
 {
 	v--;
@@ -42,11 +44,11 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 {
 	m_mode = 0;
 
-	m_cell_size = 0.4f;
-	m_cell_height = 0.2f;
-	m_agent_height = 6.0f;
+	m_cell_size = 0.2f;
+	m_cell_height = 0.1f;
+	m_agent_height = 3.5f;
 	m_agent_radius = 0.7f;
-	m_agent_max_climb = 5.0f;
+	m_agent_max_climb = 3.5f;
 	m_agent_max_slope = 55.0f;
 	m_region_min_size = 8;
 	m_region_merge_size = 20;
@@ -58,13 +60,33 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 	m_partition_type = NAVIGATION_PARTITION_WATERSHED;
 	m_max_tiles = 0;
 	m_max_polys_per_tile = 0;
-	m_tile_size = 64;
+	m_tile_size = 256;
 
 	m_tiles_building = 0;
 	m_nav_mesh = nullptr;
 
+	m_nav_mesh_renderable.reset(new NavMeshModel());
+
 	m_debug_renderable.reset(new LineModel());
 	m_debug_renderable->SetTint(glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+
+	m_start_path_renderable.reset(new LineModel());
+	m_start_path_renderable->SetTint(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
+	m_start_path_renderable->SetDepthTestEnabled(false);
+	m_start_path_renderable->SetWidth(3.0f);
+
+	m_end_path_renderable.reset(new LineModel());
+	m_end_path_renderable->SetTint(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	m_end_path_renderable->SetDepthTestEnabled(false);
+	m_end_path_renderable->SetWidth(3.0f);
+
+	m_path_renderable.reset(new LineModel());
+	m_path_renderable->SetTint(glm::vec4(0.25f, 0.0625f, 0.0f, 0.859375f));
+	m_path_renderable->SetDepthTestEnabled(false);
+	m_path_renderable->SetWidth(3.0f);
+
+	m_path_start_set = false;
+	m_path_end_set = false;
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -134,6 +156,17 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 		m_bounding_box_max.z = bmax.z;
 		UpdateBoundingBox();
 	}
+
+	m_start_path_renderable->Clear();
+	m_end_path_renderable->Clear();
+	m_path_renderable->Clear();
+	m_start_path_renderable->Update();
+	m_end_path_renderable->Update();
+	m_path_renderable->Update();
+	m_path_start_set = false;
+	m_path_end_set = false;
+	m_nav_mesh_renderable->Clear();
+	m_nav_mesh_renderable->Update();
 }
 
 void ModuleNavigation::OnSuspend()
@@ -153,6 +186,18 @@ void ModuleNavigation::OnResume()
 
 	if (m_debug_renderable) {
 		m_scene->RegisterEntity(this, m_debug_renderable.get());
+	}
+
+	if (m_start_path_renderable) {
+		m_scene->RegisterEntity(this, m_start_path_renderable.get());
+	}
+
+	if (m_end_path_renderable) {
+		m_scene->RegisterEntity(this, m_end_path_renderable.get());
+	}
+
+	if (m_path_renderable) {
+		m_scene->RegisterEntity(this, m_path_renderable.get());
 	}
 }
 
@@ -182,21 +227,12 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 {
 	auto &io = ImGui::GetIO();
 	if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
-		m_debug_renderable->Clear();
-		float box_size = 1.0f;
-		m_debug_renderable->AddBox(glm::vec3(collide_hit->x - box_size, collide_hit->y - box_size, collide_hit->z - box_size),
-			glm::vec3(collide_hit->x + box_size, collide_hit->y + box_size, collide_hit->z + box_size));
-		
-		if (non_collide_hit) {
-			m_debug_renderable->AddBox(glm::vec3(non_collide_hit->x - box_size, non_collide_hit->y - box_size, non_collide_hit->z - box_size),
-				glm::vec3(non_collide_hit->x + box_size, non_collide_hit->y + box_size, non_collide_hit->z + box_size));
-		}
-
-		m_debug_renderable->Update();
-		//SetNavigationTestNodeStart(collide_hit)
+		SetNavigationTestNodeStart(*collide_hit);
+		CalcPath();
 	}
 	else if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && io.KeyShift && collide_hit) {
-		//SetNavigationTestNodeFinish(collide_hit)
+		SetNavigationTestNodeEnd(*collide_hit);
+		CalcPath();
 	}
 }
 
@@ -346,6 +382,9 @@ void ModuleNavigation::BuildNavigationMesh()
 		return;
 	}
 
+	m_nav_mesh_renderable->Clear();
+	m_nav_mesh_renderable->Update();
+
 	CreateChunkyTriMesh(zone_geo);
 
 	if (m_nav_mesh) {
@@ -367,11 +406,6 @@ void ModuleNavigation::BuildNavigationMesh()
 		dtFreeNavMesh(m_nav_mesh);
 		m_nav_mesh = nullptr;
 		return;
-	}
-
-	if(m_nav_mesh_renderable) {
-		m_scene->UnregisterEntity(this, m_nav_mesh_renderable.get());
-		m_nav_mesh_renderable.release();
 	}
 
 	const float* bmin = (float*)&m_bounding_box_min;
@@ -458,21 +492,97 @@ void ModuleNavigation::CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo)
 
 void ModuleNavigation::CreateNavMeshModel()
 {
-	if (m_nav_mesh_renderable) {
-		m_scene->UnregisterEntity(this, m_nav_mesh_renderable.get());
-	}
-
-	m_nav_mesh_renderable.reset(new NavMeshModel());
-
 	NavigationDebugDraw dd;
 	dd.nav_module = this;
 	duDebugDrawNavMesh(&dd, *m_nav_mesh, 0xffu);
 	m_nav_mesh_renderable->Update();
-	m_nav_mesh_renderable->SetTrianglesTint(glm::vec4(0.75f, 1.0f, 0.25f, 1.0f));
-	m_nav_mesh_renderable->SetLinesTint(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	m_nav_mesh_renderable->SetPointsTint(glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
+	m_nav_mesh_renderable->SetTrianglesTint(glm::vec4(0.0f, 0.75f, 1.0f, 0.25f));
+	m_nav_mesh_renderable->SetLinesTint(glm::vec4(0.0f, 0.2f, 0.25f, 0.8f));
+	m_nav_mesh_renderable->SetPointsTint(glm::vec4(0.0f, 0.0f, 0.75f, 0.5f));
+}
 
-	m_scene->RegisterEntity(this, m_nav_mesh_renderable.get());
+void ModuleNavigation::SetNavigationTestNodeStart(const glm::vec3 &p)
+{
+	m_path_start = p;
+	m_path_start_set = true;
+	m_start_path_renderable->Clear();
+	float box_size = 2.0f;
+	m_start_path_renderable->AddBox(glm::vec3(m_path_start.x - box_size, m_path_start.y - box_size, m_path_start.z - box_size), 
+		glm::vec3(m_path_start.x + box_size, m_path_start.y + box_size, m_path_start.z + box_size));
+	m_start_path_renderable->Update();
+}
+
+void ModuleNavigation::SetNavigationTestNodeEnd(const glm::vec3 &p)
+{
+	m_path_end = p;
+	m_path_end_set = true;
+	m_end_path_renderable->Clear();
+	float box_size = 2.0f;
+	m_end_path_renderable->AddBox(glm::vec3(m_path_end.x - box_size, m_path_end.y - box_size, m_path_end.z - box_size),
+		glm::vec3(m_path_end.x + box_size, m_path_end.y + box_size, m_path_end.z + box_size));
+	m_end_path_renderable->Update();
+}
+
+void ModuleNavigation::CalcPath()
+{
+	if (!m_path_start_set || !m_path_end_set || !m_nav_mesh) {
+		return;
+	}
+
+	glm::vec3 ext(2.0f, 3.0f, 2.0f);
+	dtQueryFilter filter;
+	filter.setIncludeFlags(NavigationPolyFlagAll ^ NavigationPolyFlagDisabled);
+
+	dtNavMeshQuery *query = dtAllocNavMeshQuery();
+	query->init(m_nav_mesh, 4092);
+	dtPolyRef start_ref;
+	dtPolyRef end_ref;
+
+	query->findNearestPoly(&m_path_start[0], &ext[0], &filter, &start_ref, 0);
+	query->findNearestPoly(&m_path_end[0], &ext[0], &filter, &end_ref, 0);
+
+	if (!start_ref || !end_ref) {
+		m_path_renderable->Clear();
+		m_path_renderable->Update();
+		dtFreeNavMeshQuery(query);
+		return;
+	}
+
+	int npoly = 0;
+	dtPolyRef path[256] = { 0 };
+	query->findPath(start_ref, end_ref, &m_path_start[0], &m_path_end[0], &filter, path, &npoly, 256);
+
+	if (npoly) {
+		glm::vec3 epos = m_path_end;
+		if (path[npoly - 1] != end_ref)
+			query->closestPointOnPoly(path[npoly - 1], &m_path_end[0], &epos[0], 0);
+
+		float straight_path[256 * 3];
+		unsigned char straight_path_flags[256];
+		int n_straight_polys;
+		dtPolyRef straight_path_polys[256];
+		query->findStraightPath(&m_path_start[0], &epos[0], path, npoly,
+			straight_path, straight_path_flags,
+			straight_path_polys, &n_straight_polys, 256, DT_STRAIGHTPATH_ALL_CROSSINGS);
+
+		dtFreeNavMeshQuery(query);
+
+		if (n_straight_polys) {
+			m_path_renderable->Clear();
+
+			for (int i = 0; i < n_straight_polys - 1; ++i) {
+				glm::vec3 s(straight_path[i * 3], straight_path[i * 3 + 1] + 0.4f, straight_path[i * 3 + 2]);
+				glm::vec3 e(straight_path[(i + 1) * 3], straight_path[(i + 1) * 3 + 1] + 0.4f, straight_path[(i + 1) * 3 + 2]);
+				m_path_renderable->AddLine(s, e);
+			}
+
+			m_path_renderable->Update();
+		}
+	}
+	else {
+		dtFreeNavMeshQuery(query);
+		return;
+	}
 }
 
 void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {

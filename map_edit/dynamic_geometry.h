@@ -15,6 +15,7 @@ public:
 	virtual ~DynamicGeometry();
 
 	virtual void Draw();
+	void Clear();
 	void Update();
 
 	std::vector<glm::vec3>& GetVerts() { return m_verts; }

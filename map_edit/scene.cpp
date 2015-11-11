@@ -557,8 +557,7 @@ void Scene::RegisterEntity(Module *m, Entity *e) {
 
 	auto iter = m_registered_entities.find(m);
 	if (iter == m_registered_entities.end()) {
-		std::vector<Entity*> vec;
-		vec.push_back(e);
+		std::vector<Entity*> vec;		
 		m_registered_entities[m] = vec;
 	}
 	else {

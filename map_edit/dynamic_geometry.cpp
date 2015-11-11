@@ -29,7 +29,17 @@ void DynamicGeometry::Draw() {
 	}
 }
 
+void DynamicGeometry::Clear()
+{
+	m_verts.clear();
+	m_inds.clear();
+}
+
 void DynamicGeometry::Update() {
+	if (m_verts.size() == 0 || m_inds.size() == 0) {
+		return;
+	}
+
 	if (m_vao) {
 		glBindVertexArray(m_vao);
 
@@ -44,10 +54,6 @@ void DynamicGeometry::Update() {
 
 		glBindVertexArray(0);
 		CalcBB();
-		return;
-	}
-
-	if (m_verts.size() == 0 || m_inds.size() == 0) {
 		return;
 	}
 
