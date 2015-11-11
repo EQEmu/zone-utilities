@@ -54,6 +54,13 @@ private:
 class ModuleNavigation : public Module, public SceneHotkeyListener
 {
 public:
+	enum Mode
+	{
+		ModeNone = 0,
+		ModeNavMeshGen,
+		ModeTestNavigation,
+	};
+
 	ModuleNavigation();
 	virtual ~ModuleNavigation();
 
@@ -69,6 +76,7 @@ public:
 	virtual bool CanSave();
 	virtual void Save();
 	virtual void OnHotkey(int ident);
+	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit);
 private:
 	friend class ModuleNavigationBuildTile;
 	friend class NavigationDebugDraw;
@@ -109,6 +117,9 @@ private:
 
 	dtNavMesh *m_nav_mesh;
 	std::unique_ptr<NavMeshModel> m_nav_mesh_renderable;
+
+	//debug
+	std::unique_ptr<LineModel> m_debug_renderable;
 
 	int m_tiles_building;
 	ThreadPool m_thread_pool;

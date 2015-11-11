@@ -62,6 +62,9 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 
 	m_tiles_building = 0;
 	m_nav_mesh = nullptr;
+
+	m_debug_renderable.reset(new LineModel());
+	m_debug_renderable->SetTint(glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -104,47 +107,11 @@ void ModuleNavigation::OnDrawUI()
 	const float* bmin = (float*)&zone_geo->GetCollidableMin();
 	const float* bmax = (float*)&zone_geo->GetCollidableMax();
 	
-	ImGui::Begin("Navigation");
-	
-	ImGui::Text("Bounding Box");
-	bool update_bb = false;
-	if (ImGui::SliderFloat("Min x", &m_bounding_box_min.x, bmin[0], bmax[0], "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Min y", &m_bounding_box_min.y, bmin[1], bmax[1], "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Min z", &m_bounding_box_min.z, bmin[2], bmax[2], "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Max x", &m_bounding_box_max.x, bmin[0], bmax[0], "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Max y", &m_bounding_box_max.y, bmin[1], bmax[1], "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Max z", &m_bounding_box_max.z, bmin[2], bmax[2], "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (update_bb) {
-		UpdateBoundingBox();
-	}
-	
-	ImGui::Separator();
+	ImGui::Begin("Navigation");	
 
 	ImGui::Text("Tools");
-	ImGui::RadioButton("NavMesh Generation", &m_mode, 1); 
-	//ImGui::SameLine();
-	//ImGui::RadioButton("Mode 2", &m_mode, 2); 
-	//ImGui::SameLine();
-	//ImGui::RadioButton("Mode 3", &m_mode, 3);
-	
+	ImGui::RadioButton("NavMesh Generation", &m_mode, (int)ModeNavMeshGen);
+	ImGui::RadioButton("Test Mesh", &m_mode, (int)ModeTestNavigation);
 	ImGui::End();
 
 	if (m_mode == 1) {
@@ -183,6 +150,10 @@ void ModuleNavigation::OnResume()
 	if (m_nav_mesh_renderable) {
 		m_scene->RegisterEntity(this, m_nav_mesh_renderable.get());
 	}
+
+	if (m_debug_renderable) {
+		m_scene->RegisterEntity(this, m_debug_renderable.get());
+	}
 }
 
 bool ModuleNavigation::HasWork()
@@ -205,6 +176,28 @@ void ModuleNavigation::Save()
 
 void ModuleNavigation::OnHotkey(int ident)
 {
+}
+
+void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit)
+{
+	auto &io = ImGui::GetIO();
+	if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
+		m_debug_renderable->Clear();
+		float box_size = 1.0f;
+		m_debug_renderable->AddBox(glm::vec3(collide_hit->x - box_size, collide_hit->y - box_size, collide_hit->z - box_size),
+			glm::vec3(collide_hit->x + box_size, collide_hit->y + box_size, collide_hit->z + box_size));
+		
+		if (non_collide_hit) {
+			m_debug_renderable->AddBox(glm::vec3(non_collide_hit->x - box_size, non_collide_hit->y - box_size, non_collide_hit->z - box_size),
+				glm::vec3(non_collide_hit->x + box_size, non_collide_hit->y + box_size, non_collide_hit->z + box_size));
+		}
+
+		m_debug_renderable->Update();
+		//SetNavigationTestNodeStart(collide_hit)
+	}
+	else if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && io.KeyShift && collide_hit) {
+		//SetNavigationTestNodeFinish(collide_hit)
+	}
 }
 
 void ModuleNavigation::UpdateBoundingBox()
@@ -230,6 +223,38 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	}
 
 	ImGui::Begin("NavMesh Generation");
+
+	ImGui::Text("Bounding Box");
+	bool update_bb = false;
+	if (ImGui::SliderFloat("Min x", &m_bounding_box_min.x, bmin[0], bmax[0], "%.1f")) {
+		update_bb = true;
+	}
+
+	if (ImGui::SliderFloat("Min y", &m_bounding_box_min.y, bmin[1], bmax[1], "%.1f")) {
+		update_bb = true;
+	}
+
+	if (ImGui::SliderFloat("Min z", &m_bounding_box_min.z, bmin[2], bmax[2], "%.1f")) {
+		update_bb = true;
+	}
+
+	if (ImGui::SliderFloat("Max x", &m_bounding_box_max.x, bmin[0], bmax[0], "%.1f")) {
+		update_bb = true;
+	}
+
+	if (ImGui::SliderFloat("Max y", &m_bounding_box_max.y, bmin[1], bmax[1], "%.1f")) {
+		update_bb = true;
+	}
+
+	if (ImGui::SliderFloat("Max z", &m_bounding_box_max.z, bmin[2], bmax[2], "%.1f")) {
+		update_bb = true;
+	}
+
+	if (update_bb) {
+		UpdateBoundingBox();
+	}
+
+	ImGui::Separator();
 
 	ImGui::Text("Rasterization");
 	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 1.0f, "%.1f");

@@ -1,6 +1,8 @@
 #ifndef EQEMU_MAP_VIEW_MODULE_H
 #define EQEMU_MAP_VIEW_MODULE_H
 
+#include <glm.hpp>
+
 class Scene;
 class Module
 {
@@ -19,6 +21,7 @@ public:
 	virtual bool HasWork() = 0;
 	virtual bool CanSave() = 0;
 	virtual void Save() = 0;
+	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit) = 0;
 
 	void SetRunning(bool v) { m_running = v; }
 	bool& GetRunning() { return m_running; }

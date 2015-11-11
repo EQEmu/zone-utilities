@@ -38,6 +38,10 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 		m_key_status[i] = GLFW_RELEASE;
 	}
 
+	for (int i = 0; i < 5; ++i) {
+		m_mouse_status[i] = GLFW_RELEASE;
+	}
+	
 	m_show_open = false;
 	m_show_options = false;
 	m_show_debug = false;
@@ -270,60 +274,62 @@ void Scene::RenderUI() {
 	}
 
 	if(ImGui::BeginPopupModal("Open Zone", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-		bool use_popup = true;
-		for(auto &module : m_modules) {
-			if(module->HasWork()) {
-				ImGui::CloseCurrentPopup();
-				use_popup = false;
-				break;
-			}
-		}
-		if(use_popup) {
-			static char zone_name[256];
-			if(ImGui::InputText("Zone Name", zone_name, 256, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank))
-			{
-				ImGui::CloseCurrentPopup();
-				LoadScene(zone_name);
-				strcpy(zone_name, "");
-			}
-	
-			if((glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)) {
-				strcpy(zone_name, "");
-	
-				ImGui::CloseCurrentPopup();
-			}
-	
-			if(ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
-				ImGui::SetKeyboardFocusHere(-1);
-	
-			if(ImGui::Button("OK", ImVec2(120, 0))) {
-				ImGui::CloseCurrentPopup();
-				LoadScene(zone_name);
-				strcpy(zone_name, "");
-			}
-			ImGui::SameLine();
-			if(ImGui::Button("Cancel", ImVec2(120, 0))) {
-				ImGui::CloseCurrentPopup();
-				strcpy(zone_name, "");
-			}
-		}
-		ImGui::EndPopup();
+bool use_popup = true;
+for (auto &module : m_modules) {
+	if (module->HasWork()) {
+		ImGui::CloseCurrentPopup();
+		use_popup = false;
+		break;
+	}
+}
+if (use_popup) {
+	static char zone_name[256];
+	if (ImGui::InputText("Zone Name", zone_name, 256, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank))
+	{
+		ImGui::CloseCurrentPopup();
+		LoadScene(zone_name);
+		strcpy(zone_name, "");
+	}
+
+	if ((glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)) {
+		strcpy(zone_name, "");
+
+		ImGui::CloseCurrentPopup();
+	}
+
+	if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+		ImGui::SetKeyboardFocusHere(-1);
+
+	if (ImGui::Button("OK", ImVec2(120, 0))) {
+		ImGui::CloseCurrentPopup();
+		LoadScene(zone_name);
+		strcpy(zone_name, "");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+		ImGui::CloseCurrentPopup();
+		strcpy(zone_name, "");
+	}
+}
+ImGui::EndPopup();
 	}
 }
 
 void Scene::RenderModulesMenu() {
-	if(ImGui::BeginMenu("Modules"))
+	if (ImGui::BeginMenu("Modules"))
 	{
-		for(auto &module : m_modules) {
-			if(!module->GetRunning()) {
+		for (auto &module : m_modules) {
+			if (!module->GetRunning()) {
 				if (ImGui::MenuItem(module->GetName(), nullptr, &module->GetRunning())) {
 					module->OnResume();
 				}
-			} else {
-				if(ImGui::MenuItem(module->GetName())) {
-					if(module->GetUnpaused()) {
+			}
+			else {
+				if (ImGui::MenuItem(module->GetName())) {
+					if (module->GetUnpaused()) {
 						module->OnSuspend();
-					} else {
+					}
+					else {
 						module->OnResume();
 					}
 
@@ -335,8 +341,8 @@ void Scene::RenderModulesMenu() {
 	}
 
 	//go through and render all active modules...
-	for(auto &module : m_modules) {
-		if(module->GetRunning() && module->GetUnpaused()) {
+	for (auto &module : m_modules) {
+		if (module->GetRunning() && module->GetUnpaused()) {
 			module->OnDrawMenu();
 		}
 	}
@@ -345,14 +351,15 @@ void Scene::RenderModulesMenu() {
 void Scene::Tick() {
 	glfwPollEvents();
 
-	if(!TryHotkey()) 
-		ProcessCamera();
+	if (!TryHotkey()) {
+		ProcessSceneInput();
+	}
 }
 
-void Scene::ProcessCamera() {
+void Scene::ProcessSceneInput() {
 	auto &io = ImGui::GetIO();
 
-	if(m_first_input) {
+	if (m_first_input) {
 		m_last_time = glfwGetTime();
 		m_first_input = false;
 	}
@@ -360,7 +367,7 @@ void Scene::ProcessCamera() {
 	double current_time = glfwGetTime();
 	float delta_time = float(current_time - m_last_time);
 
-	if(!io.WantCaptureMouse && glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+	if (!io.WantCaptureMouse && glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		double x_pos, y_pos;
 		glfwGetCursorPos(m_window, &x_pos, &y_pos);
 		glfwSetCursorPos(m_window, m_width / 2, m_height / 2);
@@ -399,6 +406,53 @@ void Scene::ProcessCamera() {
 
 	m_camera_proj = glm::perspective(m_fov, (float)m_width / (float)m_height, m_near_clip, m_far_clip);
 	m_camera_view = glm::lookAt(m_camera_loc, m_camera_loc + direction, up);
+
+	bool click_to_process = false;
+	bool process_click[5] = { false };
+	if (!io.WantCaptureMouse) {
+		for (int i = 0; i < 5; ++i) {
+			if (io.MouseDown[i] == GLFW_RELEASE && m_mouse_status[i] == GLFW_PRESS) {
+				process_click[i] = true;
+				click_to_process = true;
+			}
+		}
+
+		for (int i = 0; i < 5; ++i) {
+			m_mouse_status[i] = io.MouseDown[i];
+		}
+	}
+
+	if (click_to_process) {
+		//get collide world click loc
+		//get non-collide world click loc
+
+		double x_pos, y_pos;
+		glfwGetCursorPos(m_window, &x_pos, &y_pos);
+		glm::vec3 start;
+		glm::vec3 end;
+		getClickVectors(x_pos, (double)m_height - y_pos, start, end);
+
+		glm::vec3 collidate_hit;
+		bool did_collide_hit = m_physics->GetRaycastClosestHit(start, end, collidate_hit, CollidableWorld);
+
+		glm::vec3 non_collidate_hit;
+		bool did_non_collide_hit = m_physics->GetRaycastClosestHit(start, end, non_collidate_hit, NonCollidableWorld);
+
+		//here is where i will do selection hits but not needed yet...
+
+		for (int i = 0; i < 5; ++i) {
+			if (!process_click[i])
+				continue;
+
+			for (auto &module : m_modules) {
+				if (module->GetRunning() && module->GetUnpaused()) {
+					module->OnClick(i, (did_collide_hit ? &collidate_hit : nullptr), 
+						(did_non_collide_hit ? &non_collidate_hit : nullptr));
+				}
+			}
+		}
+	}
+
 
 	m_last_time = current_time;
 }
@@ -557,4 +611,31 @@ void Scene::UnregisterAllModules() {
 	}
 
 	m_modules.clear();
+}
+
+void Scene::getClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end)
+{
+	glm::vec4 start_ndc(((float)x / (float)m_width - 0.5f) * 2.0f, ((float)y / (float)m_height - 0.5f) * 2.0f, -1.0, 1.0f);
+	glm::vec4 end_ndc(((float)x / (float)m_width - 0.5f) * 2.0f, ((float)y / (float)m_height - 0.5f) * 2.0f, 0.0, 1.0f);
+	
+	glm::mat4 inverse_proj = glm::inverse(m_camera_proj);
+	glm::mat4 inverse_view = glm::inverse(m_camera_view);
+	
+	glm::vec4 start_camera = inverse_proj * start_ndc;
+	start_camera /= start_camera.w;
+	
+	glm::vec4 start_world = inverse_view * start_camera;
+	start_world /= start_world.w;
+	
+	glm::vec4 end_camera = inverse_proj * end_ndc;
+	end_camera /= end_camera.w;
+	
+	glm::vec4 end_world = inverse_view * end_camera;
+	end_world /= end_world.w;
+	
+	glm::vec3 dir_world(end_world - start_world);
+	dir_world = glm::normalize(dir_world);
+	
+	start = glm::vec3(start_world);
+	end = glm::normalize(dir_world) * 100000.0f;
 }
