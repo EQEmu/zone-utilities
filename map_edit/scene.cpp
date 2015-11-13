@@ -274,44 +274,44 @@ void Scene::RenderUI() {
 	}
 
 	if(ImGui::BeginPopupModal("Open Zone", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-bool use_popup = true;
-for (auto &module : m_modules) {
-	if (module->HasWork()) {
-		ImGui::CloseCurrentPopup();
-		use_popup = false;
-		break;
-	}
-}
-if (use_popup) {
-	static char zone_name[256];
-	if (ImGui::InputText("Zone Name", zone_name, 256, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank))
-	{
-		ImGui::CloseCurrentPopup();
-		LoadScene(zone_name);
-		strcpy(zone_name, "");
-	}
+		bool use_popup = true;
+		for (auto &module : m_modules) {
+			if (module->HasWork()) {
+				ImGui::CloseCurrentPopup();
+				use_popup = false;
+				break;
+			}
+		}
+		if (use_popup) {
+			static char zone_name[256];
+			if (ImGui::InputText("Zone Name", zone_name, 256, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank))
+			{
+				ImGui::CloseCurrentPopup();
+				LoadScene(zone_name);
+				strcpy(zone_name, "");
+			}
 
-	if ((glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)) {
-		strcpy(zone_name, "");
+			if ((glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)) {
+				strcpy(zone_name, "");
 
-		ImGui::CloseCurrentPopup();
-	}
+				ImGui::CloseCurrentPopup();
+			}
 
-	if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
-		ImGui::SetKeyboardFocusHere(-1);
+			if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+				ImGui::SetKeyboardFocusHere(-1);
 
-	if (ImGui::Button("OK", ImVec2(120, 0))) {
-		ImGui::CloseCurrentPopup();
-		LoadScene(zone_name);
-		strcpy(zone_name, "");
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-		ImGui::CloseCurrentPopup();
-		strcpy(zone_name, "");
-	}
-}
-ImGui::EndPopup();
+			if (ImGui::Button("OK", ImVec2(120, 0))) {
+				ImGui::CloseCurrentPopup();
+				LoadScene(zone_name);
+				strcpy(zone_name, "");
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+				ImGui::CloseCurrentPopup();
+				strcpy(zone_name, "");
+			}
+		}
+		ImGui::EndPopup();
 	}
 }
 

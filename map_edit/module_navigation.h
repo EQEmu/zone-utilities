@@ -13,7 +13,7 @@
 #include "line_model.h"
 #include "rc_chunky_tri_mesh.h"
 #include "thread_pool.h"
-#include "nav_mesh_model.h"
+#include "debug_draw.h"
 
 enum NavigationPartitionType
 {
@@ -22,15 +22,42 @@ enum NavigationPartitionType
 	NAVIGATION_PARTITION_LAYERS,
 };
 
+enum NavigationAreaFlags
+{
+	NavigationAreaFlagNormal,
+	NavigationAreaFlagWater,
+	NavigationAreaFlagLava,
+	NavigationAreaFlagZoneLine,
+	NavigationAreaFlagPvP,
+	NavigationAreaFlagSlime,
+	NavigationAreaFlagIce,
+	NavigationAreaFlagVWater,
+	NavigationAreaFlagGeneralArea,
+	NavigationAreaFlagDisabled,
+};
+
 enum NavigationPolyFlags
 {
-	NavigationPolyFlagWalk = 0x01,
-	NavigationPolyFlagSwim = 0x02,
-	NavigationPolyFlagDisabled = 0x10,
+	NavigationPolyFlagNormal = 0x01,
+	NavigationPolyFlagWater = 0x02,
+	NavigationPolyFlagLava = 0x04,
+	NavigationPolyFlagZoneLine = 0x08,
+	NavigationPolyFlagPvP = 0x10,
+	NavigationPolyFlagSlime = 0x20,
+	NavigationPolyFlagIce = 0x40,
+	NavigationPolyFlagVWater = 0x80,
+	NavigationPolyFlagGeneralArea = 0x100,
+	NavigationPolyFlagDisabled = 0x200,
 	NavigationPolyFlagAll = 0xFFFF
 };
 
-class ModuleNavigation;
+struct RegionVolume {
+	float verts[4 * 3];
+	float min;
+	float max;
+	NavigationAreaFlags area_type;
+};
+
 class NavigationDebugDraw : public duDebugDraw
 {
 public:
@@ -43,7 +70,7 @@ public:
 	virtual void vertex(const float x, const float y, const float z, unsigned int color, const float u, const float v);
 	virtual void end() { mode = 0; verts_in_use = 0; }
 
-	ModuleNavigation *nav_module;
+	DebugDraw *model;
 private:
 	void CreatePrimitive();
 	int mode;
@@ -82,12 +109,14 @@ private:
 	friend class NavigationDebugDraw;
 	void UpdateBoundingBox();
 	void DrawNavMeshGenerationUI();
+	void DrawTestUI();
 	void BuildNavigationMesh();
 	void CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo);
 	void CreateNavMeshModel();
 	void SetNavigationTestNodeStart(const glm::vec3 &p);
 	void SetNavigationTestNodeEnd(const glm::vec3 &p);
 	void CalcPath();
+	void InitVolumes();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
@@ -119,10 +148,10 @@ private:
 	float m_tile_size;
 
 	dtNavMesh *m_nav_mesh;
-	std::unique_ptr<NavMeshModel> m_nav_mesh_renderable;
+	std::unique_ptr<DebugDraw> m_nav_mesh_renderable;
 
 	//debug
-	std::unique_ptr<LineModel> m_debug_renderable;
+	std::unique_ptr<DebugDraw> m_debug_renderable;
 
 	//path
 	std::unique_ptr<LineModel> m_start_path_renderable;
@@ -134,6 +163,11 @@ private:
 
 	glm::vec3 m_path_end;
 	bool m_path_end_set;
+
+	float m_path_costs[NavigationAreaFlagDisabled];
+
+	//volume
+	std::vector<RegionVolume> m_volumes;
 
 	int m_tiles_building;
 	ThreadPool m_thread_pool;

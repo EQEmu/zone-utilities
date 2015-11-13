@@ -95,6 +95,11 @@ void ModuleNavigationBuildTile::Run() {
 		rcFreeCompactHeightfield(chf);
 		return;
 	}
+
+	//go through and mark our convex areas...
+	for (auto &volume : m_nav_module->m_volumes) {
+		rcMarkConvexPolyArea(m_ctx.get(), volume.verts, 4, volume.min, volume.max, (unsigned char)volume.area_type, *chf);
+	}
 	
 	if (m_nav_module->m_partition_type == NAVIGATION_PARTITION_WATERSHED)
 	{
@@ -181,7 +186,41 @@ void ModuleNavigationBuildTile::Run() {
 	
 		for (int i = 0; i < pmesh->npolys; ++i)
 		{
-			pmesh->flags[i] = NavigationPolyFlagWalk;
+			if (pmesh->areas[i] == RC_WALKABLE_AREA)
+				pmesh->areas[i] = NavigationPolyFlagNormal;
+
+			switch (pmesh->areas[i])
+			{
+			case NavigationAreaFlagNormal:
+				pmesh->flags[i] = NavigationPolyFlagNormal;
+				break;
+			case NavigationAreaFlagWater:
+				pmesh->flags[i] = NavigationPolyFlagWater;
+				break;
+			case NavigationAreaFlagLava:
+				pmesh->flags[i] = NavigationPolyFlagLava;
+				break;
+			case NavigationAreaFlagZoneLine:
+				pmesh->flags[i] = NavigationPolyFlagZoneLine;
+				break;
+			case NavigationAreaFlagPvP:
+				pmesh->flags[i] = NavigationPolyFlagPvP;
+				break;
+			case NavigationAreaFlagSlime:
+				pmesh->flags[i] = NavigationPolyFlagSlime;
+				break;
+			case NavigationAreaFlagIce:
+				pmesh->flags[i] = NavigationPolyFlagIce;
+				break;
+			case NavigationAreaFlagVWater:
+				pmesh->flags[i] = NavigationPolyFlagVWater;
+				break;
+			case NavigationAreaFlagGeneralArea:
+				pmesh->flags[i] = NavigationPolyFlagGeneralArea;
+				break;
+			default:
+				pmesh->flags[i] = NavigationPolyFlagDisabled;
+			}
 		}
 	
 		dtNavMeshCreateParams params;

@@ -133,6 +133,11 @@ void EQPhysics::SetWaterMap(WaterMap *w) {
 	imp->water_map.reset(w);
 }
 
+WaterMap *EQPhysics::GetWaterMap()
+{
+	return imp->water_map.get();
+}
+
 bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const {
 	btVector3 src_bt(src.x, src.y, src.z);
 	btVector3 dest_bt(dest.x, dest.y, dest.z);

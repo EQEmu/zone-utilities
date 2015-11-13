@@ -26,6 +26,7 @@ public:
 	void SetCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds);
 	void SetNonCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds);
 	void SetWaterMap(WaterMap *w);
+	WaterMap *GetWaterMap();
 
 	void Step();
 

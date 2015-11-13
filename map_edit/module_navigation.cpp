@@ -65,10 +65,12 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 	m_tiles_building = 0;
 	m_nav_mesh = nullptr;
 
-	m_nav_mesh_renderable.reset(new NavMeshModel());
+	m_nav_mesh_renderable.reset(new DebugDraw(false));
 
-	m_debug_renderable.reset(new LineModel());
-	m_debug_renderable->SetTint(glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+	m_debug_renderable.reset(new DebugDraw());
+	m_debug_renderable->SetLinesTint(glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+	m_debug_renderable->SetPointsTint(glm::vec4(0.0f, 1.0f, 1.0f, 1.0f));
+	m_debug_renderable->SetTrianglesTint(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
 
 	m_start_path_renderable.reset(new LineModel());
 	m_start_path_renderable->SetTint(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
@@ -81,12 +83,16 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 	m_end_path_renderable->SetWidth(3.0f);
 
 	m_path_renderable.reset(new LineModel());
-	m_path_renderable->SetTint(glm::vec4(0.25f, 0.0625f, 0.0f, 0.859375f));
+	m_path_renderable->SetTint(glm::vec4(1.0f, 1.0f, 0.0f, 0.859375f));
 	m_path_renderable->SetDepthTestEnabled(false);
-	m_path_renderable->SetWidth(3.0f);
+	m_path_renderable->SetWidth(4.0f);
 
 	m_path_start_set = false;
 	m_path_end_set = false;
+
+	for (int i = 0; i < NavigationAreaFlagDisabled; ++i) {
+		m_path_costs[i] = 1.0f;
+	}
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -133,11 +139,20 @@ void ModuleNavigation::OnDrawUI()
 
 	ImGui::Text("Tools");
 	ImGui::RadioButton("NavMesh Generation", &m_mode, (int)ModeNavMeshGen);
-	ImGui::RadioButton("Test Mesh", &m_mode, (int)ModeTestNavigation);
+	if (m_nav_mesh && m_tiles_building == 0) {
+		ImGui::RadioButton("Test Mesh", &m_mode, (int)ModeTestNavigation);
+	}
+	else {
+		ImGui::RadioButton("Test Mesh", false);
+	}
 	ImGui::End();
 
-	if (m_mode == 1) {
+	if (m_mode == ModeNavMeshGen) {
 		DrawNavMeshGenerationUI();
+	}
+
+	if (m_mode == ModeTestNavigation) {
+		DrawTestUI();
 	}
 }
 
@@ -167,6 +182,7 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 	m_path_end_set = false;
 	m_nav_mesh_renderable->Clear();
 	m_nav_mesh_renderable->Update();
+	InitVolumes();
 }
 
 void ModuleNavigation::OnSuspend()
@@ -258,7 +274,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 		return;
 	}
 
-	ImGui::Begin("NavMesh Generation");
+	ImGui::Begin("NavMesh Properties");
 
 	ImGui::Text("Bounding Box");
 	bool update_bb = false;
@@ -363,6 +379,24 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 		}
 	}
 
+	ImGui::End();
+}
+
+void ModuleNavigation::DrawTestUI()
+{
+	ImGui::Begin("NavMesh Properties");
+	ImGui::Text("LMB to place start. Shift + LMB to place end.");
+	ImGui::Separator();
+
+	ImGui::Text("Area Costs");
+	ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 1.0f, 100.0f, "%.1f");
+	ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 1.0f, 100.0f, "%.1f");
+	ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 1.0f, 100.0f, "%.1f");
+	ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 1.0f, 100.0f, "%.1f");
+	ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 1.0f, 100.0f, "%.1f");
+	ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 1.0f, 100.0f, "%.1f");
+	ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 1.0f, 100.0f, "%.1f");
+	ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 0.1f, 100.0f, "%.1f");
 	ImGui::End();
 }
 
@@ -493,7 +527,7 @@ void ModuleNavigation::CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo)
 void ModuleNavigation::CreateNavMeshModel()
 {
 	NavigationDebugDraw dd;
-	dd.nav_module = this;
+	dd.model = m_nav_mesh_renderable.get();
 	duDebugDrawNavMesh(&dd, *m_nav_mesh, 0xffu);
 	m_nav_mesh_renderable->Update();
 	m_nav_mesh_renderable->SetTrianglesTint(glm::vec4(0.0f, 0.75f, 1.0f, 0.25f));
@@ -532,6 +566,14 @@ void ModuleNavigation::CalcPath()
 	glm::vec3 ext(2.0f, 3.0f, 2.0f);
 	dtQueryFilter filter;
 	filter.setIncludeFlags(NavigationPolyFlagAll ^ NavigationPolyFlagDisabled);
+	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
+	filter.setAreaCost(NavigationAreaFlagWater, m_path_costs[NavigationAreaFlagWater]);
+	filter.setAreaCost(NavigationAreaFlagLava, m_path_costs[NavigationAreaFlagLava]);
+	filter.setAreaCost(NavigationAreaFlagPvP, m_path_costs[NavigationAreaFlagPvP]);
+	filter.setAreaCost(NavigationAreaFlagSlime, m_path_costs[NavigationAreaFlagSlime]);
+	filter.setAreaCost(NavigationAreaFlagIce, m_path_costs[NavigationAreaFlagIce]);
+	filter.setAreaCost(NavigationAreaFlagVWater, m_path_costs[NavigationAreaFlagVWater]);
+	filter.setAreaCost(NavigationAreaFlagGeneralArea, m_path_costs[NavigationAreaFlagGeneralArea]);
 
 	dtNavMeshQuery *query = dtAllocNavMeshQuery();
 	query->init(m_nav_mesh, 4092);
@@ -585,6 +627,128 @@ void ModuleNavigation::CalcPath()
 	}
 }
 
+void ModuleNavigation::InitVolumes()
+{
+	m_volumes.clear();
+
+	auto physics = m_scene->GetZonePhysics();
+	if (!physics)
+		return;
+
+	WaterMap *w = physics->GetWaterMap();
+	if (!w)
+		return;
+
+	std::vector<RegionDetails> regions;
+	w->GetRegionDetails(regions);
+
+	for (auto &region : regions) {
+		RegionVolume v;
+
+		v.min = FLT_MAX;
+		v.max = -FLT_MAX;
+
+		for (int i = 0; i < 4; ++i) {
+			if (region.verts[i].y < v.min) {
+				v.min = region.verts[i].y;
+			} else if (region.verts[i].y > v.max) {
+				v.max = region.verts[i].y;
+			}
+		}
+
+		switch (region.type) {
+		case RegionTypeNormal:
+			v.area_type = NavigationAreaFlagNormal;
+			break;
+		case RegionTypeWater:
+			v.area_type = NavigationAreaFlagWater;
+			break;
+		case RegionTypeLava:
+			v.area_type = NavigationAreaFlagLava;
+			break;
+		case RegionTypePVP:
+			v.area_type = NavigationAreaFlagPvP;
+			break;
+		case RegionTypeSlime:
+			v.area_type = NavigationAreaFlagSlime;
+			break;
+		case RegionTypeIce:
+			v.area_type = NavigationAreaFlagIce;
+			break;
+		case RegionTypeVWater:
+			v.area_type = NavigationAreaFlagVWater;
+			break;
+		default:
+			v.area_type = NavigationAreaFlagNormal;
+		}
+
+		for (int i = 0; i < 4; ++i) {
+			v.verts[(i * 3)] = region.verts[i].x;
+			v.verts[(i * 3) + 1] = region.verts[i].y - v.min;
+			v.verts[(i * 3) + 2] = region.verts[i].z;
+		}
+
+		m_volumes.push_back(v);
+	}
+
+	//todo: move this to "render volume"
+	//NavigationDebugDraw dd;
+	//dd.model = m_debug_renderable.get();
+	//m_debug_renderable->Clear();
+	//for (auto &volume : m_volumes) {
+	//	dd.begin(DU_DRAW_LINES, 2.0f);
+	//	//min
+	//	//1 -> 2
+	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.min, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.min, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//2 -> 3
+	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.min, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.min, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//3 -> 4
+	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.min, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.min, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//4 -> 1
+	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.min, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.min, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//max
+	//	//1 -> 2
+	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.max, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.max, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//2 -> 3
+	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.max, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.max, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//3 -> 4
+	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.max, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.max, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//4 -> 1
+	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.max, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.max, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	//connect each to themselves...
+	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.min, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.max, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.min, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.max, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.min, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.max, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.min, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.max, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
+	//
+	//	dd.end();
+	//}
+	//m_debug_renderable->Update();
+}
+
 void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {
 	verts_in_use = 0;
 	switch (prim)
@@ -632,44 +796,44 @@ void NavigationDebugDraw::CreatePrimitive() {
 	switch (mode) {
 	case 1:
 	{
-		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetPointsVerts().size();
-		nav_module->m_nav_mesh_renderable->GetPointsVerts().push_back(verts[0]);
-		nav_module->m_nav_mesh_renderable->GetPointsInds().push_back(index);
+		unsigned int index = (unsigned int)model->GetPointsVerts().size();
+		model->GetPointsVerts().push_back(verts[0]);
+		model->GetPointsInds().push_back(index);
 	}
 	break;
 	case 2:
 	{
-		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetLinesVerts().size();
-		nav_module->m_nav_mesh_renderable->GetLinesVerts().push_back(verts[0]);
-		nav_module->m_nav_mesh_renderable->GetLinesVerts().push_back(verts[1]);
-		nav_module->m_nav_mesh_renderable->GetLinesInds().push_back(index);
-		nav_module->m_nav_mesh_renderable->GetLinesInds().push_back(index + 1);
+		unsigned int index = (unsigned int)model->GetLinesVerts().size();
+		model->GetLinesVerts().push_back(verts[0]);
+		model->GetLinesVerts().push_back(verts[1]);
+		model->GetLinesInds().push_back(index);
+		model->GetLinesInds().push_back(index + 1);
 	}
 	break;
 	case 3:
 	{
-		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetTrianglesVerts().size();
-		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[0]);
-		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[1]);
-		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[2]);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 1);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 2);
+		unsigned int index = (unsigned int)model->GetTrianglesVerts().size();
+		model->GetTrianglesVerts().push_back(verts[0]);
+		model->GetTrianglesVerts().push_back(verts[1]);
+		model->GetTrianglesVerts().push_back(verts[2]);
+		model->GetTrianglesInds().push_back(index);
+		model->GetTrianglesInds().push_back(index + 1);
+		model->GetTrianglesInds().push_back(index + 2);
 	}
 	break; //2 3 0
 	case 4:
 	{
-		unsigned int index = (unsigned int)nav_module->m_nav_mesh_renderable->GetTrianglesInds().size();
-		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[0]);
-		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[1]);
-		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[2]);
-		nav_module->m_nav_mesh_renderable->GetTrianglesVerts().push_back(verts[3]);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 1);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 2);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 2);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index + 3);
-		nav_module->m_nav_mesh_renderable->GetTrianglesInds().push_back(index);
+		unsigned int index = (unsigned int)model->GetTrianglesInds().size();
+		model->GetTrianglesVerts().push_back(verts[0]);
+		model->GetTrianglesVerts().push_back(verts[1]);
+		model->GetTrianglesVerts().push_back(verts[2]);
+		model->GetTrianglesVerts().push_back(verts[3]);
+		model->GetTrianglesInds().push_back(index);
+		model->GetTrianglesInds().push_back(index + 1);
+		model->GetTrianglesInds().push_back(index + 2);
+		model->GetTrianglesInds().push_back(index + 2);
+		model->GetTrianglesInds().push_back(index + 3);
+		model->GetTrianglesInds().push_back(index);
 	}
 	break;
 	}
