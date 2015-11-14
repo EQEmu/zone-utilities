@@ -20,7 +20,11 @@ public:
 	void AddLine(const glm::vec3& p0, const glm::vec3& p1);
 	void AddTriangle(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2);
 	void Clear();
+	void SetDepthTestEnabled(bool v) { m_depth_enabled = v; }
+	void SetWidth(float f) { m_line_width = f; }
 private:
+	float m_line_width;
+	bool m_depth_enabled;
 	GLuint m_vao;
 	GLuint m_vbo;
 	GLuint m_ib;

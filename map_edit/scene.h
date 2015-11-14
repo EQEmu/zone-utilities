@@ -49,7 +49,7 @@ public:
 	void RenderUI();
 	void RenderModulesMenu();
 	void Tick();
-	void ProcessCamera();
+	void ProcessSceneInput();
 
 	//hotkeys
 	void RegisterHotkey(SceneHotkeyListener *system, int ident, int key, bool ctrl, bool alt, bool shift);
@@ -69,6 +69,7 @@ public:
 	std::shared_ptr<ZoneMap> GetZoneGeometry() { return m_zone_geometry; }
 	std::shared_ptr<EQPhysics> GetZonePhysics() { return m_physics; }
 private:
+	void getClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);
 	friend class Module;
 	Scene(const Scene&);
 	Scene& operator=(const Scene&);
@@ -110,6 +111,7 @@ private:
 	bool TryHotkey();
 	std::vector<HotkeyEntry> m_hotkeys;
 	int m_key_status[512];
+	int m_mouse_status[5];
 
 	//modules
 	std::vector<std::unique_ptr<Module>> m_modules;

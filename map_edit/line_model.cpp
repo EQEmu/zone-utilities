@@ -2,6 +2,8 @@
 #include "shader.h"
 
 LineModel::LineModel() {
+	m_line_width = 1.0f;
+	m_depth_enabled = true;
 	m_vao = 0;
 	m_vbo = 0;
 	m_ib = 0;
@@ -24,6 +26,12 @@ LineModel::~LineModel() {
 
 void LineModel::Draw() {
 	if(m_vao) {
+		if (!m_depth_enabled) {
+			glDepthMask(GL_FALSE);
+		}
+
+		glLineWidth(m_line_width);
+
 		ShaderProgram shader = ShaderProgram::Current();
 		auto tint = shader.GetUniformLocation("Tint");
 		tint.SetValuePtr4(1, &m_tint[0]);
@@ -31,10 +39,20 @@ void LineModel::Draw() {
 		glBindVertexArray(m_vao);
 		glDrawElements(GL_LINES, (GLsizei)m_inds.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
+
+		glLineWidth(1.0f);
+
+		if (!m_depth_enabled) {
+			glDepthMask(GL_TRUE);
+		}
 	}
 }
 
 void LineModel::Update() {
+	if (m_verts.size() == 0 || m_inds.size() == 0) {
+		return;
+	}
+
 	if(m_vao) {
 		glBindVertexArray(m_vao);
 

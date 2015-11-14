@@ -26,11 +26,13 @@ public:
 	void SetCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds);
 	void SetNonCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds);
 	void SetWaterMap(WaterMap *w);
+	WaterMap *GetWaterMap();
 
 	void Step();
 
 	//collision stuff
 	bool CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const;
+	bool GetRaycastClosestHit(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 &hit, EQPhysicsFlags flag = CollidableWorld) const;
 	float FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const;
 	bool IsUnderworld(const glm::vec3 &point) const;
 	bool CheckLosNoHazards(const glm::vec3 &start, const glm::vec3 &end, float step_size, float max_diff);

@@ -9,13 +9,15 @@
 #include "entity.h"
 #include "dynamic_geometry.h"
 
-class NavMeshModel : public Entity
+class DebugDraw : public Entity
 {
 public:
-	NavMeshModel();
-	virtual ~NavMeshModel();
+	DebugDraw();
+	DebugDraw(bool depth);
+	virtual ~DebugDraw();
 
 	virtual void Draw();
+	void Clear();
 	void Update();
 
 	const glm::vec4& GetPointsTint() { return m_points.GetTint(); }
@@ -34,6 +36,7 @@ public:
 	std::vector<unsigned int>& GetTrianglesInds() { return m_triangles.GetInds(); }
 
 private:
+	bool m_use_depth;
 	DynamicGeometry m_points;
 	DynamicGeometry m_lines;
 	DynamicGeometry m_triangles;
