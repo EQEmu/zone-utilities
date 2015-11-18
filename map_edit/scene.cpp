@@ -454,6 +454,15 @@ void Scene::ProcessSceneInput() {
 		bool did_non_collide_hit = m_physics->GetRaycastClosestHit(start, end, non_collidate_hit, nullptr, NonCollidableWorld);
 
 		//here is where i will do selection hits but not needed yet...
+		glm::vec3 select_hit;
+		std::string ent_name;
+		bool did_select_hit = m_physics->GetRaycastClosestHit(start, end, select_hit, &ent_name, Selectable);
+		Entity *selected_ent = nullptr;
+		if (did_select_hit && ent_name.find("entity_") == 0) {
+			std::string ptr = ent_name.substr(7);
+			auto ptr_addr = std::stoll(ptr);
+			selected_ent = (Entity*)ptr_addr;
+		}
 
 		for (int i = 0; i < 5; ++i) {
 			if (!process_click[i])
@@ -462,7 +471,9 @@ void Scene::ProcessSceneInput() {
 			for (auto &module : m_modules) {
 				if (module->GetRunning() && module->GetUnpaused()) {
 					module->OnClick(i, (did_collide_hit ? &collidate_hit : nullptr), 
-						(did_non_collide_hit ? &non_collidate_hit : nullptr));
+						(did_non_collide_hit ? &non_collidate_hit : nullptr),
+						(did_select_hit ? &select_hit : nullptr),
+						(did_select_hit ? selected_ent : nullptr));
 				}
 			}
 		}

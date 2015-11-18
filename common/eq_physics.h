@@ -31,7 +31,7 @@ public:
 
 	//collision stuff
 	bool CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const;
-	bool GetRaycastClosestHit(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 &hit, const btCollisionObject **obj, EQPhysicsFlags flag = CollidableWorld) const;
+	bool GetRaycastClosestHit(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 &hit, std::string *name, EQPhysicsFlags flag = CollidableWorld) const;
 	float FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const;
 	bool IsUnderworld(const glm::vec3 &point) const;
 	
@@ -43,6 +43,8 @@ public:
 	bool InLiquid(const glm::vec3 &pos) const;
 	
 private:
+	void GetEntityHit(const btCollisionObject *obj, std::string &out_ident) const;
+
 	struct impl;
 	impl *imp;
 };

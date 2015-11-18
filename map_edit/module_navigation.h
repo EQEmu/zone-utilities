@@ -103,7 +103,7 @@ public:
 	virtual bool CanSave();
 	virtual void Save();
 	virtual void OnHotkey(int ident);
-	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit);
+	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected);
 private:
 	friend class ModuleNavigationBuildTile;
 	friend class NavigationDebugDraw;

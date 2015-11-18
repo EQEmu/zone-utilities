@@ -157,7 +157,7 @@ bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const {
 	return true;
 }
 
-bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & dest, glm::vec3 &hit, const btCollisionObject **obj, EQPhysicsFlags flag) const
+bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & dest, glm::vec3 &hit, std::string *name, EQPhysicsFlags flag) const
 {
 	btVector3 src_bt(src.x, src.y, src.z);
 	btVector3 dest_bt(dest.x, dest.y, dest.z);
@@ -172,8 +172,8 @@ bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & de
 		hit.x = ray_hit.m_hitPointWorld.x();
 		hit.y = ray_hit.m_hitPointWorld.y();
 		hit.z = ray_hit.m_hitPointWorld.z();
-		if (obj) {
-			*obj = ray_hit.m_collisionObject;
+		if (name) {
+			GetEntityHit(ray_hit.m_collisionObject, *name);
 		}
 		return true;
 	}
@@ -297,18 +297,18 @@ bool EQPhysics::IsUnderworld(const glm::vec3 &point) const {
 	return true;
 }
 
-//void EQPhysics::getEntityHit(const btCollisionObject *obj, std::string &out_ident) const {
-//	if (!obj) {
-//		return;
-//	}
-//
-//	const btRigidBody* body = btRigidBody::upcast(obj);
-//
-//	out_ident.clear();
-//	for (auto iter = imp->entity_info->begin(); iter != imp->entity_info->end(); ++iter) {
-//		if (iter->second.rb.get() == body) {
-//			out_ident = iter->first;
-//			return;
-//		}
-//	}
-//}
+void EQPhysics::GetEntityHit(const btCollisionObject *obj, std::string &out_ident) const {
+	if (!obj) {
+		return;
+	}
+
+	const btRigidBody* body = btRigidBody::upcast(obj);
+
+	out_ident.clear();
+	for (auto iter = imp->entity_info->begin(); iter != imp->entity_info->end(); ++iter) {
+		if (iter->second.rb.get() == body) {
+			out_ident = iter->first;
+			return;
+		}
+	}
+}

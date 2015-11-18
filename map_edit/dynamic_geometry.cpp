@@ -11,6 +11,7 @@ DynamicGeometry::DynamicGeometry() {
 	m_line_width = 1.0f;
 	m_depth_write_enabled = true;
 	m_depth_test_enabled = true;
+	m_blend_enabled = false;
 }
 
 DynamicGeometry::~DynamicGeometry() {
@@ -41,6 +42,10 @@ void DynamicGeometry::Draw() {
 			glDisable(GL_DEPTH_TEST);
 		}
 
+		if (m_blend_enabled) {
+			glEnable(GL_BLEND);
+		}
+
 		if(m_line_width != 1.0f)
 			glLineWidth(m_line_width);
 
@@ -57,6 +62,10 @@ void DynamicGeometry::Draw() {
 
 		if (!m_depth_test_enabled) {
 			glEnable(GL_DEPTH_TEST);
+		}
+
+		if (m_blend_enabled) {
+			glDisable(GL_BLEND);
 		}
 	}
 }
@@ -248,6 +257,33 @@ void DynamicGeometry::AddLineCylinder(const glm::vec3 &min, const glm::vec3 &max
 		AddVertex(glm::vec3(cx + dir[i * 2 + 0] * rx, min.y, cz + dir[i * 2 + 1] * rz), color);
 		AddVertex(glm::vec3(cx + dir[i * 2 + 0] * rx, max.y, cz + dir[i * 2 + 1] * rz), color);
 	}
+}
+
+void DynamicGeometry::AddLineArrow(const glm::vec3 &p0, const glm::vec3 &p1, float size, const glm::vec3 &color)
+{
+	AddLine(p0, p1, color);
+	AddLineArrowHead(p1, p0, size, color);
+}
+
+void DynamicGeometry::AddLineArrowHead(const glm::vec3 &p0, const glm::vec3 &p1, float size, const glm::vec3 &color)
+{
+	const float eps = 0.001f;
+	if (glm::dot(p0, p1) < eps * eps)
+		return;
+
+	glm::vec3 ax;
+	glm::vec3 ay(0.0, 1.0, 0.0);
+	glm::vec3 az;
+
+	az = p0 - p1;
+	az = glm::normalize(az);
+
+	ax = glm::cross(ay, az);
+	ay = glm::cross(az, ax);
+	ay = glm::normalize(ay);
+
+	AddLine(p0, glm::vec3(p0[0] + az[0] * size + ax[0] * size / 3, p0[1] + az[1] * size + ax[1] * size / 3, p0[2] + az[2] * size + ax[2] * size / 3), color);
+	AddLine(p0, glm::vec3(p0[0] + az[0] * size - ax[0] * size / 3, p0[1] + az[1] * size - ax[1] * size / 3, p0[2] + az[2] * size - ax[2] * size / 3), color);
 }
 
 void DynamicGeometry::CalcBB()

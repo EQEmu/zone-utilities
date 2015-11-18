@@ -70,16 +70,17 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 
 	m_start_path_renderable.reset(new DynamicGeometry());
 	m_start_path_renderable->SetDrawType(GL_LINES);
-	m_start_path_renderable->SetLineWidth(2.0f);
+	m_start_path_renderable->SetLineWidth(1.0f);
 
 	m_end_path_renderable.reset(new DynamicGeometry());
 	m_end_path_renderable->SetDrawType(GL_LINES);
-	m_end_path_renderable->SetLineWidth(2.0f);
+	m_end_path_renderable->SetLineWidth(1.0f);
 
 	m_path_renderable.reset(new DynamicGeometry());
 	m_path_renderable->SetDrawType(GL_LINES);
 	m_path_renderable->SetDepthWriteEnabled(false);
-	m_path_renderable->SetLineWidth(4.0f);
+	m_path_renderable->SetDepthTestEnabled(false);
+	m_path_renderable->SetLineWidth(2.0f);
 
 	m_path_start_set = false;
 	m_path_end_set = false;
@@ -233,7 +234,7 @@ void ModuleNavigation::OnHotkey(int ident)
 {
 }
 
-void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit)
+void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected)
 {
 	auto &io = ImGui::GetIO();
 	if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
@@ -538,7 +539,7 @@ void ModuleNavigation::SetNavigationTestNodeStart(const glm::vec3 &p)
 	float sz = 2.0f;
 	m_start_path_renderable->AddLineCylinder(glm::vec3(m_path_start.x - sz, m_path_start.y, m_path_start.z - sz),
 		glm::vec3(m_path_start.x + sz, m_path_start.y + (sz * 2), m_path_start.z + sz),
-		glm::vec3(0.0, 1.0, 1.0));
+		glm::vec3(0.0, 1.0, 0.0));
 
 	m_start_path_renderable->Update();
 }
@@ -551,7 +552,7 @@ void ModuleNavigation::SetNavigationTestNodeEnd(const glm::vec3 &p)
 	float sz = 2.0f;
 	m_end_path_renderable->AddLineCylinder(glm::vec3(m_path_end.x - sz, m_path_end.y, m_path_end.z - sz),
 		glm::vec3(m_path_end.x + sz, m_path_end.y + (sz * 2), m_path_end.z + sz),
-		glm::vec3(1.0, 0.0, 1.0));
+		glm::vec3(1.0, 0.0, 0.0));
 	m_end_path_renderable->Update();
 }
 

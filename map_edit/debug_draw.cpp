@@ -41,12 +41,15 @@ void DebugDraw::Update()
 {
 	m_points.Update();
 	m_points.SetDrawType(GL_POINTS);
+	m_points.SetBlend(true);
 	
 	m_lines.Update();
 	m_lines.SetDrawType(GL_LINES);
+	m_lines.SetBlend(true);
 	
 	m_triangles.Update();
 	m_triangles.SetDrawType(GL_TRIANGLES);
+	m_triangles.SetBlend(true);
 
 	if (!m_use_depth) {
 		m_points.SetDepthWriteEnabled(false);
