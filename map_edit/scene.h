@@ -57,7 +57,7 @@ public:
 	virtual void OnHotkey(int ident);
 
 	//entity
-	void RegisterEntity(Module *m, Entity *e);
+	void RegisterEntity(Module *m, Entity *e, bool selectable = false);
 	void UnregisterEntity(Module *m, Entity *e);
 	void UnregisterEntitiesByModule(Module *m);
 
@@ -69,7 +69,8 @@ public:
 	std::shared_ptr<ZoneMap> GetZoneGeometry() { return m_zone_geometry; }
 	std::shared_ptr<EQPhysics> GetZonePhysics() { return m_physics; }
 private:
-	void getClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);
+	void GetEntityName(Entity *ent, std::string &name);
+	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);
 	friend class Module;
 	Scene(const Scene&);
 	Scene& operator=(const Scene&);

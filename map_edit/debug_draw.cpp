@@ -17,9 +17,6 @@ void DebugDraw::Draw() {
 	ShaderProgram shader = ShaderProgram::Current();
 	ShaderUniform tint = shader.GetUniformLocation("Tint");
 
-	if(!m_use_depth)
-		glDepthMask(GL_FALSE);
-
 	glm::vec4 current_tint = m_triangles.GetTint();
 	tint.SetValuePtr4(1, &current_tint[0]);
 	m_triangles.Draw();
@@ -31,9 +28,6 @@ void DebugDraw::Draw() {
 	current_tint = m_points.GetTint();
 	tint.SetValuePtr4(1, &current_tint[0]);
 	m_points.Draw();
-
-	if(!m_use_depth)
-		glDepthMask(GL_TRUE);
 }
 
 void DebugDraw::Clear()
@@ -53,6 +47,12 @@ void DebugDraw::Update()
 	
 	m_triangles.Update();
 	m_triangles.SetDrawType(GL_TRIANGLES);
+
+	if (!m_use_depth) {
+		m_points.SetDepthWriteEnabled(false);
+		m_lines.SetDepthWriteEnabled(false);
+		m_triangles.SetDepthWriteEnabled(false);
+	}
 }
 
 

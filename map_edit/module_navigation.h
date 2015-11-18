@@ -10,7 +10,6 @@
 
 #include "module.h"
 #include "scene.h"
-#include "line_model.h"
 #include "rc_chunky_tri_mesh.h"
 #include "thread_pool.h"
 #include "debug_draw.h"
@@ -75,6 +74,7 @@ private:
 	void CreatePrimitive();
 	int mode;
 	glm::vec3 verts[4];
+	glm::vec3 vert_colors[4];
 	int verts_in_use;
 };
 
@@ -124,7 +124,7 @@ private:
 	int m_mode;
 
 	//bounds
-	std::unique_ptr<LineModel> m_bounding_box_renderable;
+	std::unique_ptr<DynamicGeometry> m_bounding_box_renderable;
 	glm::vec3 m_bounding_box_min;
 	glm::vec3 m_bounding_box_max;
 
@@ -154,9 +154,9 @@ private:
 	std::unique_ptr<DebugDraw> m_debug_renderable;
 
 	//path
-	std::unique_ptr<LineModel> m_start_path_renderable;
-	std::unique_ptr<LineModel> m_end_path_renderable;
-	std::unique_ptr<LineModel> m_path_renderable;
+	std::unique_ptr<DynamicGeometry> m_start_path_renderable;
+	std::unique_ptr<DynamicGeometry> m_end_path_renderable;
+	std::unique_ptr<DynamicGeometry> m_path_renderable;
 
 	glm::vec3 m_path_start;
 	bool m_path_start_set;

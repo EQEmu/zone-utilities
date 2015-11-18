@@ -1,5 +1,6 @@
 #include <vector>
 #include <memory>
+#include <map>
 
 #include <btBulletDynamicsCommon.h>
 
@@ -8,6 +9,12 @@
 
 struct btMeshInfo
 {
+	btMeshInfo(btTriangleMesh* mesh_in, btBvhTriangleMeshShape* mesh_shape_in, btRigidBody* rb_in) {
+		mesh.reset(mesh_in);
+		mesh_shape.reset(mesh_shape_in);
+		rb.reset(rb_in);
+	}
+
 	std::unique_ptr<btTriangleMesh> mesh;
 	std::unique_ptr<btBvhTriangleMeshShape> mesh_shape;
 	std::unique_ptr<btRigidBody> rb;
@@ -20,9 +27,7 @@ struct EQPhysics::impl {
 	std::unique_ptr<btCollisionDispatcher> collision_dispatch;
 	std::unique_ptr<btSequentialImpulseConstraintSolver> collision_solver;
 	std::unique_ptr<btDiscreteDynamicsWorld> collision_world;
-
-	btMeshInfo collidable;
-	btMeshInfo non_collidable;
+	std::unique_ptr<std::map<std::string, btMeshInfo>> entity_info;
 };
 
 EQPhysics::EQPhysics() {
@@ -42,6 +47,8 @@ EQPhysics::EQPhysics() {
 		imp->collision_config.get()));
 
 	imp->collision_world->setGravity(btVector3(0, -9.8f, 0.0));
+
+	imp->entity_info.reset(new std::map<std::string, btMeshInfo>());
 }
 
 EQPhysics::~EQPhysics() {
@@ -64,71 +71,6 @@ EQPhysics::~EQPhysics() {
 	delete imp;
 }
 
-void EQPhysics::SetCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds) {
-	if(verts.size() == 0 || imp->collidable.rb) {
-		return;
-	}
-
-	imp->collidable.mesh.reset(new btTriangleMesh());
-
-	//add our triangles...
-	int face_count = (int)inds.size() / 3;
-	for(int i = 0; i < face_count; ++i) {
-		unsigned int i1 = inds[i * 3 + 0];
-		unsigned int i2 = inds[i * 3 + 1];
-		unsigned int i3 = inds[i * 3 + 2];
-
-		btVector3 v1(verts[i1].x, verts[i1].y, verts[i1].z);
-		btVector3 v2(verts[i2].x, verts[i2].y, verts[i2].z);
-		btVector3 v3(verts[i3].x, verts[i3].y, verts[i3].z);
-
-		imp->collidable.mesh->addTriangle(v1, v2, v3);
-	}
-
-	imp->collidable.mesh_shape.reset(new btBvhTriangleMeshShape(imp->collidable.mesh.get(), true, true));
-
-	btTransform origin_transform;
-	origin_transform.setIdentity();
-	origin_transform.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
-
-	btRigidBody::btRigidBodyConstructionInfo rb_info(0.0f, nullptr, imp->collidable.mesh_shape.get(), btVector3(0.0f, 0.0f, 0.0f));
-	imp->collidable.rb.reset(new btRigidBody(rb_info));
-
-	imp->collision_world->addRigidBody(imp->collidable.rb.get(), (short)CollidableWorld, (short)CollidableWorld);
-}
-
-void EQPhysics::SetNonCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds) {
-	if(verts.size() == 0 || imp->non_collidable.rb) {
-		return;
-	}
-
-	imp->non_collidable.mesh.reset(new btTriangleMesh());
-	//add our triangles...
-	int face_count = (int)inds.size() / 3;
-	for(int i = 0; i < face_count; ++i) {
-		unsigned int i1 = inds[i * 3 + 0];
-		unsigned int i2 = inds[i * 3 + 1];
-		unsigned int i3 = inds[i * 3 + 2];
-
-		btVector3 v1(verts[i1].x, verts[i1].y, verts[i1].z);
-		btVector3 v2(verts[i2].x, verts[i2].y, verts[i2].z);
-		btVector3 v3(verts[i3].x, verts[i3].y, verts[i3].z);
-
-		imp->non_collidable.mesh->addTriangle(v1, v2, v3);
-	}
-
-	imp->non_collidable.mesh_shape.reset(new btBvhTriangleMeshShape(imp->non_collidable.mesh.get(), true, true));
-
-	btTransform origin_transform;
-	origin_transform.setIdentity();
-	origin_transform.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
-
-	btRigidBody::btRigidBodyConstructionInfo rb_info(0.0f, nullptr, imp->non_collidable.mesh_shape.get(), btVector3(0.0f, 0.0f, 0.0f));
-	imp->non_collidable.rb.reset(new btRigidBody(rb_info));
-
-	imp->collision_world->addRigidBody(imp->non_collidable.rb.get(), (short)NonCollidableWorld, (short)NonCollidableWorld);
-}
-
 void EQPhysics::SetWaterMap(WaterMap *w) {
 	imp->water_map.reset(w);
 }
@@ -136,6 +78,66 @@ void EQPhysics::SetWaterMap(WaterMap *w) {
 WaterMap *EQPhysics::GetWaterMap()
 {
 	return imp->water_map.get();
+}
+
+void EQPhysics::RegisterMesh(const std::string &ident, const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds, const glm::vec3 &pos, EQPhysicsFlags flag) {
+	UnregisterMesh(ident);
+
+	if (verts.size() == 0 || inds.size() == 0) {
+		return;
+	}
+
+	btTriangleMesh *mesh = new btTriangleMesh();
+
+	int face_count = (int)inds.size() / 3;
+	for (int i = 0; i < face_count; ++i) {
+		unsigned int i1 = inds[i * 3 + 0];
+		unsigned int i2 = inds[i * 3 + 1];
+		unsigned int i3 = inds[i * 3 + 2];
+
+		btVector3 v1(verts[i1].x, verts[i1].y, verts[i1].z);
+		btVector3 v2(verts[i2].x, verts[i2].y, verts[i2].z);
+		btVector3 v3(verts[i3].x, verts[i3].y, verts[i3].z);
+
+		mesh->addTriangle(v1, v2, v3);
+	}
+
+	btBvhTriangleMeshShape *mesh_shape = new btBvhTriangleMeshShape(mesh, true, true);
+
+	btTransform origin_transform;
+	origin_transform.setIdentity();
+	origin_transform.setOrigin(btVector3(pos.x, pos.y, pos.z));
+
+	btDefaultMotionState* motionState = new btDefaultMotionState(origin_transform);
+	btRigidBody::btRigidBodyConstructionInfo rb_info(0.0f, motionState, mesh_shape, btVector3(0.0f, 0.0f, 0.0f));
+	btRigidBody *rb = new btRigidBody(rb_info);
+
+	imp->collision_world->addRigidBody(rb, (short)flag, (short)flag);
+	imp->entity_info->insert(std::make_pair(ident, btMeshInfo(mesh, mesh_shape, rb)));
+}
+
+void EQPhysics::UnregisterMesh(const std::string &ident) {
+	auto iter = imp->entity_info->find(ident);
+	if (iter != imp->entity_info->end()) {
+		imp->entity_info->erase(iter);
+
+		for (int i = 0; i < imp->collision_world->getNumCollisionObjects(); ++i) {
+			btCollisionObject* obj = imp->collision_world->getCollisionObjectArray()[i];
+			btRigidBody* body = btRigidBody::upcast(obj);
+
+			if (body == iter->second.rb.get()) {
+				if (body && body->getMotionState()) {
+					delete body->getMotionState();
+				}
+
+				imp->collision_world->removeCollisionObject(obj);
+			}
+		}
+	}
+}
+
+void EQPhysics::Step()
+{
 }
 
 bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const {
@@ -155,7 +157,7 @@ bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const {
 	return true;
 }
 
-bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & dest, glm::vec3 &hit, EQPhysicsFlags flag) const
+bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & dest, glm::vec3 &hit, const btCollisionObject **obj, EQPhysicsFlags flag) const
 {
 	btVector3 src_bt(src.x, src.y, src.z);
 	btVector3 dest_bt(dest.x, dest.y, dest.z);
@@ -170,6 +172,9 @@ bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & de
 		hit.x = ray_hit.m_hitPointWorld.x();
 		hit.y = ray_hit.m_hitPointWorld.y();
 		hit.z = ray_hit.m_hitPointWorld.z();
+		if (obj) {
+			*obj = ray_hit.m_collisionObject;
+		}
 		return true;
 	}
 
@@ -181,7 +186,7 @@ bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & de
 
 float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const {
 	btVector3 from(start.x, start.y + 1.0f, start.z);
-	btVector3 to(start.x, BEST_FLOOR_INVALID, start.z);
+	btVector3 to(start.x, -FLT_MAX, start.z);
 
 	btCollisionWorld::ClosestRayResultCallback hit_below(from, to);
 	hit_below.m_collisionFilterGroup = (short)CollidableWorld;
@@ -207,7 +212,7 @@ float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::v
 		return p.getY();
 	}
 
-	to.setY(BEST_CEIL_INVALID);
+	to.setY(FLT_MAX);
 	btCollisionWorld::ClosestRayResultCallback hit_above(from, to);
 	hit_above.m_collisionFilterGroup = (short)CollidableWorld;
 	hit_above.m_collisionFilterMask = (short)CollidableWorld;
@@ -232,7 +237,7 @@ float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::v
 		return p.getY();
 	}
 
-	return BEST_FLOOR_INVALID;
+	return -FLT_MAX;
 }
 
 WaterRegionType EQPhysics::ReturnRegionType(const glm::vec3 &pos) const {
@@ -277,7 +282,7 @@ bool EQPhysics::InLiquid(const glm::vec3 &pos) const {
 
 bool EQPhysics::IsUnderworld(const glm::vec3 &point) const {
 	btVector3 from(point.x, point.y + 1.0f, point.z);
-	btVector3 to(point.x, BEST_FLOOR_INVALID, point.z);
+	btVector3 to(point.x, -FLT_MAX, point.z);
 
 	btCollisionWorld::AllHitsRayResultCallback hit_below(from, to);
 	hit_below.m_collisionFilterGroup = (short)CollidableWorld;
@@ -291,3 +296,19 @@ bool EQPhysics::IsUnderworld(const glm::vec3 &point) const {
 
 	return true;
 }
+
+//void EQPhysics::getEntityHit(const btCollisionObject *obj, std::string &out_ident) const {
+//	if (!obj) {
+//		return;
+//	}
+//
+//	const btRigidBody* body = btRigidBody::upcast(obj);
+//
+//	out_ident.clear();
+//	for (auto iter = imp->entity_info->begin(); iter != imp->entity_info->end(); ++iter) {
+//		if (iter->second.rb.get() == body) {
+//			out_ident = iter->first;
+//			return;
+//		}
+//	}
+//}
