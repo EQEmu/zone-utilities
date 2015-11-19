@@ -1,5 +1,6 @@
 #include "scene.h"
 #include "imgui_glfw.h"
+#include "string_util.h"
 #include <gtc/matrix_transform.hpp>
 
 #include "static_geometry.h"
@@ -92,28 +93,42 @@ void Scene::LoadScene(const char *zone_name) {
 		m_physics.reset(new EQPhysics());
 
 		WaterMap *w_map = WaterMap::LoadWaterMapfile(zone_name);
-		m_physics->SetCollidableWorld(m_zone_geometry->GetCollidableVerts(), m_zone_geometry->GetCollidableInds());
-		m_physics->SetNonCollidableWorld(m_zone_geometry->GetNonCollidableVerts(), m_zone_geometry->GetNonCollidableInds());
+		m_physics->RegisterMesh("CollideWorldMesh", m_zone_geometry->GetCollidableVerts(), m_zone_geometry->GetCollidableInds(), 
+			glm::vec3(0.0f, 0.0f, 0.0f), EQPhysicsFlags::CollidableWorld);
+		m_physics->RegisterMesh("NonCollideWorldMesh", m_zone_geometry->GetNonCollidableVerts(), m_zone_geometry->GetNonCollidableInds(), 
+			glm::vec3(0.0f, 0.0f, 0.0f), EQPhysicsFlags::NonCollidableWorld);
 		m_physics->SetWaterMap(w_map);
 
 		//create models from the loaded stuff here...
 		StaticGeometry *m = new StaticGeometry();
 		m->GetVerts() = m_zone_geometry->GetCollidableVerts();
 		m->GetInds() = m_zone_geometry->GetCollidableInds();
-		m->SetTint(glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
+		size_t sz = m->GetVerts().size();
+		for (size_t i = 0; i < sz; ++i) {
+			m->GetVertColors().push_back(glm::vec3(0.8f, 0.8f, 0.8f));
+		}
+
 		m->Compile();
 		m_collide_mesh_entity.reset(m);
 
 		m = new StaticGeometry();
 		m->GetVerts() = m_zone_geometry->GetNonCollidableVerts();
 		m->GetInds() = m_zone_geometry->GetNonCollidableInds();
-		m->SetTint(glm::vec4(0.5f, 0.7f, 1.0f, 1.0f));
+		sz = m->GetVerts().size();
+		for (size_t i = 0; i < sz; ++i) {
+			m->GetVertColors().push_back(glm::vec3(0.5f, 0.7f, 1.0f));
+		}
+
 		m->Compile();
 		m_non_collide_mesh_entity.reset(m);
 
 		m = new StaticGeometry();
 		if(w_map) {
 			w_map->CreateMeshFrom(m->GetVerts(), m->GetInds());
+			sz = m->GetVerts().size();
+			for (size_t i = 0; i < sz; ++i) {
+				m->GetVertColors().push_back(glm::vec3(1.0f, 1.0f, 1.0f));
+			}
 		}
 		m->SetTint(glm::vec4(0.0f, 0.0f, 0.8f, 0.2f));
 		m->Compile();
@@ -430,15 +445,24 @@ void Scene::ProcessSceneInput() {
 		glfwGetCursorPos(m_window, &x_pos, &y_pos);
 		glm::vec3 start;
 		glm::vec3 end;
-		getClickVectors(x_pos, (double)m_height - y_pos, start, end);
+		GetClickVectors(x_pos, (double)m_height - y_pos, start, end);
 
 		glm::vec3 collidate_hit;
-		bool did_collide_hit = m_physics->GetRaycastClosestHit(start, end, collidate_hit, CollidableWorld);
+		bool did_collide_hit = m_physics->GetRaycastClosestHit(start, end, collidate_hit, nullptr, CollidableWorld);
 
 		glm::vec3 non_collidate_hit;
-		bool did_non_collide_hit = m_physics->GetRaycastClosestHit(start, end, non_collidate_hit, NonCollidableWorld);
+		bool did_non_collide_hit = m_physics->GetRaycastClosestHit(start, end, non_collidate_hit, nullptr, NonCollidableWorld);
 
 		//here is where i will do selection hits but not needed yet...
+		glm::vec3 select_hit;
+		std::string ent_name;
+		bool did_select_hit = m_physics->GetRaycastClosestHit(start, end, select_hit, &ent_name, Selectable);
+		Entity *selected_ent = nullptr;
+		if (did_select_hit && ent_name.find("entity_") == 0) {
+			std::string ptr = ent_name.substr(7);
+			auto ptr_addr = std::stoll(ptr);
+			selected_ent = (Entity*)ptr_addr;
+		}
 
 		for (int i = 0; i < 5; ++i) {
 			if (!process_click[i])
@@ -447,7 +471,9 @@ void Scene::ProcessSceneInput() {
 			for (auto &module : m_modules) {
 				if (module->GetRunning() && module->GetUnpaused()) {
 					module->OnClick(i, (did_collide_hit ? &collidate_hit : nullptr), 
-						(did_non_collide_hit ? &non_collidate_hit : nullptr));
+						(did_non_collide_hit ? &non_collidate_hit : nullptr),
+						(did_select_hit ? &select_hit : nullptr),
+						(did_select_hit ? selected_ent : nullptr));
 				}
 			}
 		}
@@ -552,7 +578,7 @@ void Scene::OnHotkey(int ident) {
 	}
 }
 
-void Scene::RegisterEntity(Module *m, Entity *e) {
+void Scene::RegisterEntity(Module *m, Entity *e, bool selectable) {
 	UnregisterEntity(m, e);
 
 	auto iter = m_registered_entities.find(m);
@@ -563,6 +589,13 @@ void Scene::RegisterEntity(Module *m, Entity *e) {
 	else {
 		iter->second.push_back(e);
 	}
+
+	std::string entity_name;
+	GetEntityName(e, entity_name);
+	std::vector<glm::vec3> verts;
+	std::vector<unsigned int> inds;
+	e->GetCollisionMesh(verts, inds);
+	m_physics->RegisterMesh(entity_name, verts, inds, e->GetLocation(), selectable ? EQPhysicsFlags::Selectable : EQPhysicsFlags::NotSelectable);
 }
 
 void Scene::UnregisterEntity(Module *m, Entity *e) {
@@ -572,6 +605,10 @@ void Scene::UnregisterEntity(Module *m, Entity *e) {
 		for(auto ent_iter = lst.begin(); ent_iter != lst.end(); ++ent_iter) {
 			if((*ent_iter) == e) {
 				lst.erase(ent_iter);
+
+				std::string entity_name;
+				GetEntityName(e, entity_name);
+				m_physics->UnregisterMesh(entity_name);
 				return;
 			}
 		}	
@@ -612,7 +649,7 @@ void Scene::UnregisterAllModules() {
 	m_modules.clear();
 }
 
-void Scene::getClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end)
+void Scene::GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end)
 {
 	glm::vec4 start_ndc(((float)x / (float)m_width - 0.5f) * 2.0f, ((float)y / (float)m_height - 0.5f) * 2.0f, -1.0, 1.0f);
 	glm::vec4 end_ndc(((float)x / (float)m_width - 0.5f) * 2.0f, ((float)y / (float)m_height - 0.5f) * 2.0f, 0.0, 1.0f);
@@ -637,4 +674,9 @@ void Scene::getClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end
 	
 	start = glm::vec3(start_world);
 	end = glm::normalize(dir_world) * 100000.0f;
+}
+
+void Scene::GetEntityName(Entity *ent, std::string &name) {
+	name.clear();
+	name = EQEmu::StringFormat("entity_%p", ent);
 }

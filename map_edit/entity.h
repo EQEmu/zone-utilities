@@ -3,14 +3,16 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm.hpp>
+#include <vector>
 
 class Entity
 {
 public:
-	Entity() { }
+	Entity() { m_tint = glm::vec4(1.0); }
 	~Entity() { }
 
 	virtual void Draw() = 0;
+	virtual void GetCollisionMesh(std::vector<glm::vec3>& verts, std::vector<unsigned int>& inds) { verts.clear(); inds.clear(); };
 
 	void SetLocation(const glm::vec3 &pos) { m_loc = pos; }
 	const glm::vec3& GetLocation() const { return m_loc; }

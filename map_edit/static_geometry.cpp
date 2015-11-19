@@ -12,6 +12,10 @@ StaticGeometry::~StaticGeometry() {
 		glDeleteBuffers(1, &m_vbo);
 	}
 
+	if (m_vbco) {
+		glDeleteBuffers(1, &m_vbco);
+	}
+
 	if(m_ib) {
 		glDeleteBuffers(1, &m_ib);
 	}
@@ -30,7 +34,7 @@ void StaticGeometry::Draw() {
 }
 
 void StaticGeometry::Compile() {
-	if(m_vao || m_verts.size() == 0 || m_inds.size() == 0) {
+	if(m_vao || m_verts.size() == 0 || m_inds.size() == 0 || m_vert_colors.size() == 0) {
 		return;
 	}
 
@@ -43,6 +47,13 @@ void StaticGeometry::Compile() {
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)nullptr);
+
+	glGenBuffers(1, &m_vbco);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbco);
+	glBufferData(GL_ARRAY_BUFFER, m_vert_colors.size() * sizeof(glm::vec3), &m_vert_colors[0], GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)nullptr);
 
 	glGenBuffers(1, &m_ib);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ib);

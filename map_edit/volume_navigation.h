@@ -2,7 +2,6 @@
 #define EQEMU_MAP_VIEW_VOLUME_NAVIGATION_H
 
 #include "aligned_bounding_box.h"
-#include "line_model.h"
 
 enum VolumeNavigationType
 {

@@ -66,26 +66,21 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 	m_nav_mesh = nullptr;
 
 	m_nav_mesh_renderable.reset(new DebugDraw(false));
-
 	m_debug_renderable.reset(new DebugDraw());
-	m_debug_renderable->SetLinesTint(glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
-	m_debug_renderable->SetPointsTint(glm::vec4(0.0f, 1.0f, 1.0f, 1.0f));
-	m_debug_renderable->SetTrianglesTint(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
 
-	m_start_path_renderable.reset(new LineModel());
-	m_start_path_renderable->SetTint(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
-	m_start_path_renderable->SetDepthTestEnabled(false);
-	m_start_path_renderable->SetWidth(3.0f);
+	m_start_path_renderable.reset(new DynamicGeometry());
+	m_start_path_renderable->SetDrawType(GL_LINES);
+	m_start_path_renderable->SetLineWidth(1.0f);
 
-	m_end_path_renderable.reset(new LineModel());
-	m_end_path_renderable->SetTint(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	m_end_path_renderable->SetDepthTestEnabled(false);
-	m_end_path_renderable->SetWidth(3.0f);
+	m_end_path_renderable.reset(new DynamicGeometry());
+	m_end_path_renderable->SetDrawType(GL_LINES);
+	m_end_path_renderable->SetLineWidth(1.0f);
 
-	m_path_renderable.reset(new LineModel());
-	m_path_renderable->SetTint(glm::vec4(1.0f, 1.0f, 0.0f, 0.859375f));
+	m_path_renderable.reset(new DynamicGeometry());
+	m_path_renderable->SetDrawType(GL_LINES);
+	m_path_renderable->SetDepthWriteEnabled(false);
 	m_path_renderable->SetDepthTestEnabled(false);
-	m_path_renderable->SetWidth(4.0f);
+	m_path_renderable->SetLineWidth(2.0f);
 
 	m_path_start_set = false;
 	m_path_end_set = false;
@@ -239,7 +234,7 @@ void ModuleNavigation::OnHotkey(int ident)
 {
 }
 
-void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit)
+void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected)
 {
 	auto &io = ImGui::GetIO();
 	if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
@@ -255,10 +250,11 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 void ModuleNavigation::UpdateBoundingBox()
 {
 	if (!m_bounding_box_renderable)
-		m_bounding_box_renderable.reset(new LineModel());
+		m_bounding_box_renderable.reset(new DynamicGeometry());
 
+	m_bounding_box_renderable->SetDrawType(GL_LINES);
 	m_bounding_box_renderable->Clear();
-	m_bounding_box_renderable->AddBox(m_bounding_box_min, m_bounding_box_max);
+	m_bounding_box_renderable->AddLineBox(m_bounding_box_min, m_bounding_box_max, glm::vec3(1.0, 0.0, 0.0));
 	m_bounding_box_renderable->Update();
 }
 
@@ -540,9 +536,11 @@ void ModuleNavigation::SetNavigationTestNodeStart(const glm::vec3 &p)
 	m_path_start = p;
 	m_path_start_set = true;
 	m_start_path_renderable->Clear();
-	float box_size = 2.0f;
-	m_start_path_renderable->AddBox(glm::vec3(m_path_start.x - box_size, m_path_start.y - box_size, m_path_start.z - box_size), 
-		glm::vec3(m_path_start.x + box_size, m_path_start.y + box_size, m_path_start.z + box_size));
+	float sz = 2.0f;
+	m_start_path_renderable->AddLineCylinder(glm::vec3(m_path_start.x - sz, m_path_start.y, m_path_start.z - sz),
+		glm::vec3(m_path_start.x + sz, m_path_start.y + (sz * 2), m_path_start.z + sz),
+		glm::vec3(0.0, 1.0, 0.0));
+
 	m_start_path_renderable->Update();
 }
 
@@ -551,9 +549,10 @@ void ModuleNavigation::SetNavigationTestNodeEnd(const glm::vec3 &p)
 	m_path_end = p;
 	m_path_end_set = true;
 	m_end_path_renderable->Clear();
-	float box_size = 2.0f;
-	m_end_path_renderable->AddBox(glm::vec3(m_path_end.x - box_size, m_path_end.y - box_size, m_path_end.z - box_size),
-		glm::vec3(m_path_end.x + box_size, m_path_end.y + box_size, m_path_end.z + box_size));
+	float sz = 2.0f;
+	m_end_path_renderable->AddLineCylinder(glm::vec3(m_path_end.x - sz, m_path_end.y, m_path_end.z - sz),
+		glm::vec3(m_path_end.x + sz, m_path_end.y + (sz * 2), m_path_end.z + sz),
+		glm::vec3(1.0, 0.0, 0.0));
 	m_end_path_renderable->Update();
 }
 
@@ -615,7 +614,7 @@ void ModuleNavigation::CalcPath()
 			for (int i = 0; i < n_straight_polys - 1; ++i) {
 				glm::vec3 s(straight_path[i * 3], straight_path[i * 3 + 1] + 0.4f, straight_path[i * 3 + 2]);
 				glm::vec3 e(straight_path[(i + 1) * 3], straight_path[(i + 1) * 3 + 1] + 0.4f, straight_path[(i + 1) * 3 + 2]);
-				m_path_renderable->AddLine(s, e);
+				m_path_renderable->AddLine(s, e, glm::vec3(1.0, 1.0, 0.0));
 			}
 
 			m_path_renderable->Update();
@@ -769,22 +768,34 @@ void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {
 }
 
 void NavigationDebugDraw::vertex(const float* pos, unsigned int color) {
-	verts[verts_in_use++] = glm::vec3(pos[0], pos[1], pos[2]);
+	auto idx = verts_in_use;
+	verts[idx] = glm::vec3(pos[0], pos[1], pos[2]);
+	vert_colors[idx] = glm::vec3(color && 0xFF000000U >> 24, color && 0x00FF0000U >> 16, color && 0x0000FF00 >> 8);
+	++verts_in_use;
 	CreatePrimitive();
 }
 
 void NavigationDebugDraw::vertex(const float x, const float y, const float z, unsigned int color) {
-	verts[verts_in_use++] = glm::vec3(x, y, z);
+	auto idx = verts_in_use;
+	verts[idx] = glm::vec3(x, y, z);
+	vert_colors[idx] = glm::vec3(color && 0xFF000000U >> 24, color && 0x00FF0000U >> 16, color && 0x0000FF00 >> 8);
+	++verts_in_use;
 	CreatePrimitive();
 }
 
 void NavigationDebugDraw::vertex(const float* pos, unsigned int color, const float* uv) {
-	verts[verts_in_use++] = glm::vec3(pos[0], pos[1], pos[2]);
+	auto idx = verts_in_use;
+	verts[idx] = glm::vec3(pos[0], pos[1], pos[2]);
+	vert_colors[idx] = glm::vec3(color && 0xFF000000U >> 24, color && 0x00FF0000U >> 16, color && 0x0000FF00 >> 8);
+	++verts_in_use;
 	CreatePrimitive();
 }
 
 void NavigationDebugDraw::vertex(const float x, const float y, const float z, unsigned int color, const float u, const float v) {
-	verts[verts_in_use++] = glm::vec3(x, y, z);
+	auto idx = verts_in_use;
+	verts[idx] = glm::vec3(x, y, z);
+	vert_colors[idx] = glm::vec3(color && 0xFF000000U >> 24, color && 0x00FF0000U >> 16, color && 0x0000FF00 >> 8);
+	++verts_in_use;
 	CreatePrimitive();
 }
 
@@ -798,6 +809,7 @@ void NavigationDebugDraw::CreatePrimitive() {
 	{
 		unsigned int index = (unsigned int)model->GetPointsVerts().size();
 		model->GetPointsVerts().push_back(verts[0]);
+		model->GetPointsVertColors().push_back(vert_colors[0]);
 		model->GetPointsInds().push_back(index);
 	}
 	break;
@@ -806,6 +818,8 @@ void NavigationDebugDraw::CreatePrimitive() {
 		unsigned int index = (unsigned int)model->GetLinesVerts().size();
 		model->GetLinesVerts().push_back(verts[0]);
 		model->GetLinesVerts().push_back(verts[1]);
+		model->GetLinesVertColors().push_back(vert_colors[0]);
+		model->GetLinesVertColors().push_back(vert_colors[1]);
 		model->GetLinesInds().push_back(index);
 		model->GetLinesInds().push_back(index + 1);
 	}
@@ -816,6 +830,9 @@ void NavigationDebugDraw::CreatePrimitive() {
 		model->GetTrianglesVerts().push_back(verts[0]);
 		model->GetTrianglesVerts().push_back(verts[1]);
 		model->GetTrianglesVerts().push_back(verts[2]);
+		model->GetTrianglesVertColors().push_back(vert_colors[0]);
+		model->GetTrianglesVertColors().push_back(vert_colors[1]);
+		model->GetTrianglesVertColors().push_back(vert_colors[2]);
 		model->GetTrianglesInds().push_back(index);
 		model->GetTrianglesInds().push_back(index + 1);
 		model->GetTrianglesInds().push_back(index + 2);
@@ -828,6 +845,10 @@ void NavigationDebugDraw::CreatePrimitive() {
 		model->GetTrianglesVerts().push_back(verts[1]);
 		model->GetTrianglesVerts().push_back(verts[2]);
 		model->GetTrianglesVerts().push_back(verts[3]);
+		model->GetTrianglesVertColors().push_back(vert_colors[0]);
+		model->GetTrianglesVertColors().push_back(vert_colors[1]);
+		model->GetTrianglesVertColors().push_back(vert_colors[2]);
+		model->GetTrianglesVertColors().push_back(vert_colors[3]);
 		model->GetTrianglesInds().push_back(index);
 		model->GetTrianglesInds().push_back(index + 1);
 		model->GetTrianglesInds().push_back(index + 2);

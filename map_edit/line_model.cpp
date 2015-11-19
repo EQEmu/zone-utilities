@@ -27,7 +27,7 @@ LineModel::~LineModel() {
 void LineModel::Draw() {
 	if(m_vao) {
 		if (!m_depth_enabled) {
-			glDepthMask(GL_FALSE);
+			//glDepthMask(GL_FALSE);
 		}
 
 		glLineWidth(m_line_width);
@@ -43,7 +43,7 @@ void LineModel::Draw() {
 		glLineWidth(1.0f);
 
 		if (!m_depth_enabled) {
-			glDepthMask(GL_TRUE);
+			//glDepthMask(GL_TRUE);
 		}
 	}
 }

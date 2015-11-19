@@ -1,5 +1,4 @@
 #include "water_portal.h"
-#include "line_model.h"
 
 //void WaterPortal::Connect(int id) {
 //	m_connections.push_back(id);

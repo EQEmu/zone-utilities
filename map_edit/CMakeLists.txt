@@ -4,7 +4,6 @@ SET(map_edit_sources
 	debug_draw.cpp
 	dynamic_geometry.cpp
 	imgui_glfw.cpp
-	line_model.cpp
 	main.cpp
 	module_navigation.cpp
 	module_navigation_build_tile.cpp
@@ -12,7 +11,6 @@ SET(map_edit_sources
 	scene.cpp
 	shader.cpp
 	static_geometry.cpp
-	water_portal.cpp
 )
 
 SET(map_edit_headers
@@ -20,7 +18,6 @@ SET(map_edit_headers
 	dynamic_geometry.h
 	entity.h
 	imgui_glfw.h
-	line_model.h
 	module.h
 	module_navigation.h
 	module_navigation_build_tile.h
@@ -29,8 +26,6 @@ SET(map_edit_headers
 	scene_module.h
 	shader.h
 	static_geometry.h
-	water_portal.h
-	volume_navigation.h
 )
 
 ADD_EXECUTABLE(map_edit ${map_edit_sources} ${map_edit_headers})

@@ -25,7 +25,7 @@ SET(common_headers
 	any.h
 	compression.h
 	eq_math.h
-	eq_physics.cpp
+	eq_physics.h
 	eqemu_endian.h
 	eqg_geometry.h
 	eqg_invis_wall.h

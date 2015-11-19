@@ -18,6 +18,7 @@ public:
 	void Compile();
 
 	std::vector<glm::vec3>& GetVerts() { return m_verts; }
+	std::vector<glm::vec3>& GetVertColors() { return m_vert_colors; }
 	std::vector<unsigned int>& GetInds() { return m_inds; }
 
 	const glm::vec3& GetAABBMin() { return m_min; }
@@ -27,9 +28,11 @@ public:
 private:
 	GLuint m_vao;
 	GLuint m_vbo;
+	GLuint m_vbco;
 	GLuint m_ib;
 
 	std::vector<glm::vec3> m_verts;
+	std::vector<glm::vec3> m_vert_colors;
 	std::vector<unsigned int> m_inds;
 
 	glm::vec3 m_min;

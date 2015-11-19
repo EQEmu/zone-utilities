@@ -10,7 +10,6 @@
 
 #include "module.h"
 #include "scene.h"
-#include "line_model.h"
 #include "rc_chunky_tri_mesh.h"
 #include "thread_pool.h"
 #include "debug_draw.h"
@@ -75,6 +74,7 @@ private:
 	void CreatePrimitive();
 	int mode;
 	glm::vec3 verts[4];
+	glm::vec3 vert_colors[4];
 	int verts_in_use;
 };
 
@@ -103,7 +103,7 @@ public:
 	virtual bool CanSave();
 	virtual void Save();
 	virtual void OnHotkey(int ident);
-	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit);
+	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected);
 private:
 	friend class ModuleNavigationBuildTile;
 	friend class NavigationDebugDraw;
@@ -124,7 +124,7 @@ private:
 	int m_mode;
 
 	//bounds
-	std::unique_ptr<LineModel> m_bounding_box_renderable;
+	std::unique_ptr<DynamicGeometry> m_bounding_box_renderable;
 	glm::vec3 m_bounding_box_min;
 	glm::vec3 m_bounding_box_max;
 
@@ -154,9 +154,9 @@ private:
 	std::unique_ptr<DebugDraw> m_debug_renderable;
 
 	//path
-	std::unique_ptr<LineModel> m_start_path_renderable;
-	std::unique_ptr<LineModel> m_end_path_renderable;
-	std::unique_ptr<LineModel> m_path_renderable;
+	std::unique_ptr<DynamicGeometry> m_start_path_renderable;
+	std::unique_ptr<DynamicGeometry> m_end_path_renderable;
+	std::unique_ptr<DynamicGeometry> m_path_renderable;
 
 	glm::vec3 m_path_start;
 	bool m_path_start_set;

@@ -13,7 +13,7 @@ void main(){
 	gl_Position.y = vp_ms.y;
 	gl_Position.z = vp_ms.z;
 	gl_Position.w = 1.0;
-    gl_Position = Proj * View * Model * gl_Position;
+    	gl_Position = Proj * View * Model * gl_Position;
 	frag_color = vec4(1.0, 1.0, 1.0, 1.0) * Tint;
 }
 

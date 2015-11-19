@@ -6,16 +6,15 @@
 #include "oriented_bounding_box.h"
 #include "water_map.h"
 
-#define BEST_FLOOR_INVALID -9999999
-#define BEST_CEIL_INVALID 9999999
-
 enum EQPhysicsFlags
 {
 	CollidableWorld = 1,
 	NonCollidableWorld = 2,
-	Selectable = 4
+	Selectable = 4,
+	NotSelectable = 8,
 };
 
+class btCollisionObject;
 class EQPhysics
 {
 public:
@@ -23,19 +22,18 @@ public:
 	~EQPhysics();
 	
 	//manipulation
-	void SetCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds);
-	void SetNonCollidableWorld(const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds);
 	void SetWaterMap(WaterMap *w);
 	WaterMap *GetWaterMap();
+	void RegisterMesh(const std::string &ident, const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds, const glm::vec3 &pos, EQPhysicsFlags flag);
+	void UnregisterMesh(const std::string &ident);
 
 	void Step();
 
 	//collision stuff
 	bool CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const;
-	bool GetRaycastClosestHit(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 &hit, EQPhysicsFlags flag = CollidableWorld) const;
+	bool GetRaycastClosestHit(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 &hit, std::string *name, EQPhysicsFlags flag = CollidableWorld) const;
 	float FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const;
 	bool IsUnderworld(const glm::vec3 &point) const;
-	bool CheckLosNoHazards(const glm::vec3 &start, const glm::vec3 &end, float step_size, float max_diff);
 	
 	//Volume stuff
 	WaterRegionType ReturnRegionType(const glm::vec3 &pos) const;
@@ -45,6 +43,8 @@ public:
 	bool InLiquid(const glm::vec3 &pos) const;
 	
 private:
+	void GetEntityHit(const btCollisionObject *obj, std::string &out_ident) const;
+
 	struct impl;
 	impl *imp;
 };
