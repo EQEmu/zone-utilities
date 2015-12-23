@@ -68,6 +68,7 @@ public:
 
 	std::shared_ptr<ZoneMap> GetZoneGeometry() { return m_zone_geometry; }
 	std::shared_ptr<EQPhysics> GetZonePhysics() { return m_physics; }
+	std::string GetZoneName() { return m_name; }
 private:
 	void GetEntityName(Entity *ent, std::string &name);
 	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);

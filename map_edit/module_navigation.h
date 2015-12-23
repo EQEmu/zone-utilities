@@ -85,6 +85,7 @@ public:
 	{
 		ModeNone = 0,
 		ModeNavMeshGen,
+		ModeNavMeshConnections,
 		ModeTestNavigation,
 	};
 
@@ -107,6 +108,7 @@ public:
 private:
 	friend class ModuleNavigationBuildTile;
 	friend class NavigationDebugDraw;
+	void Clear();
 	void UpdateBoundingBox();
 	void DrawNavMeshGenerationUI();
 	void DrawTestUI();
@@ -117,6 +119,9 @@ private:
 	void SetNavigationTestNodeEnd(const glm::vec3 &p);
 	void CalcPath();
 	void InitVolumes();
+	void SaveNavSettings();
+	bool LoadNavSettings();
+	void SaveNavMesh();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
@@ -169,7 +174,7 @@ private:
 	//volume
 	std::vector<RegionVolume> m_volumes;
 
-	int m_tiles_building;
+	int m_work_pending;
 	ThreadPool m_thread_pool;
 };
 

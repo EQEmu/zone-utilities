@@ -186,7 +186,7 @@ bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & de
 
 float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const {
 	btVector3 from(start.x, start.y + 1.0f, start.z);
-	btVector3 to(start.x, -FLT_MAX, start.z);
+	btVector3 to(start.x, start.y - 3000.0f, start.z);
 
 	btCollisionWorld::ClosestRayResultCallback hit_below(from, to);
 	hit_below.m_collisionFilterGroup = (short)CollidableWorld;
@@ -212,7 +212,7 @@ float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::v
 		return p.getY();
 	}
 
-	to.setY(FLT_MAX);
+	to.setY(start.y + 3000.0f);
 	btCollisionWorld::ClosestRayResultCallback hit_above(from, to);
 	hit_above.m_collisionFilterGroup = (short)CollidableWorld;
 	hit_above.m_collisionFilterMask = (short)CollidableWorld;

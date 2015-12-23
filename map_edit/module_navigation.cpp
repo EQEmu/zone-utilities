@@ -4,7 +4,6 @@
 #include "module_navigation.h"
 #include "thread_pool.h"
 #include "log_macros.h"
-
 #include "module_navigation_build_tile.h"
 
 #include <DetourNavMeshQuery.h>
@@ -43,26 +42,9 @@ void calcChunkSize(const float* bmin, const float* bmax, float cs, int* x, int* 
 ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 {
 	m_mode = 0;
+	Clear();
 
-	m_cell_size = 0.2f;
-	m_cell_height = 0.1f;
-	m_agent_height = 3.5f;
-	m_agent_radius = 0.7f;
-	m_agent_max_climb = 3.5f;
-	m_agent_max_slope = 55.0f;
-	m_region_min_size = 8;
-	m_region_merge_size = 20;
-	m_edge_max_len = 12.0f;
-	m_edge_max_error = 1.3f;
-	m_verts_per_poly = 6.0f;
-	m_detail_sample_dist = 18.0f;
-	m_detail_sample_max_error = 1.0f;
-	m_partition_type = NAVIGATION_PARTITION_WATERSHED;
-	m_max_tiles = 0;
-	m_max_polys_per_tile = 0;
-	m_tile_size = 256;
-
-	m_tiles_building = 0;
+	m_work_pending = 0;
 	m_nav_mesh = nullptr;
 
 	m_nav_mesh_renderable.reset(new DebugDraw(false));
@@ -133,13 +115,27 @@ void ModuleNavigation::OnDrawUI()
 	ImGui::Begin("Navigation");	
 
 	ImGui::Text("Tools");
-	ImGui::RadioButton("NavMesh Generation", &m_mode, (int)ModeNavMeshGen);
-	if (m_nav_mesh && m_tiles_building == 0) {
+	if (!HasWork()) {
+		ImGui::RadioButton("NavMesh Generation", &m_mode, (int)ModeNavMeshGen);
+	}
+	else {
+		ImGui::RadioButton("NavMesh Generation", m_mode == ModeNavMeshGen);
+	}
+
+	if (!HasWork()) {
+		ImGui::RadioButton("Connections", &m_mode, (int)ModeNavMeshConnections);
+	}
+	else {
+		ImGui::RadioButton("Connections", m_mode == ModeNavMeshConnections);
+	}
+
+	if (m_nav_mesh && !HasWork()) {
 		ImGui::RadioButton("Test Mesh", &m_mode, (int)ModeTestNavigation);
 	}
 	else {
-		ImGui::RadioButton("Test Mesh", false);
+		ImGui::RadioButton("Test Mesh", m_mode == ModeTestNavigation);
 	}
+
 	ImGui::End();
 
 	if (m_mode == ModeNavMeshGen) {
@@ -165,6 +161,8 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 		m_bounding_box_max.y = bmax.y;
 		m_bounding_box_max.z = bmax.z;
 		UpdateBoundingBox();
+
+		m_scene->RegisterEntity(this, m_bounding_box_renderable.get());
 	}
 
 	m_start_path_renderable->Clear();
@@ -177,7 +175,11 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 	m_path_end_set = false;
 	m_nav_mesh_renderable->Clear();
 	m_nav_mesh_renderable->Update();
-	InitVolumes();
+
+	if (!LoadNavSettings()) {
+		Clear();
+		InitVolumes();
+	}
 }
 
 void ModuleNavigation::OnSuspend()
@@ -214,7 +216,7 @@ void ModuleNavigation::OnResume()
 
 bool ModuleNavigation::HasWork()
 {
-	if (m_tiles_building > 0) {
+	if (m_work_pending > 0) {
 		return true;
 	}
 
@@ -228,6 +230,9 @@ bool ModuleNavigation::CanSave()
 
 void ModuleNavigation::Save()
 {
+	SaveNavSettings();
+
+	SaveNavMesh();
 }
 
 void ModuleNavigation::OnHotkey(int ident)
@@ -245,6 +250,27 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 		SetNavigationTestNodeEnd(*collide_hit);
 		CalcPath();
 	}
+}
+
+void ModuleNavigation::Clear()
+{
+	m_cell_size = 0.2f;
+	m_cell_height = 0.1f;
+	m_agent_height = 3.5f;
+	m_agent_radius = 0.7f;
+	m_agent_max_climb = 3.5f;
+	m_agent_max_slope = 55.0f;
+	m_region_min_size = 8;
+	m_region_merge_size = 20;
+	m_edge_max_len = 12.0f;
+	m_edge_max_error = 1.3f;
+	m_verts_per_poly = 6.0f;
+	m_detail_sample_dist = 18.0f;
+	m_detail_sample_max_error = 1.0f;
+	m_partition_type = NAVIGATION_PARTITION_WATERSHED;
+	m_max_tiles = 0;
+	m_max_polys_per_tile = 0;
+	m_tile_size = 256;
 }
 
 void ModuleNavigation::UpdateBoundingBox()
@@ -274,30 +300,30 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 
 	ImGui::Text("Bounding Box");
 	bool update_bb = false;
-	if (ImGui::SliderFloat("Min x", &m_bounding_box_min.x, bmin[0], bmax[0], "%.1f")) {
+	if (ImGui::SliderFloat("Min x", &m_bounding_box_min.x, zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMax().x, "%.1f")) {
 		update_bb = true;
 	}
-
-	if (ImGui::SliderFloat("Min y", &m_bounding_box_min.y, bmin[1], bmax[1], "%.1f")) {
+	
+	if (ImGui::SliderFloat("Min y", &m_bounding_box_min.y, zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMax().y, "%.1f")) {
 		update_bb = true;
 	}
-
-	if (ImGui::SliderFloat("Min z", &m_bounding_box_min.z, bmin[2], bmax[2], "%.1f")) {
+	
+	if (ImGui::SliderFloat("Min z", &m_bounding_box_min.z, zone_geo->GetCollidableMin().z, zone_geo->GetCollidableMax().z, "%.1f")) {
 		update_bb = true;
 	}
-
-	if (ImGui::SliderFloat("Max x", &m_bounding_box_max.x, bmin[0], bmax[0], "%.1f")) {
+	
+	if (ImGui::SliderFloat("Max x", &m_bounding_box_max.x, zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMax().x, "%.1f")) {
 		update_bb = true;
 	}
-
-	if (ImGui::SliderFloat("Max y", &m_bounding_box_max.y, bmin[1], bmax[1], "%.1f")) {
+	
+	if (ImGui::SliderFloat("Max y", &m_bounding_box_max.y, zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMax().y, "%.1f")) {
 		update_bb = true;
 	}
-
-	if (ImGui::SliderFloat("Max z", &m_bounding_box_max.z, bmin[2], bmax[2], "%.1f")) {
+	
+	if (ImGui::SliderFloat("Max z", &m_bounding_box_max.z, zone_geo->GetCollidableMin().z, zone_geo->GetCollidableMax().z, "%.1f")) {
 		update_bb = true;
 	}
-
+	
 	if (update_bb) {
 		UpdateBoundingBox();
 	}
@@ -342,7 +368,8 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 
 	ImGui::Text("Tiling");
-	ImGui::SliderFloat("TileSize", &m_tile_size, 16.0f, 1024.0f, "%.0f");
+	ImGui::SliderFloat("TileSize", &m_tile_size, 16.0f, 2048.0f, "%.0f");
+	m_tile_size = (float)nextPow2((unsigned int)m_tile_size);
 
 	const int ts = (int)m_tile_size;
 	const int tw = (gw + ts - 1) / ts;
@@ -366,11 +393,11 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 		ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", 0).c_str());
 	}
 
-	if (m_tiles_building > 0) {
-		ImGui::Text(EQEmu::StringFormat("Building NavMesh... %u tiles remaining.", m_tiles_building).c_str());
+	if (HasWork()) {
+		ImGui::Text(EQEmu::StringFormat("%u tasks remaining...", m_work_pending).c_str());
 	}
 	else {
-		if (ImGui::Button("Build NavMesh")) {
+		if (ImGui::Button("Build All NavMesh Cells")) {
 			BuildNavigationMesh();
 		}
 	}
@@ -417,6 +444,7 @@ void ModuleNavigation::BuildNavigationMesh()
 
 	CreateChunkyTriMesh(zone_geo);
 
+	//clear previous data
 	if (m_nav_mesh) {
 		dtFreeNavMesh(m_nav_mesh);
 	}
@@ -440,8 +468,8 @@ void ModuleNavigation::BuildNavigationMesh()
 
 	const float* bmin = (float*)&m_bounding_box_min;
 	const float* bmax = (float*)&m_bounding_box_max;
-	int gw = 0, gh = 0;
-	rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
+	int gw = (int)((bmax[0] - bmin[0]) / m_cell_size + 0.5f);
+	int gh = (int)((bmax[2] - bmin[2]) / m_cell_size + 0.5f);
 	const int ts = (int)m_tile_size;
 	const int tw = (gw + ts - 1) / ts;
 	const int th = (gh + ts - 1) / ts;
@@ -453,8 +481,8 @@ void ModuleNavigation::BuildNavigationMesh()
 		{
 			glm::vec3 tile_min(bmin[0] + x * tcs, bmin[1], bmin[2] + y * tcs);
 			glm::vec3 tile_max(bmin[0] + (x + 1) * tcs, bmax[1], bmin[2] + (y + 1) * tcs);
-
-			m_tiles_building++;
+	
+			m_work_pending++;
 			m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max, phys));
 		}
 	}
@@ -689,63 +717,275 @@ void ModuleNavigation::InitVolumes()
 
 		m_volumes.push_back(v);
 	}
+}
 
-	//todo: move this to "render volume"
-	//NavigationDebugDraw dd;
-	//dd.model = m_debug_renderable.get();
-	//m_debug_renderable->Clear();
-	//for (auto &volume : m_volumes) {
-	//	dd.begin(DU_DRAW_LINES, 2.0f);
-	//	//min
-	//	//1 -> 2
-	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.min, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.min, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//2 -> 3
-	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.min, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.min, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//3 -> 4
-	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.min, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.min, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//4 -> 1
-	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.min, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.min, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//max
-	//	//1 -> 2
-	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.max, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.max, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//2 -> 3
-	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.max, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.max, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//3 -> 4
-	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.max, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.max, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//4 -> 1
-	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.max, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.max, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	//connect each to themselves...
-	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.min, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(0 * 3) + 0], volume.max, volume.verts[(0 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.min, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(1 * 3) + 0], volume.max, volume.verts[(1 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.min, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(2 * 3) + 0], volume.max, volume.verts[(2 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.min, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//	dd.vertex(volume.verts[(3 * 3) + 0], volume.max, volume.verts[(3 * 3) + 2], duRGBA(255, 255, 255, 64));
-	//
-	//	dd.end();
-	//}
-	//m_debug_renderable->Update();
+void ModuleNavigation::SaveNavSettings()
+{
+	//write project setting files
+	//zone_name.navprj
+	std::string filename = "save/" + m_scene->GetZoneName() + ".navprj";
+	FILE *f = fopen(filename.c_str() , "wb");
+
+	if (f) {
+		char magic[6] = { 'N', 'A', 'V', 'P', 'R', 'J' };
+		uint32_t version = 1;
+		fwrite(magic, sizeof(magic), 1, f);
+		fwrite(&version, sizeof(uint32_t), 1, f);
+
+		fwrite(&m_bounding_box_min.x, sizeof(float), 1, f);
+		fwrite(&m_bounding_box_min.y, sizeof(float), 1, f);
+		fwrite(&m_bounding_box_min.z, sizeof(float), 1, f);
+		fwrite(&m_bounding_box_max.x, sizeof(float), 1, f);
+		fwrite(&m_bounding_box_max.y, sizeof(float), 1, f);
+		fwrite(&m_bounding_box_max.z, sizeof(float), 1, f);
+		
+		fwrite(&m_cell_size, sizeof(float), 1, f);
+		fwrite(&m_cell_height, sizeof(float), 1, f);
+		fwrite(&m_agent_height, sizeof(float), 1, f);
+		fwrite(&m_agent_radius, sizeof(float), 1, f);
+		fwrite(&m_agent_max_climb, sizeof(float), 1, f);
+		fwrite(&m_agent_max_slope, sizeof(float), 1, f);
+		fwrite(&m_region_min_size, sizeof(float), 1, f);
+		fwrite(&m_region_merge_size, sizeof(float), 1, f);
+		fwrite(&m_edge_max_len, sizeof(float), 1, f);
+		fwrite(&m_edge_max_error, sizeof(float), 1, f);
+		fwrite(&m_verts_per_poly, sizeof(float), 1, f);
+		fwrite(&m_detail_sample_dist, sizeof(float), 1, f);
+		fwrite(&m_detail_sample_max_error, sizeof(float), 1, f);
+		fwrite(&m_tile_size, sizeof(float), 1, f);
+
+		int32_t partition_type = m_partition_type;
+		int32_t max_tiles = m_partition_type;
+		int32_t max_polys_per_tile = m_partition_type;
+		fwrite(&partition_type, sizeof(int32_t), 1, f);
+		fwrite(&max_tiles, sizeof(int32_t), 1, f);
+		fwrite(&max_polys_per_tile, sizeof(int32_t), 1, f);
+
+		//m_volumes
+		uint32_t volume_count = (uint32_t)m_volumes.size();
+		fwrite(&volume_count, sizeof(uint32_t), 1, f);
+		for (uint32_t i = 0; i < volume_count; ++i) {
+			auto &volume = m_volumes[i];
+			fwrite(&volume.verts[0], sizeof(float), 1, f);
+			fwrite(&volume.verts[1], sizeof(float), 1, f);
+			fwrite(&volume.verts[2], sizeof(float), 1, f);
+			fwrite(&volume.verts[3], sizeof(float), 1, f);
+			fwrite(&volume.verts[4], sizeof(float), 1, f);
+			fwrite(&volume.verts[5], sizeof(float), 1, f);
+			fwrite(&volume.verts[6], sizeof(float), 1, f);
+			fwrite(&volume.verts[7], sizeof(float), 1, f);
+			fwrite(&volume.verts[8], sizeof(float), 1, f);
+			fwrite(&volume.verts[9], sizeof(float), 1, f);
+			fwrite(&volume.verts[10], sizeof(float), 1, f);
+			fwrite(&volume.verts[11], sizeof(float), 1, f);
+			fwrite(&volume.min, sizeof(float), 1, f);
+			fwrite(&volume.max, sizeof(float), 1, f);
+
+			int32_t area_type = (int32_t)volume.area_type;
+			fwrite(&area_type, sizeof(int32_t), 1, f);
+		}
+
+		fclose(f);
+	}
+}
+
+bool ModuleNavigation::LoadNavSettings()
+{
+	std::string filename = "save/" + m_scene->GetZoneName() + ".navprj";
+	FILE *f = fopen(filename.c_str(), "rb");
+	if (f) {
+		char magic[6] = { 0 };
+		if (fread(magic, 6, 1, f) != 1) {
+			fclose(f);
+			return false;
+		}
+
+		if (magic[0] != 'N' ||
+			magic[1] != 'A' ||
+			magic[2] != 'V' ||
+			magic[3] != 'P' ||
+			magic[4] != 'R' ||
+			magic[5] != 'J') 
+		{
+			fclose(f);
+			return false;
+		}
+
+		uint32_t version = 0;
+		if (fread(&version, sizeof(uint32_t), 1, f) != 1) {
+			fclose(f);
+			return false;
+		}
+
+		if (version >= 1) {
+			if (fread(&m_bounding_box_min.x, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_bounding_box_min.y, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_bounding_box_min.z, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_bounding_box_max.x, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_bounding_box_max.y, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_bounding_box_max.z, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_cell_size, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_cell_height, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_agent_height, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_agent_radius, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_agent_max_climb, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_agent_max_slope, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_region_min_size, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_region_merge_size, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_edge_max_len, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_edge_max_error, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_verts_per_poly, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_detail_sample_dist, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_detail_sample_max_error, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_tile_size, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+			
+			int32_t partition_type = 0;
+			int32_t max_tiles = 0;
+			int32_t max_polys_per_tile = 0;
+
+			if (fread(&partition_type, sizeof(int32_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&max_tiles, sizeof(int32_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&max_polys_per_tile, sizeof(int32_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			m_partition_type = (int)partition_type;
+			m_max_tiles = (int)max_tiles;
+			m_max_polys_per_tile = (int)max_polys_per_tile;
+		}
+
+		uint32_t volume_count = 0;
+		if (fread(&volume_count, sizeof(uint32_t), 1, f) != 1) {
+			fclose(f);
+			return false;
+		}
+
+		for (uint32_t i = 0; i < volume_count; ++i) {
+			RegionVolume rv;
+			if (fread(&rv.verts, sizeof(float) * 12, 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&rv.min, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&rv.max, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			int32_t area_type = 0;
+			if (fread(&area_type, sizeof(int32_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			rv.area_type = (NavigationAreaFlags)area_type;
+			m_volumes.push_back(rv);
+		}
+
+		fclose(f);
+		return true;
+	}
+
+	return false;
+}
+
+void ModuleNavigation::SaveNavMesh()
+{
+	//write navmesh out
+	//zone_name.nav
 }
 
 void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {

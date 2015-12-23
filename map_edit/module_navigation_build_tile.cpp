@@ -283,8 +283,8 @@ void ModuleNavigationBuildTile::Finished() {
 			m_nav_data = nullptr;
 		}
 	}
-	m_nav_module->m_tiles_building--;
-	if(m_nav_module->m_tiles_building == 0) {
+	m_nav_module->m_work_pending--;
+	if(m_nav_module->m_work_pending == 0) {
 		m_nav_module->CreateNavMeshModel();
 	}
 }
