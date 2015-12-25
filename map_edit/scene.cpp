@@ -48,6 +48,7 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 	m_show_debug = false;
 	m_render_collide = true;
 	m_render_non_collide = true;
+	m_render_bb = true;
 
 	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
@@ -123,6 +124,10 @@ void Scene::LoadScene(const char *zone_name) {
 
 		m->Compile();
 		m_non_collide_mesh_entity.reset(m);
+
+		m_bounding_box_min = m_zone_geometry->GetCollidableMin();
+		m_bounding_box_max = m_zone_geometry->GetCollidableMax();
+		UpdateBoundingBox();
 	}
 
 	for(auto &module : m_modules) {
@@ -174,6 +179,18 @@ void Scene::Render() {
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
+
+	//if (m_render_bb && m_bounding_box_renderable) {
+	//	glm::vec4 tint = m_bounding_box_renderable->GetTint();
+	//	m_tint.SetValuePtr4(1, &tint[0]);
+	//
+	//	auto &pos = m_bounding_box_renderable->GetLocation();
+	//	model[3][0] = pos.x;
+	//	model[3][1] = pos.y;
+	//	model[3][2] = pos.z;
+	//	m_model.SetValueMatrix4(1, false, &model[0][0]);
+	//	m_bounding_box_renderable->Draw();
+	//}
 
 	for (auto &l : m_registered_entities) {
 		for (auto &e : l.second) {
@@ -255,6 +272,35 @@ void Scene::RenderUI() {
 		ImGui::Begin("Options");
 		ImGui::Checkbox("Render Collidable Mesh", &m_render_collide);
 		ImGui::Checkbox("Render Non-Collidable Mesh", &m_render_non_collide);
+		ImGui::Checkbox("Render Bounding Box", &m_render_bb);
+
+		if (m_zone_geometry) {
+			ImGui::Text("Bounding Box");
+
+			bool update_bb = false;
+			if (ImGui::DragFloatRange2("X", &m_bounding_box_min.x, &m_bounding_box_max.x, 1.0f,
+				m_zone_geometry->GetCollidableMin().x, m_zone_geometry->GetCollidableMax().x,
+				"Min: %.1f", "Max: %.1f")) {
+				update_bb = true;
+			}
+
+			if (ImGui::DragFloatRange2("Y", &m_bounding_box_min.y, &m_bounding_box_max.y, 1.0f,
+				m_zone_geometry->GetCollidableMin().y, m_zone_geometry->GetCollidableMax().y,
+				"Min: %.1f", "Max: %.1f")) {
+				update_bb = true;
+			}
+
+			if (ImGui::DragFloatRange2("Z", &m_bounding_box_min.z, &m_bounding_box_max.z, 1.0f,
+				m_zone_geometry->GetCollidableMin().z, m_zone_geometry->GetCollidableMax().z,
+				"Min: %.1f", "Max: %.1f")) {
+				update_bb = true;
+			}
+
+			if (update_bb) {
+				UpdateBoundingBox();
+			}
+		}
+
 		for (auto &module : m_modules) {
 			module->OnDrawOptions();
 		}
@@ -664,6 +710,17 @@ void Scene::GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end
 	
 	start = glm::vec3(start_world);
 	end = glm::normalize(dir_world) * 100000.0f;
+}
+
+void Scene::UpdateBoundingBox()
+{
+	if (!m_bounding_box_renderable)
+		m_bounding_box_renderable.reset(new DynamicGeometry());
+
+	m_bounding_box_renderable->SetDrawType(GL_LINES);
+	m_bounding_box_renderable->Clear();
+	m_bounding_box_renderable->AddLineBox(m_bounding_box_min, m_bounding_box_max, glm::vec3(1.0, 0.0, 0.0));
+	m_bounding_box_renderable->Update();
 }
 
 void Scene::GetEntityName(Entity *ent, std::string &name) {

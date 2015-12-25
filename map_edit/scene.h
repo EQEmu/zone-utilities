@@ -17,6 +17,7 @@
 #include "zone_map.h"
 #include "entity.h"
 #include "shader.h"
+#include "dynamic_geometry.h"
 
 class SceneHotkeyListener
 {
@@ -71,9 +72,12 @@ public:
 	std::string GetZoneName() { return m_name; }
 
 	const glm::vec3 &GetCameraLoc() { return m_camera_loc; }
+	glm::vec3 &GetBoundingBoxMin() { return m_bounding_box_min; }
+	glm::vec3 &GetBoundingBoxMax() { return m_bounding_box_max; }
 private:
 	void GetEntityName(Entity *ent, std::string &name);
 	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);
+	void UpdateBoundingBox();
 	friend class Module;
 	Scene(const Scene&);
 	Scene& operator=(const Scene&);
@@ -110,6 +114,11 @@ private:
 	std::unique_ptr<Entity> m_non_collide_mesh_entity;
 	std::map<Module*, std::vector<Entity*>> m_registered_entities;
 
+	//bounds
+	std::unique_ptr<DynamicGeometry> m_bounding_box_renderable;
+	glm::vec3 m_bounding_box_min;
+	glm::vec3 m_bounding_box_max;
+
 	//hotkeys
 	bool TryHotkey();
 	std::vector<HotkeyEntry> m_hotkeys;
@@ -126,6 +135,7 @@ private:
 	bool m_show_debug;
 	bool m_render_collide;
 	bool m_render_non_collide;
+	bool m_render_bb;
 };
 
 #endif

@@ -33,6 +33,7 @@ public:
 	virtual bool InLava(float y, float x, float z) const { return false; }
 	virtual bool InLiquid(float y, float x, float z) const { return false; }
 	virtual void CreateMeshFrom(std::vector<glm::vec3> &verts, std::vector<unsigned int> &inds) { }
+	virtual int GetVersion() { return 0; }
 protected:
 	virtual bool Load(FILE *fp) { return false; }
 };

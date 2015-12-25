@@ -147,7 +147,7 @@ void ModuleVolume::OnDrawUI()
 	}
 
 	ImGui::Separator();
-	if (ImGui::Button("Build from WaterMap (Slow, best for non-ocean zones)")) {
+	if (ImGui::Button("Build from WaterMap (Very Slow)")) {
 		BuildFromWatermap();
 	}
 	ImGui::End();
@@ -554,8 +554,8 @@ bool RegionPointEqual(const glm::vec4 &a, const glm::vec4 &b) {
 
 void ModuleVolume::BuildFromWatermap()
 {
-	auto min = m_scene->GetZoneGeometry()->GetCollidableMin();
-	auto max = m_scene->GetZoneGeometry()->GetCollidableMax();
+	auto min = m_scene->GetBoundingBoxMin();
+	auto max = m_scene->GetBoundingBoxMax();
 	auto physics = m_scene->GetZonePhysics();
 
 	m_regions.clear();

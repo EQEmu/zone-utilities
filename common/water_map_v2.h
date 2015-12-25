@@ -19,6 +19,9 @@ public:
 	virtual bool InLiquid(float y, float x, float z) const;
 	virtual int Version() const { return 2; }
 	virtual void CreateMeshFrom(std::vector<glm::vec3> &verts, std::vector<unsigned int> &inds);
+	virtual int GetVersion() { return 2; }
+
+	std::vector<std::pair<WaterRegionType, OrientedBoundingBox>> &GetRegions() { return regions; }
 protected:
 	virtual bool Load(FILE *fp);
 

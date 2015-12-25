@@ -155,22 +155,6 @@ void ModuleNavigation::OnDrawOptions()
 
 void ModuleNavigation::OnSceneLoad(const char *zone_name)
 {
-	auto zone_geo = m_scene->GetZoneGeometry();
-	if (zone_geo) {
-		auto &bmin = zone_geo->GetCollidableMin();
-		auto &bmax = zone_geo->GetCollidableMax();
-
-		m_bounding_box_min.x = bmin.x;
-		m_bounding_box_min.y = bmin.y;
-		m_bounding_box_min.z = bmin.z;
-		m_bounding_box_max.x = bmax.x;
-		m_bounding_box_max.y = bmax.y;
-		m_bounding_box_max.z = bmax.z;
-		UpdateBoundingBox();
-
-		m_scene->RegisterEntity(this, m_bounding_box_renderable.get());
-	}
-
 	m_start_path_renderable->Clear();
 	m_end_path_renderable->Clear();
 	m_path_renderable->Clear();
@@ -184,7 +168,6 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 
 	if (!LoadNavSettings()) {
 		Clear();
-		InitVolumes();
 	}
 }
 
@@ -195,10 +178,6 @@ void ModuleNavigation::OnSuspend()
 
 void ModuleNavigation::OnResume()
 {
-	if (m_bounding_box_renderable) {
-		m_scene->RegisterEntity(this, m_bounding_box_renderable.get());
-	}
-
 	if (m_nav_mesh_renderable) {
 		m_scene->RegisterEntity(this, m_nav_mesh_renderable.get());
 	}
@@ -279,24 +258,13 @@ void ModuleNavigation::Clear()
 	m_tile_size = 256;
 }
 
-void ModuleNavigation::UpdateBoundingBox()
-{
-	if (!m_bounding_box_renderable)
-		m_bounding_box_renderable.reset(new DynamicGeometry());
-
-	m_bounding_box_renderable->SetDrawType(GL_LINES);
-	m_bounding_box_renderable->Clear();
-	m_bounding_box_renderable->AddLineBox(m_bounding_box_min, m_bounding_box_max, glm::vec3(1.0, 0.0, 0.0));
-	m_bounding_box_renderable->Update();
-}
-
 void ModuleNavigation::DrawNavMeshGenerationUI()
 {
 	m_thread_pool.Process();
 	
 	auto zone_geo = m_scene->GetZoneGeometry();
-	const float* bmin = (float*)&m_bounding_box_min;
-	const float* bmax = (float*)&m_bounding_box_max;
+	const float* bmin = (float*)&m_scene->GetBoundingBoxMin();
+	const float* bmax = (float*)&m_scene->GetBoundingBoxMax();
 	int gw = 0, gh = 0;
 	if (!zone_geo) {
 		return;
@@ -304,38 +272,11 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 
 	ImGui::Begin("NavMesh Properties");
 
-	ImGui::Text("Bounding Box");
-
-	bool update_bb = false;
-	if (ImGui::DragFloatRange2("X", &m_bounding_box_min.x, &m_bounding_box_max.x, 1.0f, 
-		zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMax().x, 
-		"Min: %.1f", "Max: %.1f")) {
-		update_bb = true;
-	}
-
-	if (ImGui::DragFloatRange2("Y", &m_bounding_box_min.y, &m_bounding_box_max.y, 1.0f, 
-		zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMax().y, 
-		"Min: %.1f", "Max: %.1f")) {
-		update_bb = true;
-	}
-
-	if (ImGui::DragFloatRange2("Z", &m_bounding_box_min.z, &m_bounding_box_max.z, 1.0f, 
-		zone_geo->GetCollidableMin().z, zone_geo->GetCollidableMax().z, 
-		"Min: %.1f", "Max: %.1f")) {
-		update_bb = true;
-	}
-	
-	if (update_bb) {
-		UpdateBoundingBox();
-	}
-
-	ImGui::Separator();
-
 	ImGui::Text("Rasterization");
 	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 1.0f, "%.1f");
 	ImGui::SliderFloat("Cell Height", &m_cell_height, 0.1f, 1.0f, "%.1f");
 
-	rcCalcGridSize((float*)&m_bounding_box_min, (float*)&m_bounding_box_max, m_cell_size, &gw, &gh);
+	rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
 	ImGui::Text(EQEmu::StringFormat("Voxels  %d x %d", gw, gh).c_str());
 
 	ImGui::Separator();
@@ -459,7 +400,7 @@ void ModuleNavigation::BuildNavigationMesh()
 	m_nav_mesh = dtAllocNavMesh();
 
 	dtNavMeshParams params;
-	rcVcopy(params.orig, (float*)&m_bounding_box_min);
+	rcVcopy(params.orig, (float*)&m_scene->GetBoundingBoxMin());
 	params.tileWidth = m_tile_size * m_cell_size;
 	params.tileHeight = m_tile_size * m_cell_size;
 	params.maxTiles = m_max_tiles;
@@ -473,8 +414,8 @@ void ModuleNavigation::BuildNavigationMesh()
 		return;
 	}
 
-	const float* bmin = (float*)&m_bounding_box_min;
-	const float* bmax = (float*)&m_bounding_box_max;
+	const float* bmin = (float*)&m_scene->GetBoundingBoxMin();
+	const float* bmax = (float*)&m_scene->GetBoundingBoxMax();
 	int gw = (int)((bmax[0] - bmin[0]) / m_cell_size + 0.5f);
 	int gh = (int)((bmax[2] - bmin[2]) / m_cell_size + 0.5f);
 	const int ts = (int)m_tile_size;
@@ -526,15 +467,15 @@ void ModuleNavigation::CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo)
 		auto &v2 = zone_geo->GetCollidableVerts()[i2];
 		auto &v3 = zone_geo->GetCollidableVerts()[i3];
 
-		if (!VertexWithinBounds(v1, m_bounding_box_min, m_bounding_box_max)) {
+		if (!VertexWithinBounds(v1, m_scene->GetBoundingBoxMin(), m_scene->GetBoundingBoxMax())) {
 			continue;
 		}
 
-		if (!VertexWithinBounds(v2, m_bounding_box_min, m_bounding_box_max)) {
+		if (!VertexWithinBounds(v2, m_scene->GetBoundingBoxMin(), m_scene->GetBoundingBoxMax())) {
 			continue;
 		}
 
-		if (!VertexWithinBounds(v3, m_bounding_box_min, m_bounding_box_max)) {
+		if (!VertexWithinBounds(v3, m_scene->GetBoundingBoxMin(), m_scene->GetBoundingBoxMax())) {
 			continue;
 		}
 
@@ -661,71 +602,6 @@ void ModuleNavigation::CalcPath()
 	}
 }
 
-void ModuleNavigation::InitVolumes()
-{
-	//m_volumes.clear();
-	//
-	//auto physics = m_scene->GetZonePhysics();
-	//if (!physics)
-	//	return;
-	//
-	//WaterMap *w = physics->GetWaterMap();
-	//if (!w)
-	//	return;
-	//
-	//std::vector<RegionDetails> regions;
-	//w->GetRegionDetails(regions);
-	//
-	//for (auto &region : regions) {
-	//	RegionVolume v;
-	//
-	//	v.min = FLT_MAX;
-	//	v.max = -FLT_MAX;
-	//
-	//	for (int i = 0; i < 4; ++i) {
-	//		if (region.verts[i].y < v.min) {
-	//			v.min = region.verts[i].y;
-	//		} else if (region.verts[i].y > v.max) {
-	//			v.max = region.verts[i].y;
-	//		}
-	//	}
-	//
-	//	switch (region.type) {
-	//	case RegionTypeNormal:
-	//		v.area_type = NavigationAreaFlagNormal;
-	//		break;
-	//	case RegionTypeWater:
-	//		v.area_type = NavigationAreaFlagWater;
-	//		break;
-	//	case RegionTypeLava:
-	//		v.area_type = NavigationAreaFlagLava;
-	//		break;
-	//	case RegionTypePVP:
-	//		v.area_type = NavigationAreaFlagPvP;
-	//		break;
-	//	case RegionTypeSlime:
-	//		v.area_type = NavigationAreaFlagSlime;
-	//		break;
-	//	case RegionTypeIce:
-	//		v.area_type = NavigationAreaFlagIce;
-	//		break;
-	//	case RegionTypeVWater:
-	//		v.area_type = NavigationAreaFlagVWater;
-	//		break;
-	//	default:
-	//		v.area_type = NavigationAreaFlagNormal;
-	//	}
-	//
-	//	for (int i = 0; i < 4; ++i) {
-	//		v.verts[(i * 3)] = region.verts[i].x;
-	//		v.verts[(i * 3) + 1] = region.verts[i].y - v.min;
-	//		v.verts[(i * 3) + 2] = region.verts[i].z;
-	//	}
-	//
-	//	m_volumes.push_back(v);
-	//}
-}
-
 void ModuleNavigation::SaveNavSettings()
 {
 	//write project setting files
@@ -738,12 +614,15 @@ void ModuleNavigation::SaveNavSettings()
 		fwrite(magic, sizeof(magic), 1, f);
 		fwrite(&nav_file_version, sizeof(uint32_t), 1, f);
 
-		fwrite(&m_bounding_box_min.x, sizeof(float), 1, f);
-		fwrite(&m_bounding_box_min.y, sizeof(float), 1, f);
-		fwrite(&m_bounding_box_min.z, sizeof(float), 1, f);
-		fwrite(&m_bounding_box_max.x, sizeof(float), 1, f);
-		fwrite(&m_bounding_box_max.y, sizeof(float), 1, f);
-		fwrite(&m_bounding_box_max.z, sizeof(float), 1, f);
+		auto &bmin = m_scene->GetBoundingBoxMin();
+		auto &bmax = m_scene->GetBoundingBoxMax();
+
+		fwrite(&bmin.x, sizeof(float), 1, f);
+		fwrite(&bmin.y, sizeof(float), 1, f);
+		fwrite(&bmin.z, sizeof(float), 1, f);
+		fwrite(&bmax.x, sizeof(float), 1, f);
+		fwrite(&bmax.y, sizeof(float), 1, f);
+		fwrite(&bmax.z, sizeof(float), 1, f);
 		
 		fwrite(&m_cell_size, sizeof(float), 1, f);
 		fwrite(&m_cell_height, sizeof(float), 1, f);
@@ -766,30 +645,6 @@ void ModuleNavigation::SaveNavSettings()
 		fwrite(&partition_type, sizeof(int32_t), 1, f);
 		fwrite(&max_tiles, sizeof(int32_t), 1, f);
 		fwrite(&max_polys_per_tile, sizeof(int32_t), 1, f);
-
-		//m_volumes
-		//uint32_t volume_count = (uint32_t)m_volumes.size();
-		//fwrite(&volume_count, sizeof(uint32_t), 1, f);
-		//for (uint32_t i = 0; i < volume_count; ++i) {
-		//	auto &volume = m_volumes[i];
-		//	fwrite(&volume.verts[0], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[1], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[2], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[3], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[4], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[5], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[6], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[7], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[8], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[9], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[10], sizeof(float), 1, f);
-		//	fwrite(&volume.verts[11], sizeof(float), 1, f);
-		//	fwrite(&volume.min, sizeof(float), 1, f);
-		//	fwrite(&volume.max, sizeof(float), 1, f);
-		//
-		//	int32_t area_type = (int32_t)volume.area_type;
-		//	fwrite(&area_type, sizeof(int32_t), 1, f);
-		//}
 
 		fclose(f);
 	}
@@ -823,33 +678,36 @@ bool ModuleNavigation::LoadNavSettings()
 			return false;
 		}
 
+		auto &bmin = m_scene->GetBoundingBoxMin();
+		auto &bmax = m_scene->GetBoundingBoxMax();
+
 		if (version == nav_file_version) {
-			if (fread(&m_bounding_box_min.x, sizeof(float), 1, f) != 1) {
+			if (fread(&bmin.x, sizeof(float), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}
 
-			if (fread(&m_bounding_box_min.y, sizeof(float), 1, f) != 1) {
+			if (fread(&bmin.y, sizeof(float), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}
 
-			if (fread(&m_bounding_box_min.z, sizeof(float), 1, f) != 1) {
+			if (fread(&bmin.z, sizeof(float), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}
 
-			if (fread(&m_bounding_box_max.x, sizeof(float), 1, f) != 1) {
+			if (fread(&bmax.x, sizeof(float), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}
 
-			if (fread(&m_bounding_box_max.y, sizeof(float), 1, f) != 1) {
+			if (fread(&bmax.y, sizeof(float), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}
 
-			if (fread(&m_bounding_box_max.z, sizeof(float), 1, f) != 1) {
+			if (fread(&bmax.z, sizeof(float), 1, f) != 1) {
 				fclose(f);
 				return false;
 			}

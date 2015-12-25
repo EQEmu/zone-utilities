@@ -1,5 +1,98 @@
 #include <DetourNavMeshBuilder.h>
 #include "module_navigation_build_tile.h"
+#include <RecastAssert.h>
+
+void rcMarkOrientedBoundingBoxArea(rcContext* ctx, OrientedBoundingBox &obb, 
+	unsigned char areaId, rcCompactHeightfield& chf)
+{
+	rcAssert(ctx);
+
+	float min_x = obb.GetMinX();
+	float min_y = obb.GetMinY();
+	float min_z = obb.GetMinZ();
+	float max_x = obb.GetMaxX();
+	float max_y = obb.GetMaxY();
+	float max_z = obb.GetMaxZ();
+
+	glm::vec4 v1(min_x, max_y, min_z, 1.0f);
+	glm::vec4 v2(min_x, max_y, max_z, 1.0f);
+	glm::vec4 v3(max_x, max_y, max_z, 1.0f);
+	glm::vec4 v4(max_x, max_y, min_z, 1.0f);
+	glm::vec4 v5(min_x, min_y, min_z, 1.0f);
+	glm::vec4 v6(min_x, min_y, max_z, 1.0f);
+	glm::vec4 v7(max_x, min_y, max_z, 1.0f);
+	glm::vec4 v8(max_x, min_y, min_z, 1.0f);
+
+	v1 = obb.GetTransformation() * v1;
+	v2 = obb.GetTransformation() * v2;
+	v3 = obb.GetTransformation() * v3;
+	v4 = obb.GetTransformation() * v4;
+	v5 = obb.GetTransformation() * v5;
+	v6 = obb.GetTransformation() * v6;
+	v7 = obb.GetTransformation() * v7;
+	v8 = obb.GetTransformation() * v8;
+
+	float bmin[3], bmax[3];
+	rcVcopy(bmin, &v1[0]);
+	rcVcopy(bmax, &v1[0]);
+
+	rcVmin(bmin, &v1[0]);
+	rcVmax(bmax, &v1[0]);
+	rcVmin(bmin, &v2[0]);
+	rcVmax(bmax, &v2[0]);
+	rcVmin(bmin, &v3[0]);
+	rcVmax(bmax, &v3[0]);
+	rcVmin(bmin, &v4[0]);
+	rcVmax(bmax, &v4[0]);
+	rcVmin(bmin, &v5[0]);
+	rcVmax(bmax, &v5[0]);
+	rcVmin(bmin, &v6[0]);
+	rcVmax(bmax, &v6[0]);
+	rcVmin(bmin, &v7[0]);
+	rcVmax(bmax, &v7[0]);
+
+	int minx = (int)((bmin[0] - chf.bmin[0]) / chf.cs);
+	int miny = (int)((bmin[1] - chf.bmin[1]) / chf.ch);
+	int minz = (int)((bmin[2] - chf.bmin[2]) / chf.cs);
+	int maxx = (int)((bmax[0] - chf.bmin[0]) / chf.cs);
+	int maxy = (int)((bmax[1] - chf.bmin[1]) / chf.ch);
+	int maxz = (int)((bmax[2] - chf.bmin[2]) / chf.cs);
+
+	if (maxx < 0) return;
+	if (minx >= chf.width) return;
+	if (maxz < 0) return;
+	if (minz >= chf.height) return;
+
+	if (minx < 0) minx = 0;
+	if (maxx >= chf.width) maxx = chf.width - 1;
+	if (minz < 0) minz = 0;
+	if (maxz >= chf.height) maxz = chf.height - 1;
+
+	for (int z = minz; z <= maxz; ++z)
+	{
+		for (int x = minx; x <= maxx; ++x)
+		{
+			const rcCompactCell& c = chf.cells[x + z*chf.width];
+			for (int i = (int)c.index, ni = (int)(c.index + c.count); i < ni; ++i)
+			{
+				rcCompactSpan& s = chf.spans[i];
+				if (chf.areas[i] == RC_NULL_AREA)
+					continue;
+				if ((int)s.y >= miny && (int)s.y <= maxy)
+				{
+					float p[3];
+					p[0] = chf.bmin[0] + (x + 0.5f)*chf.cs;
+					p[1] = 0;
+					p[2] = chf.bmin[2] + (z + 0.5f)*chf.cs;
+
+					if (obb.ContainsPoint(glm::vec3(p[1], p[0], p[2]))) {
+						chf.areas[i] = areaId;
+					}
+				}
+			}
+		}
+	}
+}
 
 void ModuleNavigationBuildTile::Run() {
 	if (!m_nav_module->m_scene->GetZoneGeometry() || !m_nav_module->m_chunky_mesh) {

@@ -24,6 +24,7 @@ public:
 	virtual bool InVWater(float y, float x, float z) const;
 	virtual bool InLava(float y, float x, float z) const;
 	virtual bool InLiquid(float y, float x, float z) const;
+	virtual int GetVersion() { return 1; }
 protected:
 	virtual bool Load(FILE *fp);
 

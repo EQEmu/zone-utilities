@@ -1,8 +1,6 @@
 #ifndef EQEMU_MAP_VIEW_MODULE_NAVIGATION_H
 #define EQEMU_MAP_VIEW_MODULE_NAVIGATION_H
 
-#include <vector>
-
 #include <Recast.h>
 #include <DetourNavMesh.h>
 #include <DebugDraw.h>
@@ -110,7 +108,6 @@ private:
 	friend class ModuleNavigationBuildTile;
 	friend class NavigationDebugDraw;
 	void Clear();
-	void UpdateBoundingBox();
 	void DrawNavMeshGenerationUI();
 	void DrawTestUI();
 	void BuildNavigationMesh();
@@ -119,7 +116,6 @@ private:
 	void SetNavigationTestNodeStart(const glm::vec3 &p);
 	void SetNavigationTestNodeEnd(const glm::vec3 &p);
 	void CalcPath();
-	void InitVolumes();
 	void SaveNavSettings();
 	bool LoadNavSettings();
 	void SaveNavMesh();
@@ -127,12 +123,7 @@ private:
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
 
-	int m_mode;
-
-	//bounds
-	std::unique_ptr<DynamicGeometry> m_bounding_box_renderable;
-	glm::vec3 m_bounding_box_min;
-	glm::vec3 m_bounding_box_max;
+	int m_mode;	
 
 	//nav mesh generation vars
 	float m_cell_size;
@@ -171,9 +162,6 @@ private:
 	bool m_path_end_set;
 
 	float m_path_costs[NavigationAreaFlagDisabled];
-
-	//volume
-	//std::vector<RegionVolume> m_volumes;
 
 	int m_work_pending;
 	ThreadPool m_thread_pool;
