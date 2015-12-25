@@ -180,17 +180,12 @@ void Scene::Render() {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
-	//if (m_render_bb && m_bounding_box_renderable) {
-	//	glm::vec4 tint = m_bounding_box_renderable->GetTint();
-	//	m_tint.SetValuePtr4(1, &tint[0]);
-	//
-	//	auto &pos = m_bounding_box_renderable->GetLocation();
-	//	model[3][0] = pos.x;
-	//	model[3][1] = pos.y;
-	//	model[3][2] = pos.z;
-	//	m_model.SetValueMatrix4(1, false, &model[0][0]);
-	//	m_bounding_box_renderable->Draw();
-	//}
+	if (m_render_bb && m_bounding_box_renderable) {
+		glm::vec4 tint = m_bounding_box_renderable->GetTint();
+		m_tint.SetValuePtr4(1, &tint[0]);
+	
+		m_bounding_box_renderable->Draw();
+	}
 
 	for (auto &l : m_registered_entities) {
 		for (auto &e : l.second) {
@@ -619,7 +614,8 @@ void Scene::RegisterEntity(Module *m, Entity *e, bool selectable) {
 
 	auto iter = m_registered_entities.find(m);
 	if (iter == m_registered_entities.end()) {
-		std::vector<Entity*> vec;		
+		std::vector<Entity*> vec;
+		vec.push_back(e);
 		m_registered_entities[m] = vec;
 	}
 	else {

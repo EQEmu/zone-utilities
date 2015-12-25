@@ -146,11 +146,13 @@ void ModuleVolume::OnDrawUI()
 		}
 	}
 
-	ImGui::Separator();
-	if (ImGui::Button("Build from WaterMap (Very Slow)")) {
-		BuildFromWatermap();
-	}
-	ImGui::End();
+	//ImGui::Separator();
+	//static float step_size = 5.0f;
+	//ImGui::InputFloat("Step size", &step_size);
+	//if (ImGui::Button("Build from WaterMap (Very Slow)")) {
+	//	BuildFromWatermap(step_size);
+	//}
+	//ImGui::End();
 }
 
 void ModuleVolume::OnDrawOptions()
@@ -552,7 +554,7 @@ bool RegionPointEqual(const glm::vec4 &a, const glm::vec4 &b) {
 	return true;
 }
 
-void ModuleVolume::BuildFromWatermap()
+void ModuleVolume::BuildFromWatermap(float step_size)
 {
 	auto min = m_scene->GetBoundingBoxMin();
 	auto max = m_scene->GetBoundingBoxMax();
@@ -560,8 +562,6 @@ void ModuleVolume::BuildFromWatermap()
 
 	m_regions.clear();
 	m_regions_orig.clear();
-
-	float step_size = 5.0f;
 
 	for (float x = min.x; x < max.x; x += step_size)
 	{

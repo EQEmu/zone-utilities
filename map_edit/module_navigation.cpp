@@ -43,7 +43,7 @@ void calcChunkSize(const float* bmin, const float* bmax, float cs, int* x, int* 
 
 ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 {
-	m_mode = 0;
+	m_mode = 1;
 	Clear();
 
 	m_work_pending = 0;
@@ -239,8 +239,8 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 
 void ModuleNavigation::Clear()
 {
-	m_cell_size = 0.2f;
-	m_cell_height = 0.1f;
+	m_cell_size = 0.6f;
+	m_cell_height = 0.3f;
 	m_agent_height = 3.5f;
 	m_agent_radius = 0.7f;
 	m_agent_max_climb = 3.5f;
@@ -392,6 +392,8 @@ void ModuleNavigation::BuildNavigationMesh()
 
 	CreateChunkyTriMesh(zone_geo);
 
+	LoadVolumes();
+
 	//clear previous data
 	if (m_nav_mesh) {
 		dtFreeNavMesh(m_nav_mesh);
@@ -538,9 +540,9 @@ void ModuleNavigation::CalcPath()
 		return;
 	}
 
-	glm::vec3 ext(2.0f, 3.0f, 2.0f);
+	glm::vec3 ext(5.0f, 5.0f, 5.0f);
 	dtQueryFilter filter;
-	filter.setIncludeFlags(NavigationPolyFlagAll ^ NavigationPolyFlagDisabled);
+	filter.setIncludeFlags(NavigationPolyFlagAll);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
 	filter.setAreaCost(NavigationAreaFlagWater, m_path_costs[NavigationAreaFlagWater]);
 	filter.setAreaCost(NavigationAreaFlagLava, m_path_costs[NavigationAreaFlagLava]);
@@ -809,6 +811,7 @@ bool ModuleNavigation::LoadNavSettings()
 			return false;
 		}
 
+		m_scene->UpdateBoundingBox();
 		fclose(f);
 		return true;
 	}
@@ -820,6 +823,72 @@ void ModuleNavigation::SaveNavMesh()
 {
 	//write navmesh out
 	//zone_name.nav
+}
+
+void ModuleNavigation::LoadVolumes()
+{
+	m_volumes.clear();
+
+	auto physics = m_scene->GetZonePhysics();
+	if (!physics)
+		return;
+
+	WaterMap *w = physics->GetWaterMap();
+	if (!w)
+		return;
+
+	std::vector<RegionDetails> regions;
+	w->GetRegionDetails(regions);
+
+	for (auto &region : regions) {
+		RegionVolume v;
+
+		v.min = FLT_MAX;
+		v.max = -FLT_MAX;
+
+		for (int i = 0; i < 4; ++i) {
+			if (region.verts[i].y < v.min) {
+				v.min = region.verts[i].y;
+			}
+			else if (region.verts[i].y > v.max) {
+				v.max = region.verts[i].y;
+			}
+		}
+
+		switch (region.type) {
+		case RegionTypeNormal:
+			v.area_type = NavigationAreaFlagNormal;
+			break;
+		case RegionTypeWater:
+			v.area_type = NavigationAreaFlagWater;
+			break;
+		case RegionTypeLava:
+			v.area_type = NavigationAreaFlagLava;
+			break;
+		case RegionTypePVP:
+			v.area_type = NavigationAreaFlagPvP;
+			break;
+		case RegionTypeSlime:
+			v.area_type = NavigationAreaFlagSlime;
+			break;
+		case RegionTypeIce:
+			v.area_type = NavigationAreaFlagIce;
+			break;
+		case RegionTypeVWater:
+			v.area_type = NavigationAreaFlagVWater;
+			break;
+		default:
+			v.area_type = NavigationAreaFlagNormal;
+		}
+
+		for (int i = 0; i < 4; ++i) {
+			v.verts[(i * 3)] = region.verts[i].x;
+			v.verts[(i * 3) + 1] = region.verts[i].y - v.min;
+			v.verts[(i * 3) + 2] = region.verts[i].z;
+		}
+
+		m_volumes.push_back(v);
+	}
 }
 
 void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {

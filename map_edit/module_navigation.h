@@ -1,6 +1,7 @@
 #ifndef EQEMU_MAP_VIEW_MODULE_NAVIGATION_H
 #define EQEMU_MAP_VIEW_MODULE_NAVIGATION_H
 
+#include <vector>
 #include <Recast.h>
 #include <DetourNavMesh.h>
 #include <DebugDraw.h>
@@ -119,6 +120,7 @@ private:
 	void SaveNavSettings();
 	bool LoadNavSettings();
 	void SaveNavMesh();
+	void LoadVolumes();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
@@ -162,6 +164,8 @@ private:
 	bool m_path_end_set;
 
 	float m_path_costs[NavigationAreaFlagDisabled];
+
+	std::vector<RegionVolume> m_volumes;
 
 	int m_work_pending;
 	ThreadPool m_thread_pool;

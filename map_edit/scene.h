@@ -74,10 +74,10 @@ public:
 	const glm::vec3 &GetCameraLoc() { return m_camera_loc; }
 	glm::vec3 &GetBoundingBoxMin() { return m_bounding_box_min; }
 	glm::vec3 &GetBoundingBoxMax() { return m_bounding_box_max; }
+	void UpdateBoundingBox();
 private:
 	void GetEntityName(Entity *ent, std::string &name);
 	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);
-	void UpdateBoundingBox();
 	friend class Module;
 	Scene(const Scene&);
 	Scene& operator=(const Scene&);
