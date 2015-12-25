@@ -20,26 +20,19 @@ enum WaterRegionType {
 	RegionTypeVWater = 7
 };
 
-struct RegionDetails
-{
-	glm::vec3 verts[8];
-	WaterRegionType type;
-};
-
 class WaterMap
 {
 public:
 	WaterMap() { }
 	~WaterMap() { }
 	
-	static WaterMap* LoadWaterMapfile(std::string zone_name);
+	static WaterMap* LoadWaterMapfile(std::string dir, std::string zone_name);
 	virtual WaterRegionType ReturnRegionType(float y, float x, float z) const { return RegionTypeNormal; }
 	virtual bool InWater(float y, float x, float z) const { return false; }
 	virtual bool InVWater(float y, float x, float z) const { return false; }
 	virtual bool InLava(float y, float x, float z) const { return false; }
 	virtual bool InLiquid(float y, float x, float z) const { return false; }
 	virtual void CreateMeshFrom(std::vector<glm::vec3> &verts, std::vector<unsigned int> &inds) { }
-	virtual void GetRegionDetails(std::vector<RegionDetails> &details) { };
 protected:
 	virtual bool Load(FILE *fp) { return false; }
 };

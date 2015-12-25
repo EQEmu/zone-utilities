@@ -48,7 +48,6 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 	m_show_debug = false;
 	m_render_collide = true;
 	m_render_non_collide = true;
-	m_render_volume = true;
 
 	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
@@ -92,7 +91,10 @@ void Scene::LoadScene(const char *zone_name) {
 	if(m_zone_geometry) {
 		m_physics.reset(new EQPhysics());
 
-		WaterMap *w_map = WaterMap::LoadWaterMapfile(zone_name);
+		WaterMap *w_map = WaterMap::LoadWaterMapfile("save/", zone_name);
+		if (!w_map) {
+			w_map = WaterMap::LoadWaterMapfile("maps/", zone_name);
+		}
 		m_physics->RegisterMesh("CollideWorldMesh", m_zone_geometry->GetCollidableVerts(), m_zone_geometry->GetCollidableInds(), 
 			glm::vec3(0.0f, 0.0f, 0.0f), EQPhysicsFlags::CollidableWorld);
 		m_physics->RegisterMesh("NonCollideWorldMesh", m_zone_geometry->GetNonCollidableVerts(), m_zone_geometry->GetNonCollidableInds(), 
@@ -121,18 +123,6 @@ void Scene::LoadScene(const char *zone_name) {
 
 		m->Compile();
 		m_non_collide_mesh_entity.reset(m);
-
-		m = new StaticGeometry();
-		if(w_map) {
-			w_map->CreateMeshFrom(m->GetVerts(), m->GetInds());
-			sz = m->GetVerts().size();
-			for (size_t i = 0; i < sz; ++i) {
-				m->GetVertColors().push_back(glm::vec3(1.0f, 1.0f, 1.0f));
-			}
-		}
-		m->SetTint(glm::vec4(0.0f, 0.0f, 0.8f, 0.2f));
-		m->Compile();
-		m_volume_mesh_entity.reset(m);
 	}
 
 	for(auto &module : m_modules) {
@@ -183,14 +173,6 @@ void Scene::Render() {
 		m_non_collide_mesh_entity->Draw();
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	}
-
-	if(m_render_volume && m_volume_mesh_entity) {
-		glEnable(GL_BLEND);
-		glm::vec4 tint = m_volume_mesh_entity->GetTint();
-		m_tint.SetValuePtr4(1, &tint[0]);
-		m_volume_mesh_entity->Draw();
-		glDisable(GL_BLEND);
 	}
 
 	for (auto &l : m_registered_entities) {
@@ -273,7 +255,9 @@ void Scene::RenderUI() {
 		ImGui::Begin("Options");
 		ImGui::Checkbox("Render Collidable Mesh", &m_render_collide);
 		ImGui::Checkbox("Render Non-Collidable Mesh", &m_render_non_collide);
-		ImGui::Checkbox("Render Volumes", &m_render_volume);
+		for (auto &module : m_modules) {
+			module->OnDrawOptions();
+		}
 		ImGui::End();
 	}
 	
@@ -396,6 +380,13 @@ void Scene::ProcessSceneInput() {
 	glm::vec3 up = glm::cross(right, direction);
 
 	float speed = 50.0f;
+	bool move = true;
+
+	if (!io.WantCaptureKeyboard && (
+		glfwGetKey(m_window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+		glfwGetKey(m_window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)) {
+		move = false;
+	}
 
 	if(!io.WantCaptureKeyboard && (
 		glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || 
@@ -403,19 +394,19 @@ void Scene::ProcessSceneInput() {
 		speed *= 6.0f;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS) {
+	if(!io.WantCaptureKeyboard && move && glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS) {
 		m_camera_loc += direction * delta_time * speed;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS) {
+	if(!io.WantCaptureKeyboard && move && glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS) {
 		m_camera_loc -= direction * delta_time * speed;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS) {
+	if(!io.WantCaptureKeyboard && move && glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS) {
 		m_camera_loc += right * delta_time * speed;
 	}
 
-	if(!io.WantCaptureKeyboard && glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS) {
+	if(!io.WantCaptureKeyboard && move && glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS) {
 		m_camera_loc -= right * delta_time * speed;
 	}
 
@@ -478,7 +469,6 @@ void Scene::ProcessSceneInput() {
 			}
 		}
 	}
-
 
 	m_last_time = current_time;
 }

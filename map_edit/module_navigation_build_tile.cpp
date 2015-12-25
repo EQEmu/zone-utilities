@@ -97,9 +97,9 @@ void ModuleNavigationBuildTile::Run() {
 	}
 
 	//go through and mark our convex areas...
-	for (auto &volume : m_nav_module->m_volumes) {
-		rcMarkConvexPolyArea(m_ctx.get(), volume.verts, 4, volume.min, volume.max, (unsigned char)volume.area_type, *chf);
-	}
+	//for (auto &volume : m_nav_module->m_volumes) {
+	//	rcMarkConvexPolyArea(m_ctx.get(), volume.verts, 4, volume.min, volume.max, (unsigned char)volume.area_type, *chf);
+	//}
 	
 	if (m_nav_module->m_partition_type == NAVIGATION_PARTITION_WATERSHED)
 	{

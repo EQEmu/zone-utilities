@@ -5,6 +5,7 @@
 #include "imgui_glfw.h"
 #include "scene.h"
 #include "module_navigation.h"
+#include "module_volume.h"
 #include "thread_pool.h"
 #include "log_file.h"
 
@@ -56,8 +57,8 @@ int main(int argc, char **argv)
 
 	std::unique_ptr<Scene> scene(new Scene());
 	scene->RegisterModule(new ModuleNavigation());
+	scene->RegisterModule(new ModuleVolume());
 	scene->Init(win, 1600, 900);
-	scene->LoadScene("tutorialb");
 
 	ImGui_ImplGlfwGL3_Init(win, true);
 	while(!glfwWindowShouldClose(win)) {

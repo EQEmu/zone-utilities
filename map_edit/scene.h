@@ -69,6 +69,8 @@ public:
 	std::shared_ptr<ZoneMap> GetZoneGeometry() { return m_zone_geometry; }
 	std::shared_ptr<EQPhysics> GetZonePhysics() { return m_physics; }
 	std::string GetZoneName() { return m_name; }
+
+	const glm::vec3 &GetCameraLoc() { return m_camera_loc; }
 private:
 	void GetEntityName(Entity *ent, std::string &name);
 	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);
@@ -106,7 +108,6 @@ private:
 	ShaderUniform m_tint;
 	std::unique_ptr<Entity> m_collide_mesh_entity;
 	std::unique_ptr<Entity> m_non_collide_mesh_entity;
-	std::unique_ptr<Entity> m_volume_mesh_entity;
 	std::map<Module*, std::vector<Entity*>> m_registered_entities;
 
 	//hotkeys
@@ -125,7 +126,6 @@ private:
 	bool m_show_debug;
 	bool m_render_collide;
 	bool m_render_non_collide;
-	bool m_render_volume;
 };
 
 #endif

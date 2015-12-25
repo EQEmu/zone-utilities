@@ -30,6 +30,7 @@ public:
 	void SetDepthTestEnabled(bool v) { m_depth_test_enabled = v; }
 	void SetBlend(bool v) { m_blend_enabled = v; }
 	void SetLineWidth(float f) { m_line_width = f; }
+	void SetDoublePass(bool dp) { m_dp = dp; }
 
 	void AddVertex(const glm::vec3& p, const glm::vec3& color);
 	void AddLineBox(const glm::vec3& min, const glm::vec3& max, const glm::vec3& color = glm::vec3(1.0, 1.0, 1.0));
@@ -57,6 +58,7 @@ private:
 	bool m_depth_test_enabled;
 	bool m_blend_enabled;
 	GLenum m_draw_type;
+	bool m_dp;
 };
 
 #endif

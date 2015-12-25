@@ -7,6 +7,7 @@ SET(map_edit_sources
 	main.cpp
 	module_navigation.cpp
 	module_navigation_build_tile.cpp
+	module_volume.cpp
 	rc_chunky_tri_mesh.cpp
 	scene.cpp
 	shader.cpp
@@ -21,6 +22,7 @@ SET(map_edit_headers
 	module.h
 	module_navigation.h
 	module_navigation_build_tile.h
+	module_volume.h
 	rc_chunky_tri_mesh.h
 	scene.h
 	scene_module.h

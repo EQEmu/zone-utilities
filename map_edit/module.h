@@ -16,6 +16,7 @@ public:
 	virtual void OnShutdown() = 0;
 	virtual void OnDrawMenu() = 0;
 	virtual void OnDrawUI() = 0;
+	virtual void OnDrawOptions() = 0;
 	virtual void OnSceneLoad(const char *zone_name) = 0;
 	virtual void OnSuspend() = 0;
 	virtual void OnResume() = 0;

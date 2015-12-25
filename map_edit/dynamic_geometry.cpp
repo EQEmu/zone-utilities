@@ -1,6 +1,7 @@
 #include "dynamic_geometry.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include "shader.h"
 
 DynamicGeometry::DynamicGeometry() {
 	m_vao = 0;
@@ -12,6 +13,7 @@ DynamicGeometry::DynamicGeometry() {
 	m_depth_write_enabled = true;
 	m_depth_test_enabled = true;
 	m_blend_enabled = false;
+	m_dp = false;
 }
 
 DynamicGeometry::~DynamicGeometry() {
@@ -53,6 +55,26 @@ void DynamicGeometry::Draw() {
 		glDrawElements(m_draw_type, (GLsizei)m_inds.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
+		if (m_dp) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+			glm::vec4 temp_tint;
+			temp_tint.x = 0.0f;
+			temp_tint.y = 0.0f;
+			temp_tint.z = 0.0f;
+			temp_tint.w = 1.0f;
+
+			auto shader = ShaderProgram::Current();
+			auto tint = shader.GetUniformLocation("Tint");
+			tint.SetValuePtr4(1, &temp_tint[0]);
+
+			glBindVertexArray(m_vao);
+			glDrawElements(m_draw_type, (GLsizei)m_inds.size(), GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+
 		if (m_line_width != 1.0f)
 			glLineWidth(1.0f);
 
@@ -74,6 +96,7 @@ void DynamicGeometry::Clear()
 {
 	m_verts.clear();
 	m_inds.clear();
+	m_vert_colors.clear();
 }
 
 void DynamicGeometry::Update() {

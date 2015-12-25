@@ -203,34 +203,3 @@ void WaterMapV2::CreateMeshFrom(std::vector<glm::vec3> &verts, std::vector<unsig
 	}
 }
 
-void WaterMapV2::GetRegionDetails(std::vector<RegionDetails> &details) {
-	details.clear();
-
-	for (auto &region : regions) {
-		float min_x = region.second.GetMinX();
-		float min_y = region.second.GetMinY();
-		float min_z = region.second.GetMinZ();
-		float max_x = region.second.GetMaxX();
-		float max_y = region.second.GetMaxY();
-		float max_z = region.second.GetMaxZ();
-
-		glm::vec4 v2(min_x, max_y, max_z, 1.0f);
-		glm::vec4 v3(max_x, max_y, max_z, 1.0f);
-		glm::vec4 v5(min_x, min_y, min_z, 1.0f);
-		glm::vec4 v8(max_x, min_y, min_z, 1.0f);
-
-		v2 = region.second.GetTransformation() * v2;
-		v3 = region.second.GetTransformation() * v3;
-		v5 = region.second.GetTransformation() * v5;
-		v8 = region.second.GetTransformation() * v8;
-
-		RegionDetails detail;
-		detail.verts[0] = glm::vec3(v5.y, v5.z, v5.x);
-		detail.verts[1] = glm::vec3(v2.y, v2.z, v2.x);
-		detail.verts[2] = glm::vec3(v3.y, v3.z, v3.x);
-		detail.verts[3] = glm::vec3(v8.y, v8.z, v8.x);
-		detail.type = region.first;
-
-		details.push_back(detail);
-	}
-}

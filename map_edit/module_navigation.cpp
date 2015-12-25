@@ -8,6 +8,8 @@
 
 #include <DetourNavMeshQuery.h>
 
+const uint32_t nav_file_version = 2;
+
 inline unsigned int nextPow2(unsigned int v)
 {
 	v--;
@@ -145,6 +147,10 @@ void ModuleNavigation::OnDrawUI()
 	if (m_mode == ModeTestNavigation) {
 		DrawTestUI();
 	}
+}
+
+void ModuleNavigation::OnDrawOptions()
+{
 }
 
 void ModuleNavigation::OnSceneLoad(const char *zone_name)
@@ -299,28 +305,23 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Begin("NavMesh Properties");
 
 	ImGui::Text("Bounding Box");
+
 	bool update_bb = false;
-	if (ImGui::SliderFloat("Min x", &m_bounding_box_min.x, zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMax().x, "%.1f")) {
+	if (ImGui::DragFloatRange2("X", &m_bounding_box_min.x, &m_bounding_box_max.x, 1.0f, 
+		zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMax().x, 
+		"Min: %.1f", "Max: %.1f")) {
 		update_bb = true;
 	}
-	
-	if (ImGui::SliderFloat("Min y", &m_bounding_box_min.y, zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMax().y, "%.1f")) {
+
+	if (ImGui::DragFloatRange2("Y", &m_bounding_box_min.y, &m_bounding_box_max.y, 1.0f, 
+		zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMax().y, 
+		"Min: %.1f", "Max: %.1f")) {
 		update_bb = true;
 	}
-	
-	if (ImGui::SliderFloat("Min z", &m_bounding_box_min.z, zone_geo->GetCollidableMin().z, zone_geo->GetCollidableMax().z, "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Max x", &m_bounding_box_max.x, zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMax().x, "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Max y", &m_bounding_box_max.y, zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMax().y, "%.1f")) {
-		update_bb = true;
-	}
-	
-	if (ImGui::SliderFloat("Max z", &m_bounding_box_max.z, zone_geo->GetCollidableMin().z, zone_geo->GetCollidableMax().z, "%.1f")) {
+
+	if (ImGui::DragFloatRange2("Z", &m_bounding_box_min.z, &m_bounding_box_max.z, 1.0f, 
+		zone_geo->GetCollidableMin().z, zone_geo->GetCollidableMax().z, 
+		"Min: %.1f", "Max: %.1f")) {
 		update_bb = true;
 	}
 	
@@ -346,8 +347,10 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 
 	ImGui::Separator();
 	ImGui::Text("Region");
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
 	ImGui::SliderFloat("Min Region Size", &m_region_min_size, 0.0f, 150.0f, "%.0f");
 	ImGui::SliderFloat("Merged Region Size", &m_region_merge_size, 0.0f, 150.0f, "%.0f");
+	ImGui::PopItemWidth();
 
 	ImGui::Separator();
 	ImGui::Text("Partitioning");
@@ -357,14 +360,18 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 
 	ImGui::Separator();
 	ImGui::Text("Polygonization");
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
 	ImGui::SliderFloat("Max Edge Length", &m_edge_max_len, 0.0f, 50.0f, "%.0f");
 	ImGui::SliderFloat("Max Edge Error", &m_edge_max_error, 0.1f, 3.0f, "%.1f");
 	ImGui::SliderFloat("Verts Per Poly", &m_verts_per_poly, 3.0f, 12.0f, "%.0f");
+	ImGui::PopItemWidth();
 
 	ImGui::Separator();
 	ImGui::Text("Detail Mesh");
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
 	ImGui::SliderFloat("Sample Distance", &m_detail_sample_dist, 0.0f, 32.0f, "%.0f");
 	ImGui::SliderFloat("Max Sample Error", &m_detail_sample_max_error, 0.0f, 16.0f, "%.0f");
+	ImGui::PopItemWidth();
 	ImGui::Separator();
 
 	ImGui::Text("Tiling");
@@ -397,7 +404,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 		ImGui::Text(EQEmu::StringFormat("%u tasks remaining...", m_work_pending).c_str());
 	}
 	else {
-		if (ImGui::Button("Build All NavMesh Cells")) {
+		if (ImGui::Button("Build All NavMesh Tiles")) {
 			BuildNavigationMesh();
 		}
 	}
@@ -656,67 +663,67 @@ void ModuleNavigation::CalcPath()
 
 void ModuleNavigation::InitVolumes()
 {
-	m_volumes.clear();
-
-	auto physics = m_scene->GetZonePhysics();
-	if (!physics)
-		return;
-
-	WaterMap *w = physics->GetWaterMap();
-	if (!w)
-		return;
-
-	std::vector<RegionDetails> regions;
-	w->GetRegionDetails(regions);
-
-	for (auto &region : regions) {
-		RegionVolume v;
-
-		v.min = FLT_MAX;
-		v.max = -FLT_MAX;
-
-		for (int i = 0; i < 4; ++i) {
-			if (region.verts[i].y < v.min) {
-				v.min = region.verts[i].y;
-			} else if (region.verts[i].y > v.max) {
-				v.max = region.verts[i].y;
-			}
-		}
-
-		switch (region.type) {
-		case RegionTypeNormal:
-			v.area_type = NavigationAreaFlagNormal;
-			break;
-		case RegionTypeWater:
-			v.area_type = NavigationAreaFlagWater;
-			break;
-		case RegionTypeLava:
-			v.area_type = NavigationAreaFlagLava;
-			break;
-		case RegionTypePVP:
-			v.area_type = NavigationAreaFlagPvP;
-			break;
-		case RegionTypeSlime:
-			v.area_type = NavigationAreaFlagSlime;
-			break;
-		case RegionTypeIce:
-			v.area_type = NavigationAreaFlagIce;
-			break;
-		case RegionTypeVWater:
-			v.area_type = NavigationAreaFlagVWater;
-			break;
-		default:
-			v.area_type = NavigationAreaFlagNormal;
-		}
-
-		for (int i = 0; i < 4; ++i) {
-			v.verts[(i * 3)] = region.verts[i].x;
-			v.verts[(i * 3) + 1] = region.verts[i].y - v.min;
-			v.verts[(i * 3) + 2] = region.verts[i].z;
-		}
-
-		m_volumes.push_back(v);
-	}
+	//m_volumes.clear();
+	//
+	//auto physics = m_scene->GetZonePhysics();
+	//if (!physics)
+	//	return;
+	//
+	//WaterMap *w = physics->GetWaterMap();
+	//if (!w)
+	//	return;
+	//
+	//std::vector<RegionDetails> regions;
+	//w->GetRegionDetails(regions);
+	//
+	//for (auto &region : regions) {
+	//	RegionVolume v;
+	//
+	//	v.min = FLT_MAX;
+	//	v.max = -FLT_MAX;
+	//
+	//	for (int i = 0; i < 4; ++i) {
+	//		if (region.verts[i].y < v.min) {
+	//			v.min = region.verts[i].y;
+	//		} else if (region.verts[i].y > v.max) {
+	//			v.max = region.verts[i].y;
+	//		}
+	//	}
+	//
+	//	switch (region.type) {
+	//	case RegionTypeNormal:
+	//		v.area_type = NavigationAreaFlagNormal;
+	//		break;
+	//	case RegionTypeWater:
+	//		v.area_type = NavigationAreaFlagWater;
+	//		break;
+	//	case RegionTypeLava:
+	//		v.area_type = NavigationAreaFlagLava;
+	//		break;
+	//	case RegionTypePVP:
+	//		v.area_type = NavigationAreaFlagPvP;
+	//		break;
+	//	case RegionTypeSlime:
+	//		v.area_type = NavigationAreaFlagSlime;
+	//		break;
+	//	case RegionTypeIce:
+	//		v.area_type = NavigationAreaFlagIce;
+	//		break;
+	//	case RegionTypeVWater:
+	//		v.area_type = NavigationAreaFlagVWater;
+	//		break;
+	//	default:
+	//		v.area_type = NavigationAreaFlagNormal;
+	//	}
+	//
+	//	for (int i = 0; i < 4; ++i) {
+	//		v.verts[(i * 3)] = region.verts[i].x;
+	//		v.verts[(i * 3) + 1] = region.verts[i].y - v.min;
+	//		v.verts[(i * 3) + 2] = region.verts[i].z;
+	//	}
+	//
+	//	m_volumes.push_back(v);
+	//}
 }
 
 void ModuleNavigation::SaveNavSettings()
@@ -728,9 +735,8 @@ void ModuleNavigation::SaveNavSettings()
 
 	if (f) {
 		char magic[6] = { 'N', 'A', 'V', 'P', 'R', 'J' };
-		uint32_t version = 1;
 		fwrite(magic, sizeof(magic), 1, f);
-		fwrite(&version, sizeof(uint32_t), 1, f);
+		fwrite(&nav_file_version, sizeof(uint32_t), 1, f);
 
 		fwrite(&m_bounding_box_min.x, sizeof(float), 1, f);
 		fwrite(&m_bounding_box_min.y, sizeof(float), 1, f);
@@ -762,28 +768,28 @@ void ModuleNavigation::SaveNavSettings()
 		fwrite(&max_polys_per_tile, sizeof(int32_t), 1, f);
 
 		//m_volumes
-		uint32_t volume_count = (uint32_t)m_volumes.size();
-		fwrite(&volume_count, sizeof(uint32_t), 1, f);
-		for (uint32_t i = 0; i < volume_count; ++i) {
-			auto &volume = m_volumes[i];
-			fwrite(&volume.verts[0], sizeof(float), 1, f);
-			fwrite(&volume.verts[1], sizeof(float), 1, f);
-			fwrite(&volume.verts[2], sizeof(float), 1, f);
-			fwrite(&volume.verts[3], sizeof(float), 1, f);
-			fwrite(&volume.verts[4], sizeof(float), 1, f);
-			fwrite(&volume.verts[5], sizeof(float), 1, f);
-			fwrite(&volume.verts[6], sizeof(float), 1, f);
-			fwrite(&volume.verts[7], sizeof(float), 1, f);
-			fwrite(&volume.verts[8], sizeof(float), 1, f);
-			fwrite(&volume.verts[9], sizeof(float), 1, f);
-			fwrite(&volume.verts[10], sizeof(float), 1, f);
-			fwrite(&volume.verts[11], sizeof(float), 1, f);
-			fwrite(&volume.min, sizeof(float), 1, f);
-			fwrite(&volume.max, sizeof(float), 1, f);
-
-			int32_t area_type = (int32_t)volume.area_type;
-			fwrite(&area_type, sizeof(int32_t), 1, f);
-		}
+		//uint32_t volume_count = (uint32_t)m_volumes.size();
+		//fwrite(&volume_count, sizeof(uint32_t), 1, f);
+		//for (uint32_t i = 0; i < volume_count; ++i) {
+		//	auto &volume = m_volumes[i];
+		//	fwrite(&volume.verts[0], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[1], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[2], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[3], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[4], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[5], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[6], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[7], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[8], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[9], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[10], sizeof(float), 1, f);
+		//	fwrite(&volume.verts[11], sizeof(float), 1, f);
+		//	fwrite(&volume.min, sizeof(float), 1, f);
+		//	fwrite(&volume.max, sizeof(float), 1, f);
+		//
+		//	int32_t area_type = (int32_t)volume.area_type;
+		//	fwrite(&area_type, sizeof(int32_t), 1, f);
+		//}
 
 		fclose(f);
 	}
@@ -817,7 +823,7 @@ bool ModuleNavigation::LoadNavSettings()
 			return false;
 		}
 
-		if (version >= 1) {
+		if (version == nav_file_version) {
 			if (fread(&m_bounding_box_min.x, sizeof(float), 1, f) != 1) {
 				fclose(f);
 				return false;
@@ -941,38 +947,8 @@ bool ModuleNavigation::LoadNavSettings()
 			m_max_tiles = (int)max_tiles;
 			m_max_polys_per_tile = (int)max_polys_per_tile;
 		}
-
-		uint32_t volume_count = 0;
-		if (fread(&volume_count, sizeof(uint32_t), 1, f) != 1) {
-			fclose(f);
+		else {
 			return false;
-		}
-
-		for (uint32_t i = 0; i < volume_count; ++i) {
-			RegionVolume rv;
-			if (fread(&rv.verts, sizeof(float) * 12, 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fread(&rv.min, sizeof(float), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			if (fread(&rv.max, sizeof(float), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			int32_t area_type = 0;
-			if (fread(&area_type, sizeof(int32_t), 1, f) != 1) {
-				fclose(f);
-				return false;
-			}
-
-			rv.area_type = (NavigationAreaFlags)area_type;
-			m_volumes.push_back(rv);
 		}
 
 		fclose(f);
