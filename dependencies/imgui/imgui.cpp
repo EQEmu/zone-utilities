@@ -6856,6 +6856,16 @@ bool ImGui::RadioButton(const char* label, int* v, int v_button)
     return pressed;
 }
 
+bool ImGui::RadioButton(const char* label, unsigned char* v, unsigned char v_button)
+{
+	const bool pressed = ImGui::RadioButton(label, *v == v_button);
+	if (pressed)
+	{
+		*v = v_button;
+	}
+	return pressed;
+}
+
 static int InputTextCalcTextLenAndLineCount(const char* text_begin, const char** out_text_end)
 {
     int line_count = 0;

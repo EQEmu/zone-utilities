@@ -31,21 +31,23 @@ enum NavigationAreaFlags
 	NavigationAreaFlagIce,
 	NavigationAreaFlagVWater,
 	NavigationAreaFlagGeneralArea,
+	NavigationAreaFlagPortal,
 	NavigationAreaFlagDisabled,
 };
 
 enum NavigationPolyFlags
 {
-	NavigationPolyFlagNormal = 0x01,
-	NavigationPolyFlagWater = 0x02,
-	NavigationPolyFlagLava = 0x04,
-	NavigationPolyFlagZoneLine = 0x08,
-	NavigationPolyFlagPvP = 0x10,
-	NavigationPolyFlagSlime = 0x20,
-	NavigationPolyFlagIce = 0x40,
-	NavigationPolyFlagVWater = 0x80,
-	NavigationPolyFlagGeneralArea = 0x100,
-	NavigationPolyFlagDisabled = 0x200,
+	NavigationPolyFlagNormal = 1,
+	NavigationPolyFlagWater = 2,
+	NavigationPolyFlagLava = 4,
+	NavigationPolyFlagZoneLine = 8,
+	NavigationPolyFlagPvP = 16,
+	NavigationPolyFlagSlime = 32,
+	NavigationPolyFlagIce = 64,
+	NavigationPolyFlagVWater = 128,
+	NavigationPolyFlagGeneralArea = 256,
+	NavigationPolyFlagPortal = 512,
+	NavigationPolyFlagDisabled = 1024,
 	NavigationPolyFlagAll = 0xFFFF
 };
 
@@ -111,6 +113,7 @@ private:
 	void Clear();
 	void DrawNavMeshGenerationUI();
 	void DrawTestUI();
+	void DrawMeshConnectionUI();
 	void BuildNavigationMesh();
 	void CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo);
 	void CreateNavMeshModel();
@@ -121,6 +124,10 @@ private:
 	bool LoadNavSettings();
 	void SaveNavMesh();
 	void LoadVolumes();
+	void AddMeshConnection(const glm::vec3 &start, const glm::vec3 &end, float radius, unsigned char dir, unsigned char area, unsigned short flags);
+	void DeleteMeshConnection(glm::vec3 &pos);
+	void ClearConnections();
+	void UpdateConnectionsModel();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
@@ -146,11 +153,27 @@ private:
 	int m_max_polys_per_tile;
 	float m_tile_size;
 
+	//off-mesh-cons
+	std::vector<glm::vec3> m_connection_verts;
+	std::vector<float> m_connection_rads;
+	std::vector<unsigned char> m_connection_dirs;
+	std::vector<unsigned char> m_connection_areas;
+	std::vector<unsigned short> m_connection_flags;
+	std::vector<unsigned int> m_connection_ids;
+	uint8_t m_connection_dir;
+	int m_connection_area;
+	float m_connection_radius;
+	unsigned int m_connection_count;
+	unsigned int m_connection_id_counter;
+
+	glm::vec3 m_conn_start;
+	bool m_conn_start_set;
+
 	dtNavMesh *m_nav_mesh;
 	std::unique_ptr<DebugDraw> m_nav_mesh_renderable;
 
-	//debug
-	std::unique_ptr<DebugDraw> m_debug_renderable;
+	//connections
+	std::unique_ptr<DebugDraw> m_connections_renderable;
 
 	//path
 	std::unique_ptr<DynamicGeometry> m_start_path_renderable;

@@ -86,8 +86,8 @@ void ModuleVolume::OnDrawUI()
 		ImGui::Text("Selected Region: %d", m_selected_region);
 		bool needs_update = false;
 
-		const char* region_identifiers[] = { "Normal", "Water", "Lava", "ZoneLine", "PVP", "Slime", "Ice", "Freezing Water" };
-		if (ImGui::Combo("Area type", (int*)&region.area_type, region_identifiers, 8)) {
+		const char* region_identifiers[] = { "Normal", "Water", "Lava", "ZoneLine", "PVP", "Slime", "Ice", "V Water", "Generic Area" };
+		if (ImGui::Combo("Area type", (int*)&region.area_type, region_identifiers, 9)) {
 			m_modified = true;
 		}
 
@@ -146,13 +146,13 @@ void ModuleVolume::OnDrawUI()
 		}
 	}
 
-	//ImGui::Separator();
-	//static float step_size = 5.0f;
-	//ImGui::InputFloat("Step size", &step_size);
-	//if (ImGui::Button("Build from WaterMap (Very Slow)")) {
-	//	BuildFromWatermap(step_size);
-	//}
-	//ImGui::End();
+	ImGui::Separator();
+	static float step_size = 5.0f;
+	ImGui::InputFloat("Step size (smaller for more detail, larger for faster but worse detail)", &step_size);
+	if (ImGui::Button("Build from WaterMap (Very Slow, can create decent volumes from some s3d zones though.)")) {
+		BuildFromWatermap(step_size);
+	}
+	ImGui::End();
 }
 
 void ModuleVolume::OnDrawOptions()

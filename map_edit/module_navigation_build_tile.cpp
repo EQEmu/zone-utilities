@@ -218,6 +218,10 @@ void ModuleNavigationBuildTile::Run() {
 			case NavigationAreaFlagGeneralArea:
 				pmesh->flags[i] = NavigationPolyFlagGeneralArea;
 				break;
+			case NavigationAreaFlagPortal:
+				pmesh->flags[i] = NavigationPolyFlagPortal;
+				break;
+			case NavigationAreaFlagDisabled:
 			default:
 				pmesh->flags[i] = NavigationPolyFlagDisabled;
 			}
@@ -237,13 +241,13 @@ void ModuleNavigationBuildTile::Run() {
 		params.detailVertsCount = dmesh->nverts;
 		params.detailTris = dmesh->tris;
 		params.detailTriCount = dmesh->ntris;
-		params.offMeshConVerts = nullptr;
-		params.offMeshConRad = nullptr;
-		params.offMeshConDir = nullptr;
-		params.offMeshConAreas = nullptr;
-		params.offMeshConFlags = nullptr;
-		params.offMeshConUserID = nullptr;
-		params.offMeshConCount = 0;
+		params.offMeshConVerts = m_nav_module->m_connection_count ? (float*)&m_nav_module->m_connection_verts[0] : nullptr;
+		params.offMeshConRad = m_nav_module->m_connection_count ? (float*)&m_nav_module->m_connection_rads[0] : nullptr;
+		params.offMeshConDir = m_nav_module->m_connection_count ? (unsigned char*)&m_nav_module->m_connection_dirs[0] : nullptr;
+		params.offMeshConAreas = m_nav_module->m_connection_count ? (unsigned char*)&m_nav_module->m_connection_areas[0] : nullptr;
+		params.offMeshConFlags = m_nav_module->m_connection_count ? (unsigned short*)&m_nav_module->m_connection_flags[0] : nullptr;
+		params.offMeshConUserID = m_nav_module->m_connection_count ? (unsigned int*)&m_nav_module->m_connection_ids[0] : nullptr;
+		params.offMeshConCount = (int)m_nav_module->m_connection_count;
 		params.walkableHeight = m_nav_module->m_agent_height;
 		params.walkableRadius = m_nav_module->m_agent_radius;
 		params.walkableClimb = m_nav_module->m_agent_max_climb;

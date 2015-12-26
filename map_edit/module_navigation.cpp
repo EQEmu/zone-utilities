@@ -8,7 +8,7 @@
 
 #include <DetourNavMeshQuery.h>
 
-const uint32_t nav_file_version = 2;
+const uint32_t nav_file_version = 3;
 
 inline unsigned int nextPow2(unsigned int v)
 {
@@ -45,12 +45,17 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 {
 	m_mode = 1;
 	Clear();
+	ClearConnections();
 
 	m_work_pending = 0;
 	m_nav_mesh = nullptr;
 
 	m_nav_mesh_renderable.reset(new DebugDraw(false));
-	m_debug_renderable.reset(new DebugDraw());
+	m_connections_renderable.reset(new DebugDraw(false));
+	m_connections_renderable->GetPointsHandle().SetLineWidth(3.0f);
+	m_connections_renderable->GetLinesHandle().SetLineWidth(3.0f);
+	m_connections_renderable->GetPointsHandle().SetDepthWriteEnabled(false);
+	m_connections_renderable->GetLinesHandle().SetDepthWriteEnabled(false);
 
 	m_start_path_renderable.reset(new DynamicGeometry());
 	m_start_path_renderable->SetDrawType(GL_LINES);
@@ -68,6 +73,7 @@ ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
 
 	m_path_start_set = false;
 	m_path_end_set = false;
+	m_conn_start_set = false;
 
 	for (int i = 0; i < NavigationAreaFlagDisabled; ++i) {
 		m_path_costs[i] = 1.0f;
@@ -118,21 +124,30 @@ void ModuleNavigation::OnDrawUI()
 
 	ImGui::Text("Tools");
 	if (!HasWork()) {
-		ImGui::RadioButton("NavMesh Generation", &m_mode, (int)ModeNavMeshGen);
+		if (ImGui::RadioButton("NavMesh Generation", &m_mode, (int)ModeNavMeshGen)) {
+			m_conn_start_set = false;
+			UpdateConnectionsModel();
+		}
 	}
 	else {
 		ImGui::RadioButton("NavMesh Generation", m_mode == ModeNavMeshGen);
 	}
 
 	if (!HasWork()) {
-		ImGui::RadioButton("Connections", &m_mode, (int)ModeNavMeshConnections);
+		if (ImGui::RadioButton("Connections", &m_mode, (int)ModeNavMeshConnections)) {
+			m_conn_start_set = false;
+			UpdateConnectionsModel();
+		}
 	}
 	else {
 		ImGui::RadioButton("Connections", m_mode == ModeNavMeshConnections);
 	}
 
 	if (m_nav_mesh && !HasWork()) {
-		ImGui::RadioButton("Test Mesh", &m_mode, (int)ModeTestNavigation);
+		if (ImGui::RadioButton("Test Mesh", &m_mode, (int)ModeTestNavigation)) {
+			m_conn_start_set = false;
+			UpdateConnectionsModel();
+		}
 	}
 	else {
 		ImGui::RadioButton("Test Mesh", m_mode == ModeTestNavigation);
@@ -146,6 +161,10 @@ void ModuleNavigation::OnDrawUI()
 
 	if (m_mode == ModeTestNavigation) {
 		DrawTestUI();
+	}
+
+	if (m_mode == ModeNavMeshConnections) {
+		DrawMeshConnectionUI();
 	}
 }
 
@@ -163,11 +182,16 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 	m_path_renderable->Update();
 	m_path_start_set = false;
 	m_path_end_set = false;
+	m_conn_start_set = false;
 	m_nav_mesh_renderable->Clear();
 	m_nav_mesh_renderable->Update();
+	m_connections_renderable->Clear();
+	m_connections_renderable->Update();
+	m_conn_start_set = false;
 
 	if (!LoadNavSettings()) {
 		Clear();
+		ClearConnections();
 	}
 }
 
@@ -182,8 +206,8 @@ void ModuleNavigation::OnResume()
 		m_scene->RegisterEntity(this, m_nav_mesh_renderable.get());
 	}
 
-	if (m_debug_renderable) {
-		m_scene->RegisterEntity(this, m_debug_renderable.get());
+	if (m_connections_renderable) {
+		m_scene->RegisterEntity(this, m_connections_renderable.get());
 	}
 
 	if (m_start_path_renderable) {
@@ -234,6 +258,60 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 	else if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && io.KeyShift && collide_hit) {
 		SetNavigationTestNodeEnd(*collide_hit);
 		CalcPath();
+	}
+	else if (m_mode == ModeNavMeshConnections && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
+		if (!m_conn_start_set) {
+			m_conn_start_set = true;
+			m_conn_start = *collide_hit;
+		}
+		else {
+			m_conn_start_set = false;
+			unsigned short flag = 0;
+
+			switch (m_connection_area)
+			{
+			case NavigationAreaFlagNormal:
+				flag = NavigationPolyFlagNormal;
+				break;
+			case NavigationAreaFlagWater:
+				flag = NavigationPolyFlagWater;
+				break;
+			case NavigationAreaFlagLava:
+				flag = NavigationPolyFlagLava;
+				break;
+			case NavigationAreaFlagZoneLine:
+				flag = NavigationPolyFlagZoneLine;
+				break;
+			case NavigationAreaFlagPvP:
+				flag = NavigationPolyFlagPvP;
+				break;
+			case NavigationAreaFlagSlime:
+				flag = NavigationPolyFlagSlime;
+				break;
+			case NavigationAreaFlagIce:
+				flag = NavigationPolyFlagIce;
+				break;
+			case NavigationAreaFlagVWater:
+				flag = NavigationPolyFlagVWater;
+				break;
+			case NavigationAreaFlagGeneralArea:
+				flag = NavigationPolyFlagGeneralArea;
+				break;
+			case NavigationAreaFlagPortal:
+				flag = NavigationPolyFlagPortal;
+				break;
+			case NavigationAreaFlagDisabled:
+			default:
+				flag = NavigationPolyFlagDisabled;
+			}
+
+			AddMeshConnection(m_conn_start, *collide_hit, m_connection_radius, m_connection_dir, (unsigned char)m_connection_area, flag);
+		}
+
+		UpdateConnectionsModel();
+	}
+	else if (m_mode == ModeNavMeshConnections && mouse_button == GLFW_MOUSE_BUTTON_LEFT && io.KeyShift && collide_hit) {
+		//Delete Connection Node here
 	}
 }
 
@@ -367,7 +445,29 @@ void ModuleNavigation::DrawTestUI()
 	ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 1.0f, 100.0f, "%.1f");
 	ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 1.0f, 100.0f, "%.1f");
 	ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 0.1f, 100.0f, "%.1f");
+	ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 0.1f, 100.0f, "%.1f");
+	ImGui::End();
+}
+
+void ModuleNavigation::DrawMeshConnectionUI()
+{
+	ImGui::Begin("NavMesh Properties");
+	ImGui::Text("LMB to place points. Shift + LMB to delete a connection.");
+	ImGui::Separator();
+	ImGui::Text("Connection");
+	ImGui::RadioButton("One-Way", &m_connection_dir, 0);
+	ImGui::SameLine();
+	ImGui::RadioButton("Bi-Directional", &m_connection_dir, 1);
+
+	const char* area_types[] = { "Normal", "Water", "Lava", "ZoneLine", "PVP", "Slime", "Ice", "V Water", "Generic Area", "Portal" };
+
+	ImGui::Combo("Area Type", &m_connection_area, area_types, 10);
+	
+	ImGui::Separator();
+	if (ImGui::SliderFloat("Radius", &m_connection_radius, 0.3f, 30.0f, "%.1f")) {
+		UpdateConnectionsModel();
+	}
+
 	ImGui::End();
 }
 
@@ -502,7 +602,7 @@ void ModuleNavigation::CreateNavMeshModel()
 {
 	NavigationDebugDraw dd;
 	dd.model = m_nav_mesh_renderable.get();
-	duDebugDrawNavMesh(&dd, *m_nav_mesh, 0xffu);
+	duDebugDrawNavMesh(&dd, *m_nav_mesh, 0xffu ^ DU_DRAWNAVMESH_OFFMESHCONS);
 	m_nav_mesh_renderable->Update();
 	m_nav_mesh_renderable->SetTrianglesTint(glm::vec4(0.0f, 0.75f, 1.0f, 0.25f));
 	m_nav_mesh_renderable->SetLinesTint(glm::vec4(0.0f, 0.2f, 0.25f, 0.8f));
@@ -551,6 +651,7 @@ void ModuleNavigation::CalcPath()
 	filter.setAreaCost(NavigationAreaFlagIce, m_path_costs[NavigationAreaFlagIce]);
 	filter.setAreaCost(NavigationAreaFlagVWater, m_path_costs[NavigationAreaFlagVWater]);
 	filter.setAreaCost(NavigationAreaFlagGeneralArea, m_path_costs[NavigationAreaFlagGeneralArea]);
+	filter.setAreaCost(NavigationAreaFlagPortal, m_path_costs[NavigationAreaFlagPortal]);
 
 	dtNavMeshQuery *query = dtAllocNavMeshQuery();
 	query->init(m_nav_mesh, 4092);
@@ -647,6 +748,21 @@ void ModuleNavigation::SaveNavSettings()
 		fwrite(&partition_type, sizeof(int32_t), 1, f);
 		fwrite(&max_tiles, sizeof(int32_t), 1, f);
 		fwrite(&max_polys_per_tile, sizeof(int32_t), 1, f);
+
+		fwrite(&m_connection_dir, sizeof(uint8_t), 1, f);
+		fwrite(&m_connection_area, sizeof(uint32_t), 1, f);
+		fwrite(&m_connection_radius, sizeof(float), 1, f);
+		fwrite(&m_connection_id_counter, sizeof(uint32_t), 1, f);
+		fwrite(&m_connection_count, sizeof(uint32_t), 1, f);
+		for (unsigned int i = 0; i < m_connection_count; ++i) {
+			fwrite(&m_connection_verts[i * 2], sizeof(float) * 3, 1, f);
+			fwrite(&m_connection_verts[(i * 2) + 1], sizeof(float) * 3, 1, f);
+			fwrite(&m_connection_rads[i], sizeof(float), 1, f);
+			fwrite(&m_connection_dirs[i], sizeof(uint8_t), 1, f);
+			fwrite(&m_connection_areas[i], sizeof(uint8_t), 1, f);
+			fwrite(&m_connection_flags[i], sizeof(uint16_t), 1, f);
+			fwrite(&m_connection_ids[i], sizeof(uint32_t), 1, f);
+		}
 
 		fclose(f);
 	}
@@ -806,6 +922,89 @@ bool ModuleNavigation::LoadNavSettings()
 			m_partition_type = (int)partition_type;
 			m_max_tiles = (int)max_tiles;
 			m_max_polys_per_tile = (int)max_polys_per_tile;
+
+			if (fread(&m_connection_dir, sizeof(uint8_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_connection_area, sizeof(uint32_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_connection_radius, sizeof(float), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_connection_id_counter, sizeof(uint32_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			if (fread(&m_connection_count, sizeof(uint32_t), 1, f) != 1) {
+				fclose(f);
+				return false;
+			}
+
+			for (unsigned int i = 0; i < m_connection_count; ++i) {
+				for (int j = 0; j < 2; ++j) {
+					float x, y, z;
+					if (fread(&x, sizeof(float), 1, f) != 1) {
+						fclose(f);
+						return false;
+					}
+
+					if (fread(&y, sizeof(float), 1, f) != 1) {
+						fclose(f);
+						return false;
+					}
+
+					if (fread(&z, sizeof(float), 1, f) != 1) {
+						fclose(f);
+						return false;
+					}
+
+					m_connection_verts.push_back(glm::vec3(x, y, z));
+				}
+
+				float rads;
+				uint8_t dirs;
+				uint8_t areas;
+				uint16_t flags;
+				uint32_t ids;
+				if (fread(&rads, sizeof(float), 1, f) != 1) {
+					fclose(f);
+					return false;
+				}
+
+				if (fread(&dirs, sizeof(uint8_t), 1, f) != 1) {
+					fclose(f);
+					return false;
+				}
+
+				if (fread(&areas, sizeof(uint8_t), 1, f) != 1) {
+					fclose(f);
+					return false;
+				}
+
+				if (fread(&flags, sizeof(uint16_t), 1, f) != 1) {
+					fclose(f);
+					return false;
+				}
+
+				if (fread(&ids, sizeof(uint32_t), 1, f) != 1) {
+					fclose(f);
+					return false;
+				}
+
+				m_connection_rads.push_back(rads);
+				m_connection_dirs.push_back(dirs);
+				m_connection_areas.push_back(areas);
+				m_connection_flags.push_back(flags);
+				m_connection_ids.push_back(ids);
+			}
 		}
 		else {
 			return false;
@@ -877,8 +1076,11 @@ void ModuleNavigation::LoadVolumes()
 		case RegionTypeVWater:
 			v.area_type = NavigationAreaFlagVWater;
 			break;
+		case RegionTypeGeneralArea:
+			v.area_type = NavigationAreaFlagGeneralArea;
+			break;
 		default:
-			v.area_type = NavigationAreaFlagNormal;
+			v.area_type = NavigationAreaFlagDisabled;
 		}
 
 		for (int i = 0; i < 4; ++i) {
@@ -889,6 +1091,74 @@ void ModuleNavigation::LoadVolumes()
 
 		m_volumes.push_back(v);
 	}
+}
+
+void ModuleNavigation::AddMeshConnection(const glm::vec3 &start, const glm::vec3 &end, float radius, unsigned char dir, unsigned char area, unsigned short flags)
+{
+	m_connection_verts.push_back(start);
+	m_connection_verts.push_back(end);
+	m_connection_rads.push_back(radius);
+	m_connection_dirs.push_back(dir);
+	m_connection_areas.push_back(area);
+	m_connection_flags.push_back(flags);
+	m_connection_ids.push_back(m_connection_id_counter++);
+	m_connection_count++;
+}
+
+void ModuleNavigation::DeleteMeshConnection(glm::vec3 & pos)
+{
+}
+
+void ModuleNavigation::ClearConnections()
+{
+	m_connection_verts.clear();
+	m_connection_rads.clear();
+	m_connection_dirs.clear();
+	m_connection_areas.clear();
+	m_connection_flags.clear();
+	m_connection_ids.clear(); 
+	m_connection_id_counter = 1000;
+	m_connection_count = 0;
+	m_connection_dir = 1;
+	m_connection_area = 0;
+	m_connection_radius = 0.7f;
+}
+
+void ModuleNavigation::UpdateConnectionsModel()
+{
+	m_connections_renderable->Clear();
+
+	NavigationDebugDraw dd;
+	dd.model = m_connections_renderable.get();
+	
+	unsigned int baseColor = duRGBA(0, 0, 0, 256);
+
+	dd.begin(DU_DRAW_LINES, 2.0f);
+	for (unsigned int i = 0; i < m_connection_count; ++i) {
+		auto &v1 = m_connection_verts[i * 2];
+		auto &v2 = m_connection_verts[i * 2 + 1];
+
+		dd.vertex(v1[0], v1[1], v1[2], baseColor);
+		dd.vertex(v1[0], v1[1] + 0.2f, v1[2], baseColor);
+
+		dd.vertex(v2[0], v2[1], v2[2], baseColor);
+		dd.vertex(v2[0], v2[1] + 0.2f, v2[2], baseColor);
+
+		duAppendCircle(&dd, v1[0], v1[1] + 0.1f, v1[2], m_connection_rads[i], baseColor);
+		duAppendCircle(&dd, v2[0], v2[1] + 0.1f, v2[2], m_connection_rads[i], baseColor);
+
+		duAppendArc(&dd, v1[0], v1[1], v1[2], v2[0], v2[1], v2[2], 0.25f,
+			(m_connection_dirs[i] & 1) ? 0.6f : 0.0f, 0.6f, baseColor);
+	}
+	dd.end();
+
+	if (m_conn_start_set) {
+		dd.begin(DU_DRAW_LINES, 1.0f);
+		duAppendCircle(&dd, m_conn_start.x, m_conn_start.y + 0.1f, m_conn_start.z, m_connection_radius, baseColor);
+		dd.end();
+	}
+
+	m_connections_renderable->Update();
 }
 
 void NavigationDebugDraw::begin(duDebugDrawPrimitives prim, float size) {

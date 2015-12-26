@@ -38,6 +38,9 @@ public:
 	std::vector<glm::vec3>& GetTrianglesVertColors() { return m_triangles.GetVertColors(); }
 	std::vector<unsigned int>& GetTrianglesInds() { return m_triangles.GetInds(); }
 
+	DynamicGeometry &GetPointsHandle() { return m_points; }
+	DynamicGeometry &GetLinesHandle() { return m_lines; }
+	DynamicGeometry &GetTrianglesHandle() { return m_triangles; }
 private:
 	bool m_use_depth;
 	DynamicGeometry m_points;
