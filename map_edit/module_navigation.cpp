@@ -9,6 +9,7 @@
 #include <DetourNavMeshQuery.h>
 
 const uint32_t nav_file_version = 3;
+const uint32_t nav_mesh_file_version = 1;
 
 inline unsigned int nextPow2(unsigned int v)
 {
@@ -193,6 +194,10 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 		Clear();
 		ClearConnections();
 	}
+
+	LoadNavMesh();
+
+	UpdateConnectionsModel();
 }
 
 void ModuleNavigation::OnSuspend()
@@ -240,7 +245,6 @@ bool ModuleNavigation::CanSave()
 void ModuleNavigation::Save()
 {
 	SaveNavSettings();
-
 	SaveNavMesh();
 }
 
@@ -311,7 +315,26 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 		UpdateConnectionsModel();
 	}
 	else if (m_mode == ModeNavMeshConnections && mouse_button == GLFW_MOUSE_BUTTON_LEFT && io.KeyShift && collide_hit) {
-		//Delete Connection Node here
+		const float *p = (float*)collide_hit;
+		float nearest_dist = FLT_MAX;
+		int nearest_index = -1;
+		unsigned int sz = m_connection_count * 2;
+		for (unsigned int i = 0; i < sz; ++i) {
+			const float *v = (float*)&m_connection_verts[i];
+			float d = rcVdistSqr(p, v);
+			if (d < nearest_dist)
+			{
+				nearest_dist = d;
+				nearest_index = i / 2;
+			}
+		}
+
+		if (nearest_index != -1 &&
+			sqrtf(nearest_dist) <= m_connection_rads[nearest_index])
+		{
+			DeleteMeshConnection(nearest_index);
+			UpdateConnectionsModel();
+		}
 	}
 }
 
@@ -779,12 +802,7 @@ bool ModuleNavigation::LoadNavSettings()
 			return false;
 		}
 
-		if (magic[0] != 'N' ||
-			magic[1] != 'A' ||
-			magic[2] != 'V' ||
-			magic[3] != 'P' ||
-			magic[4] != 'R' ||
-			magic[5] != 'J') 
+		if(strncmp(magic, "NAVPRJ", 6) != 0)
 		{
 			fclose(f);
 			return false;
@@ -1022,6 +1040,140 @@ void ModuleNavigation::SaveNavMesh()
 {
 	//write navmesh out
 	//zone_name.nav
+	if (!m_nav_mesh)
+		return;
+
+	std::string filename = "save/" + m_scene->GetZoneName() + ".nav";
+	FILE *f = fopen(filename.c_str(), "wb");
+
+	if (f) {
+		const dtNavMesh *mesh = m_nav_mesh;
+		char magic[9] = { 'E', 'Q', 'N', 'A', 'V', 'M', 'E', 'S', 'H' };
+		fwrite(magic, sizeof(magic), 1, f);
+		fwrite(&nav_mesh_file_version, sizeof(uint32_t), 1, f);
+
+		uint32_t number_of_tiles = 0;
+		for (int i = 0; i < m_nav_mesh->getMaxTiles(); ++i)
+		{
+			const dtMeshTile* tile = mesh->getTile(i);
+			if (!tile || !tile->header || !tile->dataSize) 
+				continue;
+			number_of_tiles++;
+		}
+
+		fwrite(&number_of_tiles, sizeof(uint32_t), 1, f);
+
+		dtNavMeshParams params;
+		memcpy(&params, mesh->getParams(), sizeof(dtNavMeshParams));
+		fwrite(&params, sizeof(dtNavMeshParams), 1, f);
+
+		for (int i = 0; i < mesh->getMaxTiles(); ++i)
+		{
+			const dtMeshTile* tile = mesh->getTile(i);
+			if (!tile || !tile->header || !tile->dataSize) 
+				continue;
+
+			//write tileref uint32
+			uint32_t tile_ref = mesh->getTileRef(tile);
+			fwrite(&tile_ref, sizeof(uint32_t), 1, f);
+
+			//write datasize int32
+			int32_t data_size = tile->dataSize;
+			fwrite(&data_size, sizeof(int32_t), 1, f);
+
+			fwrite(tile->data, data_size, 1, f);
+		}
+		fclose(f);
+	}
+}
+
+void ModuleNavigation::LoadNavMesh()
+{
+	std::string filename = "save/" + m_scene->GetZoneName() + ".nav";
+	FILE *f = fopen(filename.c_str(), "rb");
+	if (f) {
+		char magic[9] = { 0 };
+		if (fread(magic, 9, 1, f) != 1) {
+			fclose(f);
+			return;
+		}
+
+		if (strncmp(magic, "EQNAVMESH", 9) != 0)
+		{
+			fclose(f);
+			return;
+		}
+
+		uint32_t version = 0;
+		if (fread(&version, sizeof(uint32_t), 1, f) != 1) {
+			fclose(f);
+			return;
+		}
+
+		if (version != nav_mesh_file_version) {
+			fclose(f);
+			return;
+		}
+
+		m_nav_mesh = dtAllocNavMesh();
+		
+		uint32_t number_of_tiles = 0;
+		if (fread(&number_of_tiles, sizeof(uint32_t), 1, f) != 1) {
+			dtFreeNavMesh(m_nav_mesh);
+			fclose(f);
+			return;
+		}
+
+		dtNavMeshParams params;
+		if (fread(&params, sizeof(dtNavMeshParams), 1, f) != 1) {
+			dtFreeNavMesh(m_nav_mesh);
+			fclose(f);
+			return;
+		}
+
+		dtStatus status = m_nav_mesh->init(&params);
+		if (dtStatusFailed(status))
+		{
+			dtFreeNavMesh(m_nav_mesh);
+			fclose(f);
+			return;
+		}
+
+		for (unsigned int i = 0; i < number_of_tiles; ++i)
+		{
+			uint32_t tile_ref = 0;
+			if (fread(&tile_ref, sizeof(uint32_t), 1, f) != 1) {
+				dtFreeNavMesh(m_nav_mesh);
+				fclose(f);
+				return;
+			}
+
+			int32_t data_size = 0;
+			if (fread(&data_size, sizeof(int32_t), 1, f) != 1) {
+				dtFreeNavMesh(m_nav_mesh);
+				fclose(f);
+				return;
+			}
+
+			if (!tile_ref || !data_size) {
+				dtFreeNavMesh(m_nav_mesh);
+				fclose(f);
+				return;
+			}
+
+			unsigned char* data = (unsigned char*)dtAlloc(data_size, DT_ALLOC_PERM);
+			if (fread(data, data_size, 1, f) != 1) {
+				dtFreeNavMesh(m_nav_mesh);
+				fclose(f);
+				return;
+			}
+
+			m_nav_mesh->addTile(data, data_size, DT_TILE_FREE_DATA, tile_ref, 0);
+		}
+
+		CreateNavMeshModel();
+		fclose(f);
+	}
 }
 
 void ModuleNavigation::LoadVolumes()
@@ -1105,8 +1257,17 @@ void ModuleNavigation::AddMeshConnection(const glm::vec3 &start, const glm::vec3
 	m_connection_count++;
 }
 
-void ModuleNavigation::DeleteMeshConnection(glm::vec3 & pos)
+void ModuleNavigation::DeleteMeshConnection(unsigned int i)
 {
+	int vert_start = i * 2;
+	int vert_end = (i + 1) * 2;
+	m_connection_verts.erase(m_connection_verts.begin() + vert_start, m_connection_verts.begin() + vert_end);
+	m_connection_rads.erase(m_connection_rads.begin() + i);
+	m_connection_dirs.erase(m_connection_dirs.begin() + i);
+	m_connection_areas.erase(m_connection_areas.begin() + i);
+	m_connection_flags.erase(m_connection_flags.begin() + i);
+	m_connection_ids.erase(m_connection_ids.begin() + i);
+	m_connection_count--;
 }
 
 void ModuleNavigation::ClearConnections()

@@ -123,9 +123,10 @@ private:
 	void SaveNavSettings();
 	bool LoadNavSettings();
 	void SaveNavMesh();
+	void LoadNavMesh();
 	void LoadVolumes();
 	void AddMeshConnection(const glm::vec3 &start, const glm::vec3 &end, float radius, unsigned char dir, unsigned char area, unsigned short flags);
-	void DeleteMeshConnection(glm::vec3 &pos);
+	void DeleteMeshConnection(unsigned int i);
 	void ClearConnections();
 	void UpdateConnectionsModel();
 
