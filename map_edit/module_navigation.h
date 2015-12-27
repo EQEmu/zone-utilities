@@ -115,6 +115,9 @@ private:
 	void DrawTestUI();
 	void DrawMeshConnectionUI();
 	void BuildNavigationMesh();
+	void InitNavigationMesh();
+	void BuildTile(const glm::vec3 &pos);
+	void RemoveTile(const glm::vec3 &pos);
 	void CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo);
 	void CreateNavMeshModel();
 	void SetNavigationTestNodeStart(const glm::vec3 &p);

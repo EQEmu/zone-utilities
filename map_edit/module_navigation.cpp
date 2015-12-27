@@ -105,7 +105,28 @@ void ModuleNavigation::OnDrawMenu()
 	if (ImGui::BeginMenu("Navigation"))
 	{
 		if (ImGui::MenuItem("Clear")) {
-
+			m_start_path_renderable->Clear();
+			m_end_path_renderable->Clear();
+			m_path_renderable->Clear();
+			m_start_path_renderable->Update();
+			m_end_path_renderable->Update();
+			m_path_renderable->Update();
+			m_path_start_set = false;
+			m_path_end_set = false;
+			m_conn_start_set = false;
+			m_nav_mesh_renderable->Clear();
+			m_nav_mesh_renderable->Update();
+			m_connections_renderable->Clear();
+			m_connections_renderable->Update();
+			m_conn_start_set = false;
+			m_chunky_mesh.reset();
+			if (m_nav_mesh) {
+				dtFreeNavMesh(m_nav_mesh);
+				m_nav_mesh = nullptr;
+			}
+			m_volumes.clear();
+			Clear();
+			ClearConnections();
 		}
 		ImGui::EndMenu();
 	}
@@ -144,7 +165,7 @@ void ModuleNavigation::OnDrawUI()
 		ImGui::RadioButton("Connections", m_mode == ModeNavMeshConnections);
 	}
 
-	if (m_nav_mesh && !HasWork()) {
+	if (!HasWork()) {
 		if (ImGui::RadioButton("Test Mesh", &m_mode, (int)ModeTestNavigation)) {
 			m_conn_start_set = false;
 			UpdateConnectionsModel();
@@ -189,6 +210,11 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 	m_connections_renderable->Clear();
 	m_connections_renderable->Update();
 	m_conn_start_set = false;
+	m_chunky_mesh.reset();
+
+	if (m_nav_mesh) {
+		dtFreeNavMesh(m_nav_mesh);
+	}
 
 	if (!LoadNavSettings()) {
 		Clear();
@@ -255,7 +281,12 @@ void ModuleNavigation::OnHotkey(int ident)
 void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected)
 {
 	auto &io = ImGui::GetIO();
-	if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
+	if (m_mode == ModeNavMeshGen && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
+		BuildTile(*collide_hit);
+	}
+	else if (m_mode == ModeNavMeshGen && mouse_button == GLFW_MOUSE_BUTTON_LEFT && io.KeyShift && collide_hit) {
+		RemoveTile(*collide_hit);
+	} else if (m_mode == ModeTestNavigation && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
 		SetNavigationTestNodeStart(*collide_hit);
 		CalcPath();
 	}
@@ -356,7 +387,7 @@ void ModuleNavigation::Clear()
 	m_partition_type = NAVIGATION_PARTITION_WATERSHED;
 	m_max_tiles = 0;
 	m_max_polys_per_tile = 0;
-	m_tile_size = 256;
+	m_tile_size = 128.0f;
 }
 
 void ModuleNavigation::DrawNavMeshGenerationUI()
@@ -372,6 +403,8 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	}
 
 	ImGui::Begin("NavMesh Properties");
+	ImGui::Text("LMB to place a navigation mesh tile. Shift + LMB to delete a navigation mesh tile.");
+	ImGui::Separator();
 
 	ImGui::Text("Rasterization");
 	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 1.0f, "%.1f");
@@ -417,7 +450,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 
 	ImGui::Text("Tiling");
-	ImGui::SliderFloat("TileSize", &m_tile_size, 16.0f, 2048.0f, "%.0f");
+	ImGui::SliderFloat("TileSize", &m_tile_size, 64.0f, 4096.0f, "%.0f");
 	m_tile_size = (float)nextPow2((unsigned int)m_tile_size);
 
 	const int ts = (int)m_tile_size;
@@ -500,18 +533,41 @@ void ModuleNavigation::BuildNavigationMesh()
 		return;
 	}
 
-	auto zone_geo = m_scene->GetZoneGeometry();
-	if (!zone_geo) {
-		return;
-	}
-
 	std::shared_ptr<EQPhysics> phys = m_scene->GetZonePhysics();
 	if (!phys) {
 		return;
 	}
 
-	m_nav_mesh_renderable->Clear();
-	m_nav_mesh_renderable->Update();
+	InitNavigationMesh();
+
+	const float* bmin = (float*)&m_scene->GetBoundingBoxMin();
+	const float* bmax = (float*)&m_scene->GetBoundingBoxMax();
+	int gw = (int)((bmax[0] - bmin[0]) / m_cell_size + 0.5f);
+	int gh = (int)((bmax[2] - bmin[2]) / m_cell_size + 0.5f);
+	const int ts = (int)m_tile_size;
+	const int tw = (gw + ts - 1) / ts;
+	const int th = (gh + ts - 1) / ts;
+	const float tcs = m_tile_size * m_cell_size;
+
+	m_work_pending += (th * tw);
+
+	for (int y = 0; y < th; ++y)
+	{
+		for (int x = 0; x < tw; ++x)
+		{
+			glm::vec3 tile_min(bmin[0] + x * tcs, bmin[1], bmin[2] + y * tcs);
+			glm::vec3 tile_max(bmin[0] + (x + 1) * tcs, bmax[1], bmin[2] + (y + 1) * tcs);
+			m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max, phys));
+		}
+	}
+}
+
+void ModuleNavigation::InitNavigationMesh()
+{
+	auto zone_geo = m_scene->GetZoneGeometry();
+	if (!zone_geo) {
+		return;
+	}
 
 	CreateChunkyTriMesh(zone_geo);
 
@@ -538,26 +594,52 @@ void ModuleNavigation::BuildNavigationMesh()
 		m_nav_mesh = nullptr;
 		return;
 	}
+}
 
-	const float* bmin = (float*)&m_scene->GetBoundingBoxMin();
-	const float* bmax = (float*)&m_scene->GetBoundingBoxMax();
-	int gw = (int)((bmax[0] - bmin[0]) / m_cell_size + 0.5f);
-	int gh = (int)((bmax[2] - bmin[2]) / m_cell_size + 0.5f);
-	const int ts = (int)m_tile_size;
-	const int tw = (gw + ts - 1) / ts;
-	const int th = (gh + ts - 1) / ts;
-	const float tcs = m_tile_size * m_cell_size;
+void ModuleNavigation::BuildTile(const glm::vec3 &pos)
+{
+	if (HasWork()) {
+		return;
+	}
 
-	for (int y = 0; y < th; ++y)
-	{
-		for (int x = 0; x < tw; ++x)
-		{
-			glm::vec3 tile_min(bmin[0] + x * tcs, bmin[1], bmin[2] + y * tcs);
-			glm::vec3 tile_max(bmin[0] + (x + 1) * tcs, bmax[1], bmin[2] + (y + 1) * tcs);
-	
-			m_work_pending++;
-			m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max, phys));
-		}
+	std::shared_ptr<EQPhysics> phys = m_scene->GetZonePhysics();
+	if (!phys) {
+		return;
+	}
+
+	if (!m_nav_mesh) {
+		InitNavigationMesh();
+	}
+
+	auto bmin = m_scene->GetBoundingBoxMin();
+	auto bmax = m_scene->GetBoundingBoxMax();
+
+	const float ts = m_tile_size * m_cell_size;
+	const int tx = (int)((pos[0] - bmin[0]) / ts);
+	const int ty = (int)((pos[2] - bmin[2]) / ts);
+
+	glm::vec3 tile_min(bmin[0] + tx * ts, bmin[1], bmin[2] + ty * ts);
+	glm::vec3 tile_max(bmin[0] + (tx + 1) * ts, bmax[1], bmin[2] + (ty + 1) * ts);
+	m_work_pending++;
+	m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, tx, ty, tile_min, tile_max, phys));
+}
+
+void ModuleNavigation::RemoveTile(const glm::vec3 &pos)
+{
+	if (HasWork()) {
+		return;
+	}
+
+	if (m_nav_mesh) {
+		auto bmin = m_scene->GetBoundingBoxMin();
+		auto bmax = m_scene->GetBoundingBoxMax();
+
+		const float ts = m_tile_size * m_cell_size;
+		const int tx = (int)((pos[0] - bmin[0]) / ts);
+		const int ty = (int)((pos[2] - bmin[2]) / ts);
+
+		m_nav_mesh->removeTile(m_nav_mesh->getTileRefAt(tx, ty, 0), 0, 0);
+		CreateNavMeshModel();
 	}
 }
 
@@ -623,13 +705,14 @@ void ModuleNavigation::CreateChunkyTriMesh(std::shared_ptr<ZoneMap> zone_geo)
 
 void ModuleNavigation::CreateNavMeshModel()
 {
+	m_nav_mesh_renderable->Clear();
 	NavigationDebugDraw dd;
 	dd.model = m_nav_mesh_renderable.get();
 	duDebugDrawNavMesh(&dd, *m_nav_mesh, 0xffu ^ DU_DRAWNAVMESH_OFFMESHCONS);
-	m_nav_mesh_renderable->Update();
 	m_nav_mesh_renderable->SetTrianglesTint(glm::vec4(0.0f, 0.75f, 1.0f, 0.25f));
 	m_nav_mesh_renderable->SetLinesTint(glm::vec4(0.0f, 0.2f, 0.25f, 0.8f));
 	m_nav_mesh_renderable->SetPointsTint(glm::vec4(0.0f, 0.0f, 0.75f, 0.5f));
+	m_nav_mesh_renderable->Update();
 }
 
 void ModuleNavigation::SetNavigationTestNodeStart(const glm::vec3 &p)
@@ -714,9 +797,17 @@ void ModuleNavigation::CalcPath()
 			m_path_renderable->Clear();
 
 			for (int i = 0; i < n_straight_polys - 1; ++i) {
+				glm::vec3 color(1.0f, 1.0f, 0.0f);
+				unsigned short flag = 0;
+				if (dtStatusSucceed(m_nav_mesh->getPolyFlags(straight_path_polys[i], &flag))) {
+					if (flag & NavigationPolyFlagPortal) {
+						color = glm::vec3(0.0, 1.0, 0.0);
+					}
+				}
+
 				glm::vec3 s(straight_path[i * 3], straight_path[i * 3 + 1] + 0.4f, straight_path[i * 3 + 2]);
 				glm::vec3 e(straight_path[(i + 1) * 3], straight_path[(i + 1) * 3 + 1] + 0.4f, straight_path[(i + 1) * 3 + 2]);
-				m_path_renderable->AddLine(s, e, glm::vec3(1.0, 1.0, 0.0));
+				m_path_renderable->AddLine(s, e, color);
 			}
 
 			m_path_renderable->Update();
@@ -1171,6 +1262,10 @@ void ModuleNavigation::LoadNavMesh()
 			m_nav_mesh->addTile(data, data_size, DT_TILE_FREE_DATA, tile_ref, 0);
 		}
 
+		auto zone_geo = m_scene->GetZoneGeometry();
+		if (zone_geo) {
+			CreateChunkyTriMesh(zone_geo);
+		}
 		CreateNavMeshModel();
 		fclose(f);
 	}
@@ -1281,7 +1376,7 @@ void ModuleNavigation::ClearConnections()
 	m_connection_id_counter = 1000;
 	m_connection_count = 0;
 	m_connection_dir = 1;
-	m_connection_area = 0;
+	m_connection_area = 9;
 	m_connection_radius = 0.7f;
 }
 
