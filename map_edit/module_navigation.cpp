@@ -214,6 +214,7 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 
 	if (m_nav_mesh) {
 		dtFreeNavMesh(m_nav_mesh);
+		m_nav_mesh = nullptr;
 	}
 
 	if (!LoadNavSettings()) {
@@ -1211,6 +1212,7 @@ void ModuleNavigation::LoadNavMesh()
 		uint32_t number_of_tiles = 0;
 		if (fread(&number_of_tiles, sizeof(uint32_t), 1, f) != 1) {
 			dtFreeNavMesh(m_nav_mesh);
+			m_nav_mesh = nullptr;
 			fclose(f);
 			return;
 		}
@@ -1218,6 +1220,7 @@ void ModuleNavigation::LoadNavMesh()
 		dtNavMeshParams params;
 		if (fread(&params, sizeof(dtNavMeshParams), 1, f) != 1) {
 			dtFreeNavMesh(m_nav_mesh);
+			m_nav_mesh = nullptr;
 			fclose(f);
 			return;
 		}
@@ -1226,6 +1229,7 @@ void ModuleNavigation::LoadNavMesh()
 		if (dtStatusFailed(status))
 		{
 			dtFreeNavMesh(m_nav_mesh);
+			m_nav_mesh = nullptr;
 			fclose(f);
 			return;
 		}
@@ -1235,6 +1239,7 @@ void ModuleNavigation::LoadNavMesh()
 			uint32_t tile_ref = 0;
 			if (fread(&tile_ref, sizeof(uint32_t), 1, f) != 1) {
 				dtFreeNavMesh(m_nav_mesh);
+				m_nav_mesh = nullptr;
 				fclose(f);
 				return;
 			}
@@ -1242,12 +1247,14 @@ void ModuleNavigation::LoadNavMesh()
 			int32_t data_size = 0;
 			if (fread(&data_size, sizeof(int32_t), 1, f) != 1) {
 				dtFreeNavMesh(m_nav_mesh);
+				m_nav_mesh = nullptr;
 				fclose(f);
 				return;
 			}
 
 			if (!tile_ref || !data_size) {
 				dtFreeNavMesh(m_nav_mesh);
+				m_nav_mesh = nullptr;
 				fclose(f);
 				return;
 			}
@@ -1255,6 +1262,7 @@ void ModuleNavigation::LoadNavMesh()
 			unsigned char* data = (unsigned char*)dtAlloc(data_size, DT_ALLOC_PERM);
 			if (fread(data, data_size, 1, f) != 1) {
 				dtFreeNavMesh(m_nav_mesh);
+				m_nav_mesh = nullptr;
 				fclose(f);
 				return;
 			}
