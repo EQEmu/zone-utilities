@@ -100,6 +100,7 @@ static void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
 	glDisable(GL_BLEND);
 	glDisable(GL_SCISSOR_TEST);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	glBindTexture(GL_TEXTURE_2D, last_texture);
 }
 

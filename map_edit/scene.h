@@ -98,6 +98,7 @@ private:
 	float m_far_clip;
 	double m_last_time;
 	bool m_first_input;
+	bool m_right_was_down;
 
 	//zone info
 	std::string m_name;

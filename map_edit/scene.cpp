@@ -34,6 +34,7 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 	m_far_clip = 15000.0f;
 	m_last_time = 0.0f;
 	m_first_input = true;
+	m_right_was_down = false;
 
 	for(int i = 0; i < 512; ++i) {
 		m_key_status[i] = GLFW_RELEASE;
@@ -408,12 +409,24 @@ void Scene::ProcessSceneInput() {
 	float delta_time = float(current_time - m_last_time);
 
 	if (!io.WantCaptureMouse && glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		double x_pos, y_pos;
-		glfwGetCursorPos(m_window, &x_pos, &y_pos);
-		glfwSetCursorPos(m_window, m_width / 2, m_height / 2);
+		if (m_right_was_down) {
+			double x_pos, y_pos;
+			glfwGetCursorPos(m_window, &x_pos, &y_pos);
+			glfwSetCursorPos(m_window, m_width / 2, m_height / 2);
 
-		m_hor_angle += 0.005f * float(m_width / 2 - x_pos);
-		m_ver_angle += 0.005f * float(m_height / 2 - y_pos);
+			m_hor_angle += 0.005f * float(m_width / 2 - x_pos);
+			m_ver_angle += 0.005f * float(m_height / 2 - y_pos);
+		}
+		else {
+			glfwSetCursorPos(m_window, m_width / 2, m_height / 2);
+		}
+	}
+
+	if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		m_right_was_down = true;
+	}
+	else {
+		m_right_was_down = false;
 	}
 
 	glm::vec3 direction(cos(m_ver_angle) * sin(m_hor_angle), sin(m_ver_angle), cos(m_ver_angle) * cos(m_hor_angle));

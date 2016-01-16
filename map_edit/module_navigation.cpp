@@ -374,9 +374,9 @@ void ModuleNavigation::Clear()
 {
 	m_cell_size = 0.6f;
 	m_cell_height = 0.3f;
-	m_agent_height = 3.5f;
-	m_agent_radius = 0.7f;
-	m_agent_max_climb = 3.5f;
+	m_agent_height = 7.0f;
+	m_agent_radius = 0.8f;
+	m_agent_max_climb = 6.0f;
 	m_agent_max_slope = 55.0f;
 	m_region_min_size = 8;
 	m_region_merge_size = 20;
