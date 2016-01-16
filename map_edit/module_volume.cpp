@@ -487,6 +487,13 @@ void ModuleVolume::BuildRegionModels()
 		inds.push_back(current_index + 3);
 		inds.push_back(current_index + 0);
 
+		inds.push_back(current_index + 2);
+		inds.push_back(current_index + 1);
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 3);
+		inds.push_back(current_index + 2);
+
 		//back
 		inds.push_back(current_index + 1);
 		inds.push_back(current_index + 2);
@@ -494,6 +501,13 @@ void ModuleVolume::BuildRegionModels()
 		inds.push_back(current_index + 6);
 		inds.push_back(current_index + 5);
 		inds.push_back(current_index + 1);
+
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 2);
+		inds.push_back(current_index + 1);
+		inds.push_back(current_index + 1);
+		inds.push_back(current_index + 5);
+		inds.push_back(current_index + 6);
 
 		//bottom
 		inds.push_back(current_index + 4);
@@ -503,6 +517,13 @@ void ModuleVolume::BuildRegionModels()
 		inds.push_back(current_index + 7);
 		inds.push_back(current_index + 4);
 
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 5);
+		inds.push_back(current_index + 4);
+		inds.push_back(current_index + 4);
+		inds.push_back(current_index + 7);
+		inds.push_back(current_index + 6);
+
 		//front
 		inds.push_back(current_index + 0);
 		inds.push_back(current_index + 3);
@@ -510,6 +531,13 @@ void ModuleVolume::BuildRegionModels()
 		inds.push_back(current_index + 7);
 		inds.push_back(current_index + 4);
 		inds.push_back(current_index + 0);
+
+		inds.push_back(current_index + 7);
+		inds.push_back(current_index + 3);
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 4);
+		inds.push_back(current_index + 7);
 
 		//left
 		inds.push_back(current_index + 0);
@@ -519,6 +547,13 @@ void ModuleVolume::BuildRegionModels()
 		inds.push_back(current_index + 4);
 		inds.push_back(current_index + 0);
 
+		inds.push_back(current_index + 5);
+		inds.push_back(current_index + 1);
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 0);
+		inds.push_back(current_index + 4);
+		inds.push_back(current_index + 5);
+
 		//right
 		inds.push_back(current_index + 3);
 		inds.push_back(current_index + 2);
@@ -526,6 +561,13 @@ void ModuleVolume::BuildRegionModels()
 		inds.push_back(current_index + 6);
 		inds.push_back(current_index + 7);
 		inds.push_back(current_index + 3);
+
+		inds.push_back(current_index + 6);
+		inds.push_back(current_index + 2);
+		inds.push_back(current_index + 3);
+		inds.push_back(current_index + 3);
+		inds.push_back(current_index + 7);
+		inds.push_back(current_index + 6);
 	}
 
 	m_volume_entity->Update();
