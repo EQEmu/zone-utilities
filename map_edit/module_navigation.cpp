@@ -1,15 +1,17 @@
 #include <algorithm>
+#include <sstream>
 #include "string_util.h"
 #include "imgui.h"
 #include "module_navigation.h"
 #include "thread_pool.h"
 #include "log_macros.h"
 #include "module_navigation_build_tile.h"
+#include "compression.h"
 
 #include <DetourNavMeshQuery.h>
 
 const uint32_t nav_file_version = 3;
-const uint32_t nav_mesh_file_version = 1;
+const uint32_t nav_mesh_file_version = 2;
 
 inline unsigned int nextPow2(unsigned int v)
 {
@@ -1144,6 +1146,8 @@ void ModuleNavigation::SaveNavMesh()
 		fwrite(magic, sizeof(magic), 1, f);
 		fwrite(&nav_mesh_file_version, sizeof(uint32_t), 1, f);
 
+		std::stringstream ss(std::stringstream::in | std::stringstream::out | std::stringstream::binary);
+
 		uint32_t number_of_tiles = 0;
 		for (int i = 0; i < m_nav_mesh->getMaxTiles(); ++i)
 		{
@@ -1153,11 +1157,11 @@ void ModuleNavigation::SaveNavMesh()
 			number_of_tiles++;
 		}
 
-		fwrite(&number_of_tiles, sizeof(uint32_t), 1, f);
+		ss.write((const char*)&number_of_tiles, sizeof(uint32_t));
 
 		dtNavMeshParams params;
 		memcpy(&params, mesh->getParams(), sizeof(dtNavMeshParams));
-		fwrite(&params, sizeof(dtNavMeshParams), 1, f);
+		ss.write((const char*)&params, sizeof(dtNavMeshParams));
 
 		for (int i = 0; i < mesh->getMaxTiles(); ++i)
 		{
@@ -1167,14 +1171,24 @@ void ModuleNavigation::SaveNavMesh()
 
 			//write tileref uint32
 			uint32_t tile_ref = mesh->getTileRef(tile);
-			fwrite(&tile_ref, sizeof(uint32_t), 1, f);
+			ss.write((const char*)&tile_ref, sizeof(uint32_t));
 
 			//write datasize int32
 			int32_t data_size = tile->dataSize;
-			fwrite(&data_size, sizeof(int32_t), 1, f);
+			ss.write((const char*)&data_size, sizeof(int32_t));
 
-			fwrite(tile->data, data_size, 1, f);
+			ss.write((const char*)tile->data, data_size);
 		}
+
+		std::vector<char> buffer;
+		auto buffer_len = ss.str().length() + 128;
+		buffer.resize(buffer_len);
+
+		uint32_t out_size = (uint32_t)EQEmu::DeflateData(ss.str().c_str(), (uint32_t)ss.str().length(), &buffer[0], buffer_len);
+		fwrite(&out_size, sizeof(uint32_t), 1, f);
+		uint32_t uncompressed_size = (uint32_t)ss.str().length();
+		fwrite(&uncompressed_size, sizeof(uint32_t), 1, f);
+		fwrite(&buffer[0], out_size, 1, f);
 		fclose(f);
 	}
 }
@@ -1207,65 +1221,64 @@ void ModuleNavigation::LoadNavMesh()
 			return;
 		}
 
-		m_nav_mesh = dtAllocNavMesh();
-		
-		uint32_t number_of_tiles = 0;
-		if (fread(&number_of_tiles, sizeof(uint32_t), 1, f) != 1) {
-			dtFreeNavMesh(m_nav_mesh);
-			m_nav_mesh = nullptr;
+		uint32_t data_size;
+		if (fread(&data_size, sizeof(data_size), 1, f) != 1) {
 			fclose(f);
 			return;
 		}
 
-		dtNavMeshParams params;
-		if (fread(&params, sizeof(dtNavMeshParams), 1, f) != 1) {
-			dtFreeNavMesh(m_nav_mesh);
-			m_nav_mesh = nullptr;
+		uint32_t buffer_size;
+		if (fread(&buffer_size, sizeof(buffer_size), 1, f) != 1) {
 			fclose(f);
 			return;
 		}
+
+		std::vector<char> data;
+		data.resize(data_size);
+		if (fread(&data[0], data_size, 1, f) != 1) {
+			fclose(f);
+			return;
+		}
+
+		std::vector<char> buffer;
+		buffer.resize(buffer_size);
+		uint32_t v = EQEmu::InflateData(&data[0], data_size, &buffer[0], buffer_size);
+		fclose(f);
+
+		char *buf = &buffer[0];
+		m_nav_mesh = dtAllocNavMesh();
+		
+		uint32_t number_of_tiles = *(uint32_t*)buf;
+		buf += sizeof(uint32_t);
+
+		dtNavMeshParams params = *(dtNavMeshParams*)buf;
+		buf += sizeof(dtNavMeshParams);
 
 		dtStatus status = m_nav_mesh->init(&params);
 		if (dtStatusFailed(status))
 		{
 			dtFreeNavMesh(m_nav_mesh);
 			m_nav_mesh = nullptr;
-			fclose(f);
 			return;
 		}
 
 		for (unsigned int i = 0; i < number_of_tiles; ++i)
 		{
-			uint32_t tile_ref = 0;
-			if (fread(&tile_ref, sizeof(uint32_t), 1, f) != 1) {
-				dtFreeNavMesh(m_nav_mesh);
-				m_nav_mesh = nullptr;
-				fclose(f);
-				return;
-			}
-
-			int32_t data_size = 0;
-			if (fread(&data_size, sizeof(int32_t), 1, f) != 1) {
-				dtFreeNavMesh(m_nav_mesh);
-				m_nav_mesh = nullptr;
-				fclose(f);
-				return;
-			}
+			uint32_t tile_ref = *(uint32_t*)buf;
+			buf += sizeof(uint32_t);
+			
+			int32_t data_size = *(uint32_t*)buf;
+			buf += sizeof(uint32_t);
 
 			if (!tile_ref || !data_size) {
 				dtFreeNavMesh(m_nav_mesh);
 				m_nav_mesh = nullptr;
-				fclose(f);
 				return;
 			}
 
 			unsigned char* data = (unsigned char*)dtAlloc(data_size, DT_ALLOC_PERM);
-			if (fread(data, data_size, 1, f) != 1) {
-				dtFreeNavMesh(m_nav_mesh);
-				m_nav_mesh = nullptr;
-				fclose(f);
-				return;
-			}
+			memcpy(data, buf, data_size);
+			buf += data_size;
 
 			m_nav_mesh->addTile(data, data_size, DT_TILE_FREE_DATA, tile_ref, 0);
 		}
@@ -1275,7 +1288,6 @@ void ModuleNavigation::LoadNavMesh()
 			CreateChunkyTriMesh(zone_geo);
 		}
 		CreateNavMeshModel();
-		fclose(f);
 	}
 }
 
