@@ -36,10 +36,9 @@ int main(int argc, char **argv)
 	glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 	glfwWindowHint(GLFW_RESIZABLE, 0);
-	//glfwWindowHint(GLFW_DECORATED, 0);
+	glfwWindowHint(GLFW_DECORATED, 0);
 
-	GLFWwindow *win = glfwCreateWindow(1600, 900, "Map Edit", nullptr, nullptr);
-	//GLFWwindow *win = glfwCreateWindow(mode->width, mode->height, "Map Edit", nullptr, nullptr);
+	GLFWwindow *win = glfwCreateWindow(mode->width, mode->height, "Map Edit", nullptr, nullptr);
 	if(!win) {
 		eqLogMessage(LogFatal, "Couldn't create an OpenGL window.");
 		glfwTerminate();
@@ -58,7 +57,7 @@ int main(int argc, char **argv)
 	std::unique_ptr<Scene> scene(new Scene());
 	scene->RegisterModule(new ModuleNavigation());
 	scene->RegisterModule(new ModuleVolume());
-	scene->Init(win, 1600, 900);
+	scene->Init(win, mode->width, mode->height);
 
 	ImGui_ImplGlfwGL3_Init(win, true);
 	while(!glfwWindowShouldClose(win)) {
