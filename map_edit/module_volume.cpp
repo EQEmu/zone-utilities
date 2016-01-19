@@ -146,12 +146,12 @@ void ModuleVolume::OnDrawUI()
 		}
 	}
 
-	ImGui::Separator();
-	static float step_size = 5.0f;
-	ImGui::InputFloat("Step size (smaller for more detail, larger for faster but worse detail)", &step_size);
-	if (ImGui::Button("Build from WaterMap (Very Slow, can create decent volumes from some s3d zones though.)")) {
-		BuildFromWatermap(step_size);
-	}
+	//ImGui::Separator();
+	//static float step_size = 5.0f;
+	//ImGui::InputFloat("Step size (smaller for more detail, larger for faster but worse detail)", &step_size);
+	//if (ImGui::Button("Build from WaterMap (Very Slow, can create decent volumes from some s3d zones though.)")) {
+	//	BuildFromWatermap(step_size);
+	//}
 	ImGui::End();
 }
 

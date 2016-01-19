@@ -137,6 +137,7 @@ private:
 	bool m_render_collide;
 	bool m_render_non_collide;
 	bool m_render_bb;
+	bool m_backface_cull;
 };
 
 #endif

@@ -447,7 +447,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 	ImGui::Text("Detail Mesh");
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
-	ImGui::SliderFloat("Sample Distance", &m_detail_sample_dist, 0.0f, 32.0f, "%.0f");
+	ImGui::SliderFloat("Sample Distance", &m_detail_sample_dist, 1.0f, 32.0f, "%.0f");
 	ImGui::SliderFloat("Max Sample Error", &m_detail_sample_max_error, 0.0f, 16.0f, "%.0f");
 	ImGui::PopItemWidth();
 	ImGui::Separator();

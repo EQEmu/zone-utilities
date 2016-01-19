@@ -50,6 +50,7 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 	m_render_collide = true;
 	m_render_non_collide = true;
 	m_render_bb = true;
+	m_backface_cull = false;
 
 	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
@@ -139,6 +140,13 @@ void Scene::LoadScene(const char *zone_name) {
 void Scene::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	ImGui_ImplGlfwGL3_NewFrame();
+
+	if (m_backface_cull) {
+		glEnable(GL_CULL_FACE);
+	}
+	else {
+		glDisable(GL_CULL_FACE);
+	}
 
 	m_shader->Use();
 
@@ -269,6 +277,7 @@ void Scene::RenderUI() {
 		ImGui::Checkbox("Render Collidable Mesh", &m_render_collide);
 		ImGui::Checkbox("Render Non-Collidable Mesh", &m_render_non_collide);
 		ImGui::Checkbox("Render Bounding Box", &m_render_bb);
+		ImGui::Checkbox("Enable backface culling.", &m_backface_cull);
 
 		if (m_zone_geometry) {
 			ImGui::Text("Bounding Box");

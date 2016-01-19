@@ -264,6 +264,7 @@ bool    ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks)
 	io.RenderDrawListsFn = ImGui_ImplGlfwGL3_RenderDrawLists;
 	io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
 	io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
+	io.MouseDrawCursor = true;
 #ifdef _MSC_VER
 	io.ImeWindowHandle = glfwGetWin32Window(g_Window);
 #endif
