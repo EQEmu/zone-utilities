@@ -277,7 +277,7 @@ void Scene::RenderUI() {
 		ImGui::Checkbox("Render Collidable Mesh", &m_render_collide);
 		ImGui::Checkbox("Render Non-Collidable Mesh", &m_render_non_collide);
 		ImGui::Checkbox("Render Bounding Box", &m_render_bb);
-		ImGui::Checkbox("Enable backface culling.", &m_backface_cull);
+		ImGui::Checkbox("Enable Backface Culling.", &m_backface_cull);
 
 		if (m_zone_geometry) {
 			ImGui::Text("Bounding Box");

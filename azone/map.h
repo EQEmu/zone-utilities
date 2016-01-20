@@ -35,6 +35,7 @@ private:
 		std::vector<std::shared_ptr<EQEmu::Light>> &lights
 		);
 	bool CompileEQGv4();
+	void LoadIgnore(std::string zone_name);
 
 	void AddFace(glm::vec3 &v1, glm::vec3 &v2, glm::vec3 &v3, bool collidable);
 
@@ -59,6 +60,7 @@ private:
 	std::map<std::string, std::shared_ptr<EQEmu::EQG::Geometry>> map_eqg_models;
 	std::vector<std::shared_ptr<EQEmu::Placeable>> map_placeables;
 	std::vector<std::shared_ptr<EQEmu::PlaceableGroup>> map_group_placeables;
+	std::map<std::string, bool> ignore_placs;
 };
 
 #endif

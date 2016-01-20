@@ -770,7 +770,7 @@ bool ZoneMap::LoadV2(FILE *f) {
 			imp->min.x = vert.x;
 		}
 
-		if(vert.y < imp->min.y) {
+		if(vert.y < imp->min.y && vert.y > -15000) {
 			imp->min.y = vert.y;
 		}
 

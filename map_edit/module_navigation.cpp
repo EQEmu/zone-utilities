@@ -410,17 +410,17 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 
 	ImGui::Text("Rasterization");
-	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 1.0f, "%.1f");
-	ImGui::SliderFloat("Cell Height", &m_cell_height, 0.1f, 1.0f, "%.1f");
+	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 3.0f, "%.1f");
+	ImGui::SliderFloat("Cell Height", &m_cell_height, 0.1f, 3.0f, "%.1f");
 
 	rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
 	ImGui::Text(EQEmu::StringFormat("Voxels  %d x %d", gw, gh).c_str());
 
 	ImGui::Separator();
 	ImGui::Text("Agent");
-	ImGui::SliderFloat("Height", &m_agent_height, 0.1f, 15.0f, "%.1f");
+	ImGui::SliderFloat("Height", &m_agent_height, 0.1f, 40.0f, "%.1f");
 	ImGui::SliderFloat("Radius", &m_agent_radius, 0.1f, 15.0f, "%.1f");
-	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 15.0f, "%.1f");
+	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 40.0f, "%.1f");
 	ImGui::SliderFloat("Max Slope", &m_agent_max_slope, 0.0f, 90.0f, "%.0f");
 
 	ImGui::Separator();
@@ -439,22 +439,21 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 	ImGui::Text("Polygonization");
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
-	ImGui::SliderFloat("Max Edge Length", &m_edge_max_len, 0.0f, 50.0f, "%.0f");
+	ImGui::SliderFloat("Max Edge Length", &m_edge_max_len, 0.0f, 512.0f, "%.0f");
 	ImGui::SliderFloat("Max Edge Error", &m_edge_max_error, 0.1f, 3.0f, "%.1f");
-	ImGui::SliderFloat("Verts Per Poly", &m_verts_per_poly, 3.0f, 12.0f, "%.0f");
+	ImGui::SliderFloat("Verts Per Poly", &m_verts_per_poly, 3.0f, 6.0f, "%.0f");
 	ImGui::PopItemWidth();
 
 	ImGui::Separator();
 	ImGui::Text("Detail Mesh");
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
 	ImGui::SliderFloat("Sample Distance", &m_detail_sample_dist, 1.0f, 32.0f, "%.0f");
-	ImGui::SliderFloat("Max Sample Error", &m_detail_sample_max_error, 0.0f, 16.0f, "%.0f");
+	ImGui::SliderFloat("Max Sample Error", &m_detail_sample_max_error, 1.0f, 16.0f, "%.0f");
 	ImGui::PopItemWidth();
 	ImGui::Separator();
 
 	ImGui::Text("Tiling");
 	ImGui::SliderFloat("TileSize", &m_tile_size, 64.0f, 4096.0f, "%.0f");
-	m_tile_size = (float)nextPow2((unsigned int)m_tile_size);
 
 	const int ts = (int)m_tile_size;
 	const int tw = (gw + ts - 1) / ts;
@@ -749,7 +748,7 @@ void ModuleNavigation::CalcPath()
 		return;
 	}
 
-	glm::vec3 ext(5.0f, 5.0f, 5.0f);
+	glm::vec3 ext(15.0f, 15.0f, 15.0f);
 	dtQueryFilter filter;
 	filter.setIncludeFlags(NavigationPolyFlagAll);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);

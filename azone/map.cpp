@@ -1,5 +1,6 @@
 #include "map.h"
 #include <sstream>
+#include <fstream>
 #include "compression.h"
 #include "log_macros.h"
 #include <gtc/matrix_transform.hpp>
@@ -11,6 +12,8 @@ Map::~Map() {
 }
 
 bool Map::Build(std::string zone_name) {
+	LoadIgnore(zone_name);
+
 	eqLogMessage(LogTrace, "Attempting to load %s.eqg as a standard eqg.", zone_name.c_str());
 	
 	EQEmu::EQGLoader eqg;
@@ -484,6 +487,11 @@ bool Map::CompileS3D(
 				continue;
 			}
 
+			if (ignore_placs.count(plac->GetName()) > 0) {
+				continue;
+			}
+
+			eqLogMessage(LogTrace, "Loading placeable %s", plac->GetName().c_str());
 			bool found = false;
 			for (uint32_t o = 0; o < object_frags.size(); ++o) {
 				if (object_frags[o].type == 0x14) {
@@ -640,6 +648,10 @@ bool Map::CompileEQG(
 		float scale_z = plac->GetScaleZ();
 
 		if(!is_ter) {
+			if (ignore_placs.count(model->GetName()) > 0) {
+				continue;
+			}
+
 			if (map_eqg_models.count(model->GetName()) == 0) {
 				map_eqg_models[model->GetName()] = model;
 			}
@@ -817,6 +829,20 @@ bool Map::CompileEQGv4()
 	}
 
 	return true;
+}
+
+void Map::LoadIgnore(std::string zone_name)
+{
+	ignore_placs.clear();
+	std::string filename = zone_name + ".ignore";
+
+	std::ifstream f(filename, std::ifstream::in);
+	char buffer[128];
+	while (f.good()) {
+		f.getline(buffer, 128);
+		ignore_placs[buffer] = true;
+	}
+	f.close();
 }
 
 void Map::AddFace(glm::vec3 &v1, glm::vec3 &v2, glm::vec3 &v3, bool collidable) {
