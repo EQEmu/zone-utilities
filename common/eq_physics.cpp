@@ -15,9 +15,9 @@ struct btMeshInfo
 		rb.reset(rb_in);
 	}
 
-	std::unique_ptr<btTriangleMesh> mesh;
-	std::unique_ptr<btBvhTriangleMeshShape> mesh_shape;
-	std::unique_ptr<btRigidBody> rb;
+	std::shared_ptr<btTriangleMesh> mesh;
+	std::shared_ptr<btBvhTriangleMeshShape> mesh_shape;
+	std::shared_ptr<btRigidBody> rb;
 };
 
 struct EQPhysics::impl {
