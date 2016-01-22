@@ -165,6 +165,7 @@ bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & de
 	btCollisionWorld::ClosestRayResultCallback ray_hit(src_bt, dest_bt);
 	ray_hit.m_collisionFilterGroup = (short)flag;
 	ray_hit.m_collisionFilterMask = (short)flag;
+	ray_hit.m_flags |= 1;
 
 	imp->collision_world->rayTest(src_bt, dest_bt, ray_hit);
 
@@ -191,6 +192,7 @@ float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::v
 	btCollisionWorld::ClosestRayResultCallback hit_below(from, to);
 	hit_below.m_collisionFilterGroup = (short)CollidableWorld;
 	hit_below.m_collisionFilterMask = (short)CollidableWorld;
+	hit_below.m_flags |= 1;
 
 	imp->collision_world->rayTest(from, to, hit_below);
 
@@ -287,6 +289,7 @@ bool EQPhysics::IsUnderworld(const glm::vec3 &point) const {
 	btCollisionWorld::AllHitsRayResultCallback hit_below(from, to);
 	hit_below.m_collisionFilterGroup = (short)CollidableWorld;
 	hit_below.m_collisionFilterMask = (short)CollidableWorld;
+	hit_below.m_flags |= 1;
 
 	imp->collision_world->rayTest(from, to, hit_below);
 

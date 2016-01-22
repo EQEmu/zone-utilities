@@ -379,7 +379,7 @@ void ModuleNavigation::Clear()
 	m_agent_height = 7.0f;
 	m_agent_radius = 0.8f;
 	m_agent_max_climb = 6.0f;
-	m_agent_max_slope = 55.0f;
+	m_agent_max_slope = 60.0f;
 	m_region_min_size = 8;
 	m_region_merge_size = 20;
 	m_edge_max_len = 12.0f;
@@ -410,24 +410,24 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 
 	ImGui::Text("Rasterization");
-	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 3.0f, "%.1f");
-	ImGui::SliderFloat("Cell Height", &m_cell_height, 0.1f, 3.0f, "%.1f");
+	ImGui::SliderFloat("Cell Size", &m_cell_size, 0.1f, 2.0f, "%.1f");
+	ImGui::SliderFloat("Cell Height", &m_cell_height, 0.1f, 2.0f, "%.1f");
 
 	rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
 	ImGui::Text(EQEmu::StringFormat("Voxels  %d x %d", gw, gh).c_str());
 
 	ImGui::Separator();
 	ImGui::Text("Agent");
-	ImGui::SliderFloat("Height", &m_agent_height, 0.1f, 40.0f, "%.1f");
+	ImGui::SliderFloat("Height", &m_agent_height, 0.1f, 20.0f, "%.1f");
 	ImGui::SliderFloat("Radius", &m_agent_radius, 0.1f, 15.0f, "%.1f");
-	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 40.0f, "%.1f");
+	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 20.0f, "%.1f");
 	ImGui::SliderFloat("Max Slope", &m_agent_max_slope, 0.0f, 90.0f, "%.0f");
 
 	ImGui::Separator();
 	ImGui::Text("Region");
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
-	ImGui::SliderFloat("Min Region Size", &m_region_min_size, 0.0f, 150.0f, "%.0f");
-	ImGui::SliderFloat("Merged Region Size", &m_region_merge_size, 0.0f, 150.0f, "%.0f");
+	ImGui::SliderFloat("Min Region Size", &m_region_min_size, 0.0f, 60.0f, "%.0f");
+	ImGui::SliderFloat("Merged Region Size", &m_region_merge_size, 0.0f, 60.0f, "%.0f");
 	ImGui::PopItemWidth();
 
 	ImGui::Separator();
@@ -439,7 +439,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 	ImGui::Text("Polygonization");
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
-	ImGui::SliderFloat("Max Edge Length", &m_edge_max_len, 0.0f, 512.0f, "%.0f");
+	ImGui::SliderFloat("Max Edge Length", &m_edge_max_len, 0.0f, 128.0f, "%.0f");
 	ImGui::SliderFloat("Max Edge Error", &m_edge_max_error, 0.1f, 3.0f, "%.1f");
 	ImGui::SliderFloat("Verts Per Poly", &m_verts_per_poly, 3.0f, 6.0f, "%.0f");
 	ImGui::PopItemWidth();
@@ -496,14 +496,15 @@ void ModuleNavigation::DrawTestUI()
 	ImGui::Separator();
 
 	ImGui::Text("Area Costs");
-	ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 1.0f, 100.0f, "%.1f");
-	ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 0.1f, 100.0f, "%.1f");
+	ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 1.0f, 10.0f, "%.1f");
+	ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 1.0f, 10.0f, "%.1f");
+	ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 1.0f, 10.0f, "%.1f");
+	ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 1.0f, 10.0f, "%.1f");
+	ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 1.0f, 10.0f, "%.1f");
+	ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 1.0f, 10.0f, "%.1f");
+	ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 1.0f, 10.0f, "%.1f");
+	ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 0.1f, 10.0f, "%.1f");
+	ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 0.1f, 10.0f, "%.1f");
 	ImGui::End();
 }
 
@@ -748,7 +749,7 @@ void ModuleNavigation::CalcPath()
 		return;
 	}
 
-	glm::vec3 ext(15.0f, 15.0f, 15.0f);
+	glm::vec3 ext(10.0f, 10.0f, 10.0f);
 	dtQueryFilter filter;
 	filter.setIncludeFlags(NavigationPolyFlagAll);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
@@ -791,7 +792,7 @@ void ModuleNavigation::CalcPath()
 		dtPolyRef straight_path_polys[256];
 		query->findStraightPath(&m_path_start[0], &epos[0], path, npoly,
 			straight_path, straight_path_flags,
-			straight_path_polys, &n_straight_polys, 256, DT_STRAIGHTPATH_ALL_CROSSINGS);
+			straight_path_polys, &n_straight_polys, 256, DT_STRAIGHTPATH_AREA_CROSSINGS);
 
 		dtFreeNavMeshQuery(query);
 
@@ -1396,7 +1397,7 @@ void ModuleNavigation::ClearConnections()
 	m_connection_count = 0;
 	m_connection_dir = 1;
 	m_connection_area = 9;
-	m_connection_radius = 0.7f;
+	m_connection_radius = 1.5f;
 }
 
 void ModuleNavigation::UpdateConnectionsModel()

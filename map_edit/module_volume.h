@@ -43,7 +43,7 @@ private:
 	void FreeRegionList();
 	void BuildRegionList();
 	void BuildRegionModels();
-	void BuildFromWatermap(float step_size);
+	void BuildFromWatermap(const glm::vec3 &pos);
 	bool CanCombineRegions(int dest, int src);
 	void CombineRegions(int dest, int src);
 	bool DoCombine();

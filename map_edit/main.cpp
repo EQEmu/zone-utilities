@@ -9,6 +9,8 @@
 #include "thread_pool.h"
 #include "log_file.h"
 
+std::unique_ptr<Scene> scene;
+
 int main(int argc, char **argv)
 {
 	eqLogInit(EQEMU_LOG_LEVEL);
@@ -35,8 +37,7 @@ int main(int argc, char **argv)
 	glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
 	glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-	glfwWindowHint(GLFW_RESIZABLE, 0);
-	glfwWindowHint(GLFW_DECORATED, 0);
+
 
 	GLFWwindow *win = glfwCreateWindow(mode->width, mode->height, "Map Edit", nullptr, nullptr);
 	if(!win) {
@@ -54,10 +55,14 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	std::unique_ptr<Scene> scene(new Scene());
+	scene.reset(new Scene());
 	scene->RegisterModule(new ModuleNavigation());
 	scene->RegisterModule(new ModuleVolume());
-	scene->Init(win, mode->width, mode->height);
+	scene->Init(win);
+
+	glfwSetFramebufferSizeCallback(win, [](GLFWwindow *win, int width, int height) {
+		scene->Resize(width, height);
+	});
 
 	ImGui_ImplGlfwGL3_Init(win, true);
 	while(!glfwWindowShouldClose(win)) {

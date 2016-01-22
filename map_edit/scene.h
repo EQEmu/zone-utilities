@@ -43,7 +43,7 @@ public:
 	~Scene();
 	
 	//scene & engine managment
-	void Init(GLFWwindow *win, int width, int height);
+	void Init(GLFWwindow *win);
 	void LoadScene(const char *zone_name);
 	void Render();
 	void RenderMainMenu();
@@ -75,6 +75,8 @@ public:
 	glm::vec3 &GetBoundingBoxMin() { return m_bounding_box_min; }
 	glm::vec3 &GetBoundingBoxMax() { return m_bounding_box_max; }
 	void UpdateBoundingBox();
+
+	void Resize(int width, int height);
 private:
 	void GetEntityName(Entity *ent, std::string &name);
 	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);

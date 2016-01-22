@@ -63,12 +63,14 @@ void ModuleVolume::OnDrawUI()
 	ImGui::SameLine();
 
 	if (ImGui::Button("Delete")) {
-		m_regions.erase(m_regions.begin() + m_selected_region);
-		BuildRegionList();
-		BuildRegionModels();
+		if (m_selected_region != -1) {
+			m_regions.erase(m_regions.begin() + m_selected_region);
+			BuildRegionList();
+			BuildRegionModels();
 
-		m_selected_region = -1;
-		m_modified = true;
+			m_selected_region = -1;
+			m_modified = true;
+		}
 	}
 
 	ImGui::Separator();
@@ -79,6 +81,11 @@ void ModuleVolume::OnDrawUI()
 
 		m_selected_region = -1;
 		m_modified = true;
+	}
+
+	ImGui::Separator();
+	if (ImGui::Button("Create region from water map approx")) {
+		BuildFromWatermap(m_scene->GetCameraLoc());
 	}
 
 	if (m_selected_region >= 0 && m_selected_region < m_region_list_size) {
@@ -178,14 +185,10 @@ void ModuleVolume::OnSceneLoad(const char *zone_name)
 
 void ModuleVolume::OnSuspend()
 {
-	m_scene->UnregisterEntitiesByModule(this);
 }
 
 void ModuleVolume::OnResume()
 {
-	if (m_render_volume) {
-		m_scene->RegisterEntity(this, m_volume_entity.get());
-	}
 }
 
 bool ModuleVolume::HasWork()
@@ -589,41 +592,91 @@ bool RegionPointEqual(const glm::vec4 &a, const glm::vec4 &b) {
 	return true;
 }
 
-void ModuleVolume::BuildFromWatermap(float step_size)
+void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 {
-	auto min = m_scene->GetBoundingBoxMin();
-	auto max = m_scene->GetBoundingBoxMax();
 	auto physics = m_scene->GetZonePhysics();
+	if (!physics) {
+		return;
+	}
+	
+	auto region_type = physics->ReturnRegionType(pos);
+	if (region_type == RegionTypeNormal || region_type == RegionTypeUntagged || region_type == RegionTypeUnsupported) {
+		return;
+	}
 
-	m_regions.clear();
-	m_regions_orig.clear();
-
-	for (float x = min.x; x < max.x; x += step_size)
-	{
-		for (float y = min.y; y < max.y; y += step_size)
-		{
-			for (float z = min.z; z < max.z; z += step_size)
-			{
-				auto region = physics->ReturnRegionType(glm::vec3(x, y, z));
-				if (region != RegionTypeNormal) {
-					Region t;
-					t.area_type = (uint32_t)region;
-					t.pos = glm::vec3(z, x, y);
-					t.scale = glm::vec3(1.0f);
-					t.extents = glm::vec3(step_size / 2.0f);
-					t.obb = OrientedBoundingBox(t.pos, t.rot, t.scale, t.extents);
-					//create region at x, y, z with extent step_size / 2
-					m_regions.push_back(t);
-				}
-			}
+	glm::vec3 new_region_min = pos;
+	glm::vec3 new_region_max = pos;
+	
+	//X+
+	const float step_size = 0.1f;
+	for (float x = pos.x;; x += step_size) {
+		auto temp_region_type = physics->ReturnRegionType(glm::vec3(x, pos.y, pos.z));
+		if (temp_region_type != region_type) {
+			break;
 		}
+	
+		new_region_max.x += step_size;
+	}
+	
+	//X-
+	for (float x = pos.x;; x -= step_size) {
+		auto temp_region_type = physics->ReturnRegionType(glm::vec3(x, pos.y, pos.z));
+		if (temp_region_type != region_type) {
+			break;
+		}
+	
+		new_region_min.x -= step_size;
+	}
+	
+	//Y+
+	for (float y = pos.y;; y += step_size) {
+		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, y, pos.z));
+		if (temp_region_type != region_type) {
+			break;
+		}
+	
+		new_region_max.y += step_size;
+	}
+	
+	//Y-
+	for (float y = pos.y;; y -= step_size) {
+		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, y, pos.z));
+		if (temp_region_type != region_type) {
+			break;
+		}
+	
+		new_region_min.y -= step_size;
+	}
+	
+	//Z+
+	for (float z = pos.z;; z += step_size) {
+		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, pos.y, z));
+		if (temp_region_type != region_type) {
+			break;
+		}
+	
+		new_region_max.z += step_size;
+	}
+	
+	//Z-
+	for (float z = pos.z;; z -= step_size) {
+		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, pos.y, z));
+		if (temp_region_type != region_type) {
+			break;
+		}
+	
+		new_region_min.z -= step_size;
 	}
 
-	while (DoCombine()) {
-	}
-
-	m_regions_orig = m_regions;
-	m_modified = true;
+	Region t;
+	t.area_type = (uint32_t)region_type;
+	//t.pos = glm::vec3(camera_loc.z, camera_loc.x, camera_loc.y);
+	t.pos = glm::vec3((new_region_max.z + new_region_min.z) / 2.0f, (new_region_max.x + new_region_min.x) / 2.0f, (new_region_max.y + new_region_min.y) / 2.0f);
+	t.scale = glm::vec3(1.0f);
+	t.extents = glm::vec3((new_region_max.z - new_region_min.z) / 2.0f, (new_region_max.x - new_region_min.x) / 2.0f, (new_region_max.y - new_region_min.y) / 2.0f); // calc extents
+	t.obb = OrientedBoundingBox(t.pos, t.rot, t.scale, t.extents);
+	m_regions.push_back(t);
+	
 	BuildRegionList();
 	BuildRegionModels();
 }

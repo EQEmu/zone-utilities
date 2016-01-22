@@ -5,6 +5,31 @@
 
 #include "static_geometry.h"
 
+const char *GetRegionTypeString(WaterRegionType type) {
+	switch (type) {
+	case RegionTypeNormal:
+		return "Normal";
+	case RegionTypeWater:
+		return "Water";
+	case RegionTypeLava:
+		return "Lava";
+	case RegionTypeZoneLine:
+		return "ZoneLine";
+	case RegionTypePVP:
+		return "PvP";
+	case RegionTypeSlime:
+		return "Slime";
+	case RegionTypeIce:
+		return "Ice";
+	case RegionTypeVWater:
+		return "V Water";
+	case RegionTypeGeneralArea:
+		return "Misc";
+	default:
+		return "Unsupported";
+	}
+}
+
 Scene::Scene() {
 }
 
@@ -21,10 +46,9 @@ enum MainHotkeys : int
 	MainHotkeyToggleDebug,
 };
 
-void Scene::Init(GLFWwindow *win, int width, int height) {
+void Scene::Init(GLFWwindow *win) {
 	m_window = win;
-	m_width = width;
-	m_height = height;
+	glfwGetFramebufferSize(win, &m_width, &m_height);
 	m_name[0] = 0;
 
 	m_hor_angle = 3.14f;
@@ -56,7 +80,7 @@ void Scene::Init(GLFWwindow *win, int width, int height) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glClearColor(0.5f, 0.5f, 0.5f, 0.5f);
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, m_width, m_height);
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 
 	glfwSetInputMode(win, GLFW_STICKY_MOUSE_BUTTONS, 1);
@@ -130,6 +154,10 @@ void Scene::LoadScene(const char *zone_name) {
 		m_bounding_box_min = m_zone_geometry->GetCollidableMin();
 		m_bounding_box_max = m_zone_geometry->GetCollidableMax();
 		UpdateBoundingBox();
+	}
+	else {
+		m_collide_mesh_entity.release();
+		m_non_collide_mesh_entity.release();
 	}
 
 	for(auto &module : m_modules) {
@@ -263,7 +291,7 @@ void Scene::RenderUI() {
 		ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::Text("Loc: (%.2f, %.2f, %.2f)", m_camera_loc.x, m_camera_loc.y, m_camera_loc.z);
 		ImGui::Text("Best floor: %.2f", m_physics->FindBestFloor(m_camera_loc, nullptr, nullptr));
-		ImGui::Text("InLiquid: %s", m_physics->InLiquid(m_camera_loc) ? "true" : "false");
+		ImGui::Text("Area: %s", GetRegionTypeString(m_physics->ReturnRegionType(m_camera_loc)));
 		if(GetZoneGeometry()) {
 			auto zone_geo = GetZoneGeometry();
 			ImGui::Text("Min: (%.2f, %.2f, %.2f)", zone_geo->GetCollidableMin().x, zone_geo->GetCollidableMin().y, zone_geo->GetCollidableMin().z);
@@ -739,6 +767,13 @@ void Scene::UpdateBoundingBox()
 	m_bounding_box_renderable->Clear();
 	m_bounding_box_renderable->AddLineBox(m_bounding_box_min, m_bounding_box_max, glm::vec3(1.0, 0.0, 0.0));
 	m_bounding_box_renderable->Update();
+}
+
+void Scene::Resize(int width, int height)
+{
+	m_width = width;
+	m_height = height;
+	glViewport(0, 0, m_width, m_height);
 }
 
 void Scene::GetEntityName(Entity *ent, std::string &name) {
