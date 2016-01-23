@@ -670,13 +670,13 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 
 	Region t;
 	t.area_type = (uint32_t)region_type;
-	//t.pos = glm::vec3(camera_loc.z, camera_loc.x, camera_loc.y);
 	t.pos = glm::vec3((new_region_max.z + new_region_min.z) / 2.0f, (new_region_max.x + new_region_min.x) / 2.0f, (new_region_max.y + new_region_min.y) / 2.0f);
 	t.scale = glm::vec3(1.0f);
 	t.extents = glm::vec3((new_region_max.z - new_region_min.z) / 2.0f, (new_region_max.x - new_region_min.x) / 2.0f, (new_region_max.y - new_region_min.y) / 2.0f); // calc extents
 	t.obb = OrientedBoundingBox(t.pos, t.rot, t.scale, t.extents);
 	m_regions.push_back(t);
 	
+	m_modified = true;
 	BuildRegionList();
 	BuildRegionModels();
 }

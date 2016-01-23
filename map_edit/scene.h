@@ -79,7 +79,7 @@ public:
 	void Resize(int width, int height);
 private:
 	void GetEntityName(Entity *ent, std::string &name);
-	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end);
+	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end, int width, int height);
 	friend class Module;
 	Scene(const Scene&);
 	Scene& operator=(const Scene&);

@@ -74,7 +74,7 @@ void Scene::Init(GLFWwindow *win) {
 	m_render_collide = true;
 	m_render_non_collide = true;
 	m_render_bb = true;
-	m_backface_cull = false;
+	m_backface_cull = true;
 
 	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
@@ -448,7 +448,15 @@ void Scene::ProcessSceneInput() {
 	if (!io.WantCaptureMouse && glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		if (m_right_was_down) {
 			double x_pos, y_pos;
+			int w, h;
+			int display_w, display_h;
+			glfwGetWindowSize(m_window, &w, &h);
+			glfwGetFramebufferSize(m_window, &display_w, &display_h);
+
 			glfwGetCursorPos(m_window, &x_pos, &y_pos);
+			x_pos *= (double)display_w / w;
+			y_pos *= (double)display_h / h;
+
 			glfwSetCursorPos(m_window, m_width / 2, m_height / 2);
 
 			m_hor_angle += 0.005f * float(m_width / 2 - x_pos);
@@ -524,10 +532,18 @@ void Scene::ProcessSceneInput() {
 		//get non-collide world click loc
 
 		double x_pos, y_pos;
+		int w, h;
+		int display_w, display_h;
+		glfwGetWindowSize(m_window, &w, &h);
+		glfwGetFramebufferSize(m_window, &display_w, &display_h);
+
 		glfwGetCursorPos(m_window, &x_pos, &y_pos);
+		x_pos *= (double)display_w / w;
+		y_pos *= (double)display_h / h;
+
 		glm::vec3 start;
 		glm::vec3 end;
-		GetClickVectors(x_pos, (double)m_height - y_pos, start, end);
+		GetClickVectors(x_pos, (double)h - y_pos, start, end, display_w, display_h);
 
 		glm::vec3 collidate_hit;
 		bool did_collide_hit = m_physics->GetRaycastClosestHit(start, end, collidate_hit, nullptr, CollidableWorld);
@@ -731,10 +747,10 @@ void Scene::UnregisterAllModules() {
 	m_modules.clear();
 }
 
-void Scene::GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end)
+void Scene::GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end, int width, int height)
 {
-	glm::vec4 start_ndc(((float)x / (float)m_width - 0.5f) * 2.0f, ((float)y / (float)m_height - 0.5f) * 2.0f, -1.0, 1.0f);
-	glm::vec4 end_ndc(((float)x / (float)m_width - 0.5f) * 2.0f, ((float)y / (float)m_height - 0.5f) * 2.0f, 0.0, 1.0f);
+	glm::vec4 start_ndc(((float)x / (float)width - 0.5f) * 2.0f, ((float)y / (float)height - 0.5f) * 2.0f, -1.0, 1.0f);
+	glm::vec4 end_ndc(((float)x / (float)width - 0.5f) * 2.0f, ((float)y / (float)height - 0.5f) * 2.0f, 0.0, 1.0f);
 	
 	glm::mat4 inverse_proj = glm::inverse(m_camera_proj);
 	glm::mat4 inverse_view = glm::inverse(m_camera_view);
