@@ -44,9 +44,6 @@ private:
 	void BuildRegionList();
 	void BuildRegionModels();
 	void BuildFromWatermap(const glm::vec3 &pos);
-	bool CanCombineRegions(int dest, int src);
-	void CombineRegions(int dest, int src);
-	bool DoCombine();
 
 	Scene *m_scene;
 	bool m_render_volume;

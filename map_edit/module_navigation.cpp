@@ -496,15 +496,20 @@ void ModuleNavigation::DrawTestUI()
 	ImGui::Separator();
 
 	ImGui::Text("Area Costs");
-	ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 1.0f, 10.0f, "%.1f");
-	ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 1.0f, 10.0f, "%.1f");
-	ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 1.0f, 10.0f, "%.1f");
-	ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 1.0f, 10.0f, "%.1f");
-	ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 1.0f, 10.0f, "%.1f");
-	ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 1.0f, 10.0f, "%.1f");
-	ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 1.0f, 10.0f, "%.1f");
-	ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 0.1f, 10.0f, "%.1f");
-	ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 0.1f, 10.0f, "%.1f");
+	bool status = ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 1.0f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 1.0f, 10.0f, "%.1f");
+
+	if (status) {
+		CalcPath();
+	}
+
 	ImGui::End();
 }
 
@@ -749,7 +754,7 @@ void ModuleNavigation::CalcPath()
 		return;
 	}
 
-	glm::vec3 ext(10.0f, 10.0f, 10.0f);
+	glm::vec3 ext(15.0f, 15.0f, 15.0f);
 	dtQueryFilter filter;
 	filter.setIncludeFlags(NavigationPolyFlagAll);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
@@ -786,13 +791,13 @@ void ModuleNavigation::CalcPath()
 		if (path[npoly - 1] != end_ref)
 			query->closestPointOnPoly(path[npoly - 1], &m_path_end[0], &epos[0], 0);
 
-		float straight_path[256 * 3];
-		unsigned char straight_path_flags[256];
+		float straight_path[512 * 3];
+		unsigned char straight_path_flags[512];
 		int n_straight_polys;
-		dtPolyRef straight_path_polys[256];
+		dtPolyRef straight_path_polys[512];
 		query->findStraightPath(&m_path_start[0], &epos[0], path, npoly,
 			straight_path, straight_path_flags,
-			straight_path_polys, &n_straight_polys, 256, DT_STRAIGHTPATH_AREA_CROSSINGS);
+			straight_path_polys, &n_straight_polys, 512, DT_STRAIGHTPATH_ALL_CROSSINGS);
 
 		dtFreeNavMeshQuery(query);
 

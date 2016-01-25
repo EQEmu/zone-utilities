@@ -543,7 +543,7 @@ void Scene::ProcessSceneInput() {
 
 		glm::vec3 start;
 		glm::vec3 end;
-		GetClickVectors(x_pos, (double)h - y_pos, start, end, display_w, display_h);
+		GetClickVectors(x_pos, (double)display_h - y_pos, start, end, display_w, display_h);
 
 		glm::vec3 collidate_hit;
 		bool did_collide_hit = m_physics->GetRaycastClosestHit(start, end, collidate_hit, nullptr, CollidableWorld);
@@ -771,7 +771,7 @@ void Scene::GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end
 	dir_world = glm::normalize(dir_world);
 	
 	start = glm::vec3(start_world);
-	end = glm::normalize(dir_world) * 100000.0f;
+	end = glm::normalize(dir_world) * 10000000.0f;
 }
 
 void Scene::UpdateBoundingBox()
