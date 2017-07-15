@@ -135,6 +135,12 @@ bool Map::Write(std::string filename) {
 		uint32_t vert_count = (uint32_t)verts.size();
 		uint32_t poly_count = (uint32_t)polys.size();
 
+		auto textureBrushSet = model_iter->second->GetTextureBrushSet();
+		auto textureSet = textureBrushSet->GetTextureSet();
+		for (auto &set : textureSet) {
+			eqLogMessage(LogTrace, "Texture set for model %s with flag %u", model_iter->second->GetName().c_str(), set->GetFlags());
+		} 
+
 		ss.write((const char*)&vert_count, sizeof(uint32_t));
 		ss.write((const char*)&poly_count, sizeof(uint32_t));
 		for(uint32_t i = 0; i < vert_count; ++i) {
@@ -153,6 +159,14 @@ bool Map::Write(std::string filename) {
 			uint32_t v2 = poly.verts[1];
 			uint32_t v3 = poly.verts[2];
 			uint8_t vis = poly.flags == 0x10 ? 0 : 1;
+			
+			if (poly.tex < textureSet.size()) {
+				eqLogMessage(LogTrace, "Poly with texture %u", poly.tex);
+				auto texture = textureSet[poly.tex];
+				if (texture->GetFlags() == 1) {
+					vis = 0;
+				}
+			}
 
 			ss.write((const char*)&v1, sizeof(uint32_t));
 			ss.write((const char*)&v2, sizeof(uint32_t));
@@ -443,7 +457,6 @@ bool Map::CompileS3D(
 		if(zone_frags[i].type == 0x36) {
 			EQEmu::S3D::WLDFragment36 &frag = reinterpret_cast<EQEmu::S3D::WLDFragment36&>(zone_frags[i]);
 			auto model = frag.GetData();
-		
 			auto &mod_polys = model->GetPolygons();
 			auto &mod_verts = model->GetVertices();
 
