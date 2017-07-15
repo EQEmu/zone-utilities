@@ -3,7 +3,7 @@
 
 #include "module_navigation.h"
 
-class ModuleNavigationBuildTile : public ThreadPoolWork
+class ModuleNavigationBuildTile
 {
 public:
 	ModuleNavigationBuildTile(ModuleNavigation *nav_module, int x, int y, glm::vec3 tile_min, glm::vec3 tile_max, std::shared_ptr<EQPhysics> physics) {
@@ -21,8 +21,8 @@ public:
 	}
 	~ModuleNavigationBuildTile() { if(m_nav_data) { dtFree(m_nav_data); m_nav_data = nullptr; } }
 
-	virtual void Run();
-	virtual void Finished();
+	void Run();
+	void Finished();
 
 private:
 	ModuleNavigation *m_nav_module;

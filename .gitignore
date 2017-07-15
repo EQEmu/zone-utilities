@@ -34,3 +34,5 @@ build_32/
 Build_64/
 build_64/
 logs/
+/x86
+/x64

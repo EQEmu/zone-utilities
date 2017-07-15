@@ -5,9 +5,10 @@
 #include "imgui_glfw.h"
 #include "scene.h"
 #include "module_navigation.h"
+#include "module_wp.h"
 #include "module_volume.h"
-#include "thread_pool.h"
 #include "log_file.h"
+#include "event/event_loop.h"
 
 std::unique_ptr<Scene> scene;
 
@@ -57,6 +58,7 @@ int main(int argc, char **argv)
 
 	scene.reset(new Scene());
 	scene->RegisterModule(new ModuleNavigation());
+	scene->RegisterModule(new ModuleWP());
 	scene->RegisterModule(new ModuleVolume());
 	scene->Init(win);
 
@@ -68,6 +70,7 @@ int main(int argc, char **argv)
 	while(!glfwWindowShouldClose(win)) {
 		scene->Tick();
 		scene->Render();
+		EQ::EventLoop::Get().Process();
 	}
 
 	scene->UnregisterAllModules();

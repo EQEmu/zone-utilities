@@ -195,7 +195,6 @@ private:
 	std::vector<RegionVolume> m_volumes;
 
 	int m_work_pending;
-	ThreadPool m_thread_pool;
 };
 
 #endif

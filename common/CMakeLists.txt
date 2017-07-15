@@ -12,12 +12,12 @@ SET(common_sources
 	pfs_crc.cpp
 	s3d_loader.cpp
 	string_util.cpp
-	thread_pool.cpp
 	water_map.cpp
 	water_map_v1.cpp
 	water_map_v2.cpp
 	wld_fragment.cpp
 	zone_map.cpp
+	event/event_loop.cpp
 )
 
 SET(common_headers
@@ -54,7 +54,6 @@ SET(common_headers
 	s3d_texture_brush.h
 	s3d_texture_brush_set.h
 	string_util.h
-	thread_pool.h
 	water_map.h
 	water_map_v1.h
 	water_map_v2.h
@@ -62,6 +61,9 @@ SET(common_headers
 	wld_fragment.h
 	wld_structs.h
 	zone_map.h
+	event/background_task.h
+	event/event_loop.h
+	event/timer.h
 )
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})

@@ -7,6 +7,7 @@
 #include "log_macros.h"
 #include "module_navigation_build_tile.h"
 #include "compression.h"
+#include "event/background_task.h"
 
 #include <DetourNavMeshQuery.h>
 
@@ -44,7 +45,7 @@ void calcChunkSize(const float* bmin, const float* bmax, float cs, int* x, int* 
 	*z = (int)((bmax[2] - bmin[2]) / cs + 0.5f);
 }
 
-ModuleNavigation::ModuleNavigation() : m_thread_pool(4)
+ModuleNavigation::ModuleNavigation()
 {
 	m_mode = 1;
 	Clear();
@@ -213,6 +214,7 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 	m_connections_renderable->Update();
 	m_conn_start_set = false;
 	m_chunky_mesh.reset();
+	ClearConnections();
 
 	if (m_nav_mesh) {
 		dtFreeNavMesh(m_nav_mesh);
@@ -395,8 +397,6 @@ void ModuleNavigation::Clear()
 
 void ModuleNavigation::DrawNavMeshGenerationUI()
 {
-	m_thread_pool.Process();
-	
 	auto zone_geo = m_scene->GetZoneGeometry();
 	const float* bmin = (float*)&m_scene->GetBoundingBoxMin();
 	const float* bmax = (float*)&m_scene->GetBoundingBoxMax();
@@ -565,7 +565,14 @@ void ModuleNavigation::BuildNavigationMesh()
 		{
 			glm::vec3 tile_min(bmin[0] + x * tcs, bmin[1], bmin[2] + y * tcs);
 			glm::vec3 tile_max(bmin[0] + (x + 1) * tcs, bmax[1], bmin[2] + (y + 1) * tcs);
-			m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max, phys));
+			
+			auto work = new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max, phys);
+			EQ::BackgroundTask task([work]() {
+				work->Run();
+			}, [work]() {
+				work->Finished();
+				delete work;
+			});
 		}
 	}
 }
@@ -629,7 +636,14 @@ void ModuleNavigation::BuildTile(const glm::vec3 &pos)
 	glm::vec3 tile_min(bmin[0] + tx * ts, bmin[1], bmin[2] + ty * ts);
 	glm::vec3 tile_max(bmin[0] + (tx + 1) * ts, bmax[1], bmin[2] + (ty + 1) * ts);
 	m_work_pending++;
-	m_thread_pool.AddWork(new ModuleNavigationBuildTile(this, tx, ty, tile_min, tile_max, phys));
+
+	auto work = new ModuleNavigationBuildTile(this, tx, ty, tile_min, tile_max, phys);
+	EQ::BackgroundTask task([work]() {
+		work->Run();
+	}, [work]() {
+		work->Finished();
+		delete work;
+	});
 }
 
 void ModuleNavigation::RemoveTile(const glm::vec3 &pos)

@@ -609,7 +609,7 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	
 	//X+
 	const float step_size = 0.1f;
-	for (float x = pos.x;; x += step_size) {
+	for (float x = pos.x; x < 30000.0f; x += step_size) {
 		auto temp_region_type = physics->ReturnRegionType(glm::vec3(x, pos.y, pos.z));
 		if (temp_region_type != region_type) {
 			break;
@@ -619,7 +619,7 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	}
 	
 	//X-
-	for (float x = pos.x;; x -= step_size) {
+	for (float x = pos.x; x > -30000.0f; x -= step_size) {
 		auto temp_region_type = physics->ReturnRegionType(glm::vec3(x, pos.y, pos.z));
 		if (temp_region_type != region_type) {
 			break;
@@ -629,7 +629,7 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	}
 	
 	//Y+
-	for (float y = pos.y;; y += step_size) {
+	for (float y = pos.y; y < 30000.0f; y += step_size) {
 		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, y, pos.z));
 		if (temp_region_type != region_type) {
 			break;
@@ -639,7 +639,7 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	}
 	
 	//Y-
-	for (float y = pos.y;; y -= step_size) {
+	for (float y = pos.y; y > -30000.0f; y -= step_size) {
 		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, y, pos.z));
 		if (temp_region_type != region_type) {
 			break;
@@ -649,7 +649,7 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	}
 	
 	//Z+
-	for (float z = pos.z;; z += step_size) {
+	for (float z = pos.z; z < 30000.0f; z += step_size) {
 		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, pos.y, z));
 		if (temp_region_type != region_type) {
 			break;
@@ -659,7 +659,7 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	}
 	
 	//Z-
-	for (float z = pos.z;; z -= step_size) {
+	for (float z = pos.z; z > -30000.0f; z -= step_size) {
 		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, pos.y, z));
 		if (temp_region_type != region_type) {
 			break;
