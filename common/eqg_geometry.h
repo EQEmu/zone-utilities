@@ -27,7 +27,7 @@ public:
 	{
 		uint32_t flags;
 		uint32_t verts[3];
-		std::string material;
+		int32_t material;
 	};
 
 	Geometry() { }

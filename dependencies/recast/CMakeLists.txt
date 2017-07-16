@@ -6,6 +6,7 @@ SET(recast_navigation_sources
 	debug_utils/src/RecastDebugDraw.cpp
 	debug_utils/src/RecastDump.cpp
 	detour/src/DetourAlloc.cpp
+	detour/src/DetourAssert.cpp
 	detour/src/DetourCommon.cpp
 	detour/src/DetourNavMesh.cpp
 	detour/src/DetourNavMeshBuilder.cpp
@@ -16,6 +17,7 @@ SET(recast_navigation_sources
 	recast/src/Recast.cpp
 	recast/src/RecastAlloc.cpp
 	recast/src/RecastArea.cpp
+	recast/src/RecastAssert.cpp
 	recast/src/RecastContour.cpp
 	recast/src/RecastFilter.cpp
 	recast/src/RecastLayers.cpp
@@ -59,6 +61,7 @@ SOURCE_GROUP(DebugUtils FILES
 
 SOURCE_GROUP(Detour FILES
 	detour/src/DetourAlloc.cpp
+	detour/src/DetourAssert.cpp
 	detour/src/DetourCommon.cpp
 	detour/src/DetourNavMesh.cpp
 	detour/src/DetourNavMeshBuilder.cpp
@@ -86,6 +89,7 @@ SOURCE_GROUP(Recast FILES
 	recast/src/Recast.cpp
 	recast/src/RecastAlloc.cpp
 	recast/src/RecastArea.cpp
+	recast/src/RecastAssert.cpp
 	recast/src/RecastContour.cpp
 	recast/src/RecastFilter.cpp
 	recast/src/RecastLayers.cpp
