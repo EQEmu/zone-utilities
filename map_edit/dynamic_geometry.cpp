@@ -92,6 +92,12 @@ void DynamicGeometry::Draw() {
 	}
 }
 
+void DynamicGeometry::GetCollisionMesh(std::vector<glm::vec3>& verts, std::vector<unsigned int>& inds)
+{
+	verts = m_verts;
+	inds = m_inds;
+}
+
 void DynamicGeometry::Clear()
 {
 	m_verts.clear();
@@ -307,6 +313,127 @@ void DynamicGeometry::AddLineArrowHead(const glm::vec3 &p0, const glm::vec3 &p1,
 
 	AddLine(p0, glm::vec3(p0[0] + az[0] * size + ax[0] * size / 3, p0[1] + az[1] * size + ax[1] * size / 3, p0[2] + az[2] * size + ax[2] * size / 3), color);
 	AddLine(p0, glm::vec3(p0[0] + az[0] * size - ax[0] * size / 3, p0[1] + az[1] * size - ax[1] * size / 3, p0[2] + az[2] * size - ax[2] * size / 3), color);
+}
+
+void DynamicGeometry::AddBox(const glm::vec3 &min, const glm::vec3 &max, const glm::vec3 & color)
+{
+	glm::vec3 v1(min.x, max.y, min.z);
+	glm::vec3 v2(min.x, max.y, max.z);
+	glm::vec3 v3(max.x, max.y, max.z);
+	glm::vec3 v4(max.x, max.y, min.z);
+	glm::vec3 v5(min.x, min.y, min.z);
+	glm::vec3 v6(min.x, min.y, max.z);
+	glm::vec3 v7(max.x, min.y, max.z);
+	glm::vec3 v8(max.x, min.y, min.z);
+
+	uint32_t current_index = (uint32_t)m_verts.size();
+	m_verts.push_back(v1);
+	m_verts.push_back(v2);
+	m_verts.push_back(v3);
+	m_verts.push_back(v4);
+	m_verts.push_back(v5);
+	m_verts.push_back(v6);
+	m_verts.push_back(v7);
+	m_verts.push_back(v8);
+
+	m_vert_colors.push_back(color);
+	m_vert_colors.push_back(color);
+	m_vert_colors.push_back(color);
+	m_vert_colors.push_back(color);
+	m_vert_colors.push_back(color);
+	m_vert_colors.push_back(color);
+	m_vert_colors.push_back(color);
+	m_vert_colors.push_back(color);
+
+	//top
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 1);
+	m_inds.push_back(current_index + 2);
+	m_inds.push_back(current_index + 2);
+	m_inds.push_back(current_index + 3);
+	m_inds.push_back(current_index + 0);
+
+	m_inds.push_back(current_index + 2);
+	m_inds.push_back(current_index + 1);
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 3);
+	m_inds.push_back(current_index + 2);
+
+	//back
+	m_inds.push_back(current_index + 1);
+	m_inds.push_back(current_index + 2);
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 5);
+	m_inds.push_back(current_index + 1);
+
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 2);
+	m_inds.push_back(current_index + 1);
+	m_inds.push_back(current_index + 1);
+	m_inds.push_back(current_index + 5);
+	m_inds.push_back(current_index + 6);
+
+	//bottom
+	m_inds.push_back(current_index + 4);
+	m_inds.push_back(current_index + 5);
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 7);
+	m_inds.push_back(current_index + 4);
+
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 5);
+	m_inds.push_back(current_index + 4);
+	m_inds.push_back(current_index + 4);
+	m_inds.push_back(current_index + 7);
+	m_inds.push_back(current_index + 6);
+
+	//front
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 3);
+	m_inds.push_back(current_index + 7);
+	m_inds.push_back(current_index + 7);
+	m_inds.push_back(current_index + 4);
+	m_inds.push_back(current_index + 0);
+
+	m_inds.push_back(current_index + 7);
+	m_inds.push_back(current_index + 3);
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 4);
+	m_inds.push_back(current_index + 7);
+
+	//left
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 1);
+	m_inds.push_back(current_index + 5);
+	m_inds.push_back(current_index + 5);
+	m_inds.push_back(current_index + 4);
+	m_inds.push_back(current_index + 0);
+
+	m_inds.push_back(current_index + 5);
+	m_inds.push_back(current_index + 1);
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 0);
+	m_inds.push_back(current_index + 4);
+	m_inds.push_back(current_index + 5);
+
+	//right
+	m_inds.push_back(current_index + 3);
+	m_inds.push_back(current_index + 2);
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 7);
+	m_inds.push_back(current_index + 3);
+
+	m_inds.push_back(current_index + 6);
+	m_inds.push_back(current_index + 2);
+	m_inds.push_back(current_index + 3);
+	m_inds.push_back(current_index + 3);
+	m_inds.push_back(current_index + 7);
+	m_inds.push_back(current_index + 6);
 }
 
 void DynamicGeometry::CalcBB()

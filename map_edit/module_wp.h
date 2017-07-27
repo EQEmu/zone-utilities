@@ -3,6 +3,25 @@
 #include "module.h"
 #include "scene.h"
 #include "thread_pool.h"
+#include <vector>
+
+struct WPNode
+{
+	uint32_t id;
+	float x;
+	float y;
+	float z;
+	float best_z;
+};
+
+struct WPEdge
+{
+	uint32_t from;
+	uint32_t to;
+	float distance;
+	int8_t teleport;
+	int32_t door_id;
+};
 
 class ModuleWP : public Module, public SceneHotkeyListener
 {
@@ -24,4 +43,28 @@ public:
 	virtual void OnHotkey(int ident);
 	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected);
 private:
+	void LoadPath();
+	void LoadV2(FILE *f, uint32_t nodes);
+	void LoadV3(FILE *f, uint32_t nodes);
+	void BuildVisualGraph(bool rebuild = false);
+	int32_t GetSelectedNode(const glm::vec3 &loc);
+	void Connect(int selected, int current);
+	void ConnectNodeToNode(int a, int b);
+	void Disconnect(int selected, int current);
+	void DisconnectNodeToNode(int a, int b);
+	void Create(const glm::vec3 &loc);
+	void Delete();
+
+	Scene *m_scene;
+	std::vector<WPNode> m_nodes;
+	std::vector<WPEdge> m_edges;
+	std::unique_ptr<DynamicGeometry> m_nodes_renderable;
+	std::unique_ptr<DynamicGeometry> m_edges_renderable;
+	std::unique_ptr<DynamicGeometry> m_selected_renderable;
+	int32_t m_selected_node;
+	bool m_dirty;
+
+	int32_t m_current_door_id;
+	int8_t m_current_teleport;
+	bool m_current_bidirectional;
 };

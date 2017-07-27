@@ -161,7 +161,7 @@ void ModuleVolume::OnDrawOptions()
 	ImGui::Text("Volume");
 	if (ImGui::Checkbox("Render Volumes", &m_render_volume)) {
 		if (m_render_volume) {
-			m_scene->RegisterEntity(this, m_volume_entity.get());
+			m_scene->RegisterEntity(this, m_volume_entity.get(), true);
 		}
 		else {
 			m_scene->UnregisterEntity(this, m_volume_entity.get());

@@ -558,7 +558,7 @@ void Scene::ProcessSceneInput() {
 		Entity *selected_ent = nullptr;
 		if (did_select_hit && ent_name.find("entity_") == 0) {
 			std::string ptr = ent_name.substr(7);
-			auto ptr_addr = std::stoll(ptr);
+			auto ptr_addr = std::stoll(ptr, nullptr, 16);
 			selected_ent = (Entity*)ptr_addr;
 		}
 
@@ -604,7 +604,7 @@ bool Scene::TryHotkey() {
 	}
 
 	for(auto &hotkey : m_hotkeys) {
-		if(!hotkey_hit && io.KeysDown[hotkey.key] == GLFW_RELEASE && m_key_status[hotkey.key] == GLFW_PRESS && hotkey.modifiers & mods) {
+		if(!hotkey_hit && io.KeysDown[hotkey.key] == GLFW_RELEASE && m_key_status[hotkey.key] == GLFW_PRESS && (!hotkey.modifiers || hotkey.modifiers & mods)) {
 			hotkey.system->OnHotkey(hotkey.id);
 			hotkey_hit = true;
 		}
@@ -688,12 +688,14 @@ void Scene::RegisterEntity(Module *m, Entity *e, bool selectable) {
 		iter->second.push_back(e);
 	}
 
-	std::string entity_name;
-	GetEntityName(e, entity_name);
-	std::vector<glm::vec3> verts;
-	std::vector<unsigned int> inds;
-	e->GetCollisionMesh(verts, inds);
-	m_physics->RegisterMesh(entity_name, verts, inds, e->GetLocation(), selectable ? EQPhysicsFlags::Selectable : EQPhysicsFlags::NotSelectable);
+	if (selectable) {
+		std::string entity_name;
+		GetEntityName(e, entity_name);
+		std::vector<glm::vec3> verts;
+		std::vector<unsigned int> inds;
+		e->GetCollisionMesh(verts, inds);
+		m_physics->RegisterMesh(entity_name, verts, inds, e->GetLocation(), EQPhysicsFlags::Selectable);
+	}
 }
 
 void Scene::UnregisterEntity(Module *m, Entity *e) {

@@ -119,8 +119,6 @@ void EQPhysics::RegisterMesh(const std::string &ident, const std::vector<glm::ve
 void EQPhysics::UnregisterMesh(const std::string &ident) {
 	auto iter = imp->entity_info->find(ident);
 	if (iter != imp->entity_info->end()) {
-		imp->entity_info->erase(iter);
-
 		for (int i = 0; i < imp->collision_world->getNumCollisionObjects(); ++i) {
 			btCollisionObject* obj = imp->collision_world->getCollisionObjectArray()[i];
 			btRigidBody* body = btRigidBody::upcast(obj);
@@ -133,6 +131,8 @@ void EQPhysics::UnregisterMesh(const std::string &ident) {
 				imp->collision_world->removeCollisionObject(obj);
 			}
 		}
+
+		imp->entity_info->erase(iter);
 	}
 }
 

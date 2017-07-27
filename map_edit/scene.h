@@ -77,6 +77,8 @@ public:
 	void UpdateBoundingBox();
 
 	void Resize(int width, int height);
+
+	double GetLastFrameTime() { return m_last_time; }
 private:
 	void GetEntityName(Entity *ent, std::string &name);
 	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end, int width, int height);

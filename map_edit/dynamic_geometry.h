@@ -15,6 +15,7 @@ public:
 	virtual ~DynamicGeometry();
 
 	virtual void Draw();
+	virtual void GetCollisionMesh(std::vector<glm::vec3>& verts, std::vector<unsigned int>& inds);
 	void Clear();
 	void Update();
 
@@ -39,6 +40,7 @@ public:
 	void AddLineCylinder(const glm::vec3& min, const glm::vec3& max, const glm::vec3& color = glm::vec3(1.0, 1.0, 1.0));
 	void AddLineArrow(const glm::vec3& p0, const glm::vec3& p1, float size, const glm::vec3& color = glm::vec3(1.0, 1.0, 1.0));
 	void AddLineArrowHead(const glm::vec3& p0, const glm::vec3& p1, float size, const glm::vec3& color = glm::vec3(1.0, 1.0, 1.0));
+	void AddBox(const glm::vec3& min, const glm::vec3& max, const glm::vec3& color = glm::vec3(1.0, 1.0, 1.0));
 private:
 	void CalcBB();
 	GLuint m_vao;

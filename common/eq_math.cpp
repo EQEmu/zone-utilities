@@ -38,3 +38,33 @@ glm::mat4 CreateScaleMatrix(float sx, float sy, float sz) {
 	scale[2][2] = sz;
 	return scale;
 }
+
+float Distance(const glm::vec3 &a, const glm::vec3 &b)
+{
+	float xdiff = a.x - b.x;
+	float ydiff = a.y - b.y;
+	float zdiff = a.z - b.z;
+	return ::sqrt((xdiff * xdiff) + (ydiff * ydiff) + (zdiff * zdiff));
+ }
+
+float DistanceNoRoot(const glm::vec3 &a, const glm::vec3 &b)
+{
+	float xdiff = a.x - b.x;
+	float ydiff = a.y - b.y;
+	float zdiff = a.z - b.z;
+	return (xdiff * xdiff) + (ydiff * ydiff) + (zdiff * zdiff);
+}
+
+float DistanceNoZ(const glm::vec3 &a, const glm::vec3 &b)
+{
+	float xdiff = a.x - b.x;
+	float ydiff = a.y - b.y;
+	return ::sqrt((xdiff * xdiff) + (ydiff * ydiff));
+}
+
+float DistanceNoRootNoZ(const glm::vec3 &a, const glm::vec3 &b)
+{
+	float xdiff = a.x - b.x;
+	float ydiff = a.y - b.y;
+	return (xdiff * xdiff) + (ydiff * ydiff);
+}

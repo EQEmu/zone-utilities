@@ -782,7 +782,7 @@ void ModuleNavigation::CalcPath()
 	filter.setAreaCost(NavigationAreaFlagPortal, m_path_costs[NavigationAreaFlagPortal]);
 
 	dtNavMeshQuery *query = dtAllocNavMeshQuery();
-	query->init(m_nav_mesh, 4092);
+	query->init(m_nav_mesh, 32768);
 	dtPolyRef start_ref;
 	dtPolyRef end_ref;
 
@@ -797,21 +797,21 @@ void ModuleNavigation::CalcPath()
 	}
 
 	int npoly = 0;
-	dtPolyRef path[256] = { 0 };
-	query->findPath(start_ref, end_ref, &m_path_start[0], &m_path_end[0], &filter, path, &npoly, 256);
+	dtPolyRef path[1024] = { 0 };
+	query->findPath(start_ref, end_ref, &m_path_start[0], &m_path_end[0], &filter, path, &npoly, 1024);
 
 	if (npoly) {
 		glm::vec3 epos = m_path_end;
 		if (path[npoly - 1] != end_ref)
 			query->closestPointOnPoly(path[npoly - 1], &m_path_end[0], &epos[0], 0);
 
-		float straight_path[512 * 3];
-		unsigned char straight_path_flags[512];
+		float straight_path[2048 * 3];
+		unsigned char straight_path_flags[2048];
 		int n_straight_polys;
-		dtPolyRef straight_path_polys[512];
+		dtPolyRef straight_path_polys[2048];
 		query->findStraightPath(&m_path_start[0], &epos[0], path, npoly,
 			straight_path, straight_path_flags,
-			straight_path_polys, &n_straight_polys, 512, DT_STRAIGHTPATH_ALL_CROSSINGS);
+			straight_path_polys, &n_straight_polys, 2048, DT_STRAIGHTPATH_ALL_CROSSINGS);
 
 		dtFreeNavMeshQuery(query);
 
