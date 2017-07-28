@@ -54,6 +54,7 @@ private:
 	void DisconnectNodeToNode(int a, int b);
 	void Create(const glm::vec3 &loc);
 	void Delete();
+	void RecalcDistancesForNode(int id);
 
 	Scene *m_scene;
 	std::vector<WPNode> m_nodes;
@@ -65,6 +66,6 @@ private:
 	bool m_dirty;
 
 	int32_t m_current_door_id;
-	int8_t m_current_teleport;
+	bool m_current_teleport;
 	bool m_current_bidirectional;
 };

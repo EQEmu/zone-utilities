@@ -5,7 +5,7 @@ ModuleWP::ModuleWP()
 	m_selected_node = -1;
 	m_dirty = false;
 	m_current_door_id = -1;
-	m_current_teleport = 0;
+	m_current_teleport = false;
 	m_current_bidirectional = true;
 }
 
@@ -37,6 +37,10 @@ void ModuleWP::OnDrawMenu()
 void ModuleWP::OnDrawUI()
 {
 	ImGui::Begin("Waypoint Navigation");
+	ImGui::Text("Connection Settings");
+	ImGui::Checkbox("Bidirectional", &m_current_bidirectional);
+	ImGui::InputInt("Door Id", &m_current_door_id);
+	ImGui::Checkbox("Is Teleport", &m_current_teleport);
 	ImGui::End();
 
 	if (m_selected_node != -1) {
@@ -76,6 +80,7 @@ void ModuleWP::OnDrawUI()
 		if (update) {
 			m_selected_renderable->SetLocation(glm::vec3(node.x, node.z, node.y));
 			m_dirty = true;
+			RecalcDistancesForNode(node.id);
 			BuildVisualGraph();
 		}
 	}
@@ -566,13 +571,11 @@ void ModuleWP::Connect(int selected, int current)
 	if (m_current_bidirectional) {
 		ConnectNodeToNode(selected, current);
 		ConnectNodeToNode(current, selected);
-		m_selected_node = current;
 		BuildVisualGraph(true);
 		return;
 	}
 
 	ConnectNodeToNode(selected, current);
-	m_selected_node = current;
 	BuildVisualGraph(true);
 }
 
@@ -592,8 +595,13 @@ void ModuleWP::ConnectNodeToNode(int a, int b)
 
 		WPEdge e;
 		e.door_id = m_current_door_id;
-		e.teleport = m_current_teleport;
-		e.distance = Distance(glm::vec3(n_a.x, n_a.y, n_a.z), glm::vec3(n_b.x, n_b.y, n_b.z));
+		e.teleport = m_current_teleport ? 1 : 0;
+		if (!e.teleport) {
+			e.distance = Distance(glm::vec3(n_a.x, n_a.y, n_a.z), glm::vec3(n_b.x, n_b.y, n_b.z));
+		}
+		else {
+			e.distance = 0.0f;
+		}
 		e.from = a;
 		e.to = b;
 
@@ -699,4 +707,16 @@ void ModuleWP::Delete()
 
 	m_selected_node = -1;
 	BuildVisualGraph(true);
+}
+
+void ModuleWP::RecalcDistancesForNode(int id)
+{
+	for (auto &edge : m_edges) {
+		if (!edge.teleport && (edge.to == id || edge.from == id)) {
+			auto &to = m_nodes[edge.to];
+			auto &from = m_nodes[edge.from];
+
+			edge.distance = Distance(glm::vec3(from.x, from.y, from.z), glm::vec3(to.x, to.y, to.z));
+		}
+	}
 }
