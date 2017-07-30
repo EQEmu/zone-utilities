@@ -768,7 +768,7 @@ void ModuleNavigation::CalcPath()
 		return;
 	}
 
-	glm::vec3 ext(15.0f, 15.0f, 15.0f);
+	glm::vec3 ext(15.0f, 100.0f, 15.0f);
 	dtQueryFilter filter;
 	filter.setIncludeFlags(NavigationPolyFlagAll);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
@@ -785,6 +785,10 @@ void ModuleNavigation::CalcPath()
 	query->init(m_nav_mesh, 32768);
 	dtPolyRef start_ref;
 	dtPolyRef end_ref;
+
+	eqLogMessage(LogInfo, "Calculating path from (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)",
+		m_path_start[0], m_path_start[1], m_path_start[2],
+		m_path_end[0], m_path_end[1], m_path_end[2]);
 
 	query->findNearestPoly(&m_path_start[0], &ext[0], &filter, &start_ref, 0);
 	query->findNearestPoly(&m_path_end[0], &ext[0], &filter, &end_ref, 0);
