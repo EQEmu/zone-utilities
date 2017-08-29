@@ -82,6 +82,8 @@ ModuleNavigation::ModuleNavigation()
 	for (int i = 0; i < NavigationAreaFlagDisabled; ++i) {
 		m_path_costs[i] = 1.0f;
 	}
+
+	m_path_costs[NavigationAreaFlagPrefer] = 0.5;
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -340,6 +342,9 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 			case NavigationAreaFlagPortal:
 				flag = NavigationPolyFlagPortal;
 				break;
+			case NavigationAreaFlagPrefer:
+				flag = NavigationAreaFlagPrefer;
+				break;
 			case NavigationAreaFlagDisabled:
 			default:
 				flag = NavigationPolyFlagDisabled;
@@ -496,15 +501,16 @@ void ModuleNavigation::DrawTestUI()
 	ImGui::Separator();
 
 	ImGui::Text("Area Costs");
-	bool status = ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 1.0f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 1.0f, 10.0f, "%.1f");
+	bool status = ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Prefer", &m_path_costs[NavigationAreaFlagPrefer], 0.1f, 10.0f, "%.1f");
 
 	if (status) {
 		CalcPath();
@@ -523,9 +529,9 @@ void ModuleNavigation::DrawMeshConnectionUI()
 	ImGui::SameLine();
 	ImGui::RadioButton("Bi-Directional", &m_connection_dir, 1);
 
-	const char* area_types[] = { "Normal", "Water", "Lava", "ZoneLine", "PVP", "Slime", "Ice", "V Water", "Generic Area", "Portal" };
+	const char* area_types[] = { "Normal", "Water", "Lava", "ZoneLine", "PVP", "Slime", "Ice", "V Water", "Generic Area", "Portal", "Prefer" };
 
-	ImGui::Combo("Area Type", &m_connection_area, area_types, 10);
+	ImGui::Combo("Area Type", &m_connection_area, area_types, 11);
 	
 	ImGui::Separator();
 	if (ImGui::SliderFloat("Radius", &m_connection_radius, 0.3f, 30.0f, "%.1f")) {
@@ -780,6 +786,7 @@ void ModuleNavigation::CalcPath()
 	filter.setAreaCost(NavigationAreaFlagVWater, m_path_costs[NavigationAreaFlagVWater]);
 	filter.setAreaCost(NavigationAreaFlagGeneralArea, m_path_costs[NavigationAreaFlagGeneralArea]);
 	filter.setAreaCost(NavigationAreaFlagPortal, m_path_costs[NavigationAreaFlagPortal]);
+	filter.setAreaCost(NavigationAreaFlagPrefer, m_path_costs[NavigationAreaFlagPrefer]);
 
 	dtNavMeshQuery *query = dtAllocNavMeshQuery();
 	query->init(m_nav_mesh, 32768);

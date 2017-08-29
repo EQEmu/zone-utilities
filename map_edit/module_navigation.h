@@ -32,6 +32,7 @@ enum NavigationAreaFlags
 	NavigationAreaFlagVWater,
 	NavigationAreaFlagGeneralArea,
 	NavigationAreaFlagPortal,
+	NavigationAreaFlagPrefer,
 	NavigationAreaFlagDisabled,
 };
 
@@ -47,7 +48,8 @@ enum NavigationPolyFlags
 	NavigationPolyFlagVWater = 128,
 	NavigationPolyFlagGeneralArea = 256,
 	NavigationPolyFlagPortal = 512,
-	NavigationPolyFlagDisabled = 1024,
+	NavigationPolyFlagPrefer = 1024,
+	NavigationPolyFlagDisabled = 2048,
 	NavigationPolyFlagAll = 0xFFFF
 };
 

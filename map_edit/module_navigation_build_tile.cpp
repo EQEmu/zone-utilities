@@ -221,6 +221,9 @@ void ModuleNavigationBuildTile::Run() {
 			case NavigationAreaFlagPortal:
 				pmesh->flags[i] = NavigationPolyFlagPortal;
 				break;
+			case NavigationAreaFlagPrefer:
+				pmesh->flags[i] = NavigationPolyFlagPrefer;
+				break;
 			case NavigationAreaFlagDisabled:
 			default:
 				pmesh->flags[i] = NavigationPolyFlagDisabled;
