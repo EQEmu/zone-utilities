@@ -381,11 +381,11 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 
 void ModuleNavigation::Clear()
 {
-	m_cell_size = 0.65f;
-	m_cell_height = 0.3f;
+	m_cell_size = 0.8f;
+	m_cell_height = 0.4f;
 	m_agent_height = 6.55f;
 	m_agent_radius = 1.31f;
-	m_agent_max_climb = 3.275f;
+	m_agent_max_climb = 6.55f;
 	m_agent_max_slope = 60.0f;
 	m_region_min_size = 8;
 	m_region_merge_size = 20;
@@ -397,7 +397,7 @@ void ModuleNavigation::Clear()
 	m_partition_type = NAVIGATION_PARTITION_WATERSHED;
 	m_max_tiles = 0;
 	m_max_polys_per_tile = 0;
-	m_tile_size = 128.0f;
+	m_tile_size = 512.0f;
 }
 
 void ModuleNavigation::DrawNavMeshGenerationUI()
@@ -425,7 +425,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Text("Agent");
 	ImGui::SliderFloat("Height", &m_agent_height, 0.1f, 20.0f, "%.1f");
 	ImGui::SliderFloat("Radius", &m_agent_radius, 0.0f, 15.0f, "%.1f");
-	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 20.0f, "%.1f");
+	ImGui::SliderFloat("Max Climb", &m_agent_max_climb, 0.1f, 100.0f, "%.1f");
 	ImGui::SliderFloat("Max Slope", &m_agent_max_slope, 0.0f, 90.0f, "%.0f");
 
 	ImGui::Separator();
