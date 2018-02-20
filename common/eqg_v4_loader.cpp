@@ -208,27 +208,29 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 		}
 
 		SafeVarAllocParse(uint32_t, layer_count);
-		SafeStringAllocParse(base_material);
-		//tile.SetBaseMaterial(base_material);
+		if (layer_count > 0) {
+			SafeStringAllocParse(base_material);
+			//tile.SetBaseMaterial(base_material);
 
-		uint32_t overlay_count = 0;
-		for (uint32_t layer = 1; layer < layer_count; ++layer) {
-			SafeStringAllocParse(material);
+			uint32_t overlay_count = 0;
+			for (uint32_t layer = 1; layer < layer_count; ++layer) {
+				SafeStringAllocParse(material);
 
-			SafeVarAllocParse(uint32_t, detail_mask_dim);
-			uint32_t sz_m = detail_mask_dim * detail_mask_dim;
+				SafeVarAllocParse(uint32_t, detail_mask_dim);
+				uint32_t sz_m = detail_mask_dim * detail_mask_dim;
 
-			//TerrainTileLayer layer;
-			//DetailMask dm;
-			for (uint32_t b = 0; b < sz_m; ++b)
-			{
-				SafeVarAllocParse(uint8_t, detail_mask_byte);
-				//dm.AddByte(detail_mask_byte);
+				//TerrainTileLayer layer;
+				//DetailMask dm;
+				for (uint32_t b = 0; b < sz_m; ++b)
+				{
+					SafeVarAllocParse(uint8_t, detail_mask_byte);
+					//dm.AddByte(detail_mask_byte);
+				}
+
+				//layer.AddDetailMask(dm);
+				//tile.AddLayer(layer);
+				++overlay_count;
 			}
-
-			//layer.AddDetailMask(dm);
-			//tile.AddLayer(layer);
-			++overlay_count;
 		}
 
 		SafeVarAllocParse(uint32_t, single_placeable_count);
