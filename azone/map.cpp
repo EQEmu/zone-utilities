@@ -451,6 +451,7 @@ bool Map::CompileS3D(
 	map_models.clear();
 	map_eqg_models.clear();
 	map_placeables.clear();
+    bool treat_collide_tex_as_nc = true;
 
 	eqLogMessage(LogTrace, "Processing s3d zone geometry fragments.");
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
@@ -462,6 +463,26 @@ bool Map::CompileS3D(
 
 			for (uint32_t j = 0; j < mod_polys.size(); ++j) {
 				auto &current_poly = mod_polys[j];
+                bool collide_tex = false;
+
+                auto &tbs = model->GetTextureBrushSet();
+                if (current_poly.tex >= 0 && current_poly.tex < tbs->GetTextureSet().size()) {
+                    auto &tex = tbs->GetTextureSet()[current_poly.tex];
+                    auto &textures = tex->GetTextures();
+                    if (textures.size() == 1) {
+                        auto &t = textures[0];
+                        auto &frames = t->GetTextureFrames();
+
+                        if (frames.size() == 1) {
+                            auto &f = frames[0];
+
+                            if (f.compare("collide.dds") == 0) {
+                                collide_tex = true;
+                            }
+                        }
+                    }
+                }
+
 				auto v1 = mod_verts[current_poly.verts[0]];
 				auto v2 = mod_verts[current_poly.verts[1]];
 				auto v3 = mod_verts[current_poly.verts[2]];
@@ -480,8 +501,14 @@ bool Map::CompileS3D(
 
 				if(current_poly.flags == 0x10)
 					AddFace(v1.pos, v2.pos, v3.pos, false);
-				else
-					AddFace(v1.pos, v2.pos, v3.pos, true);
+                else {
+                    if (collide_tex && treat_collide_tex_as_nc) {
+                        AddFace(v1.pos, v2.pos, v3.pos, false);
+                    }
+                    else {
+                        AddFace(v1.pos, v2.pos, v3.pos, true);
+                    }
+                }
 			}
 		}
 	}
