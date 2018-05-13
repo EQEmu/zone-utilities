@@ -120,7 +120,7 @@ void Scene::LoadScene(const char *zone_name) {
 
 		WaterMap *w_map = WaterMap::LoadWaterMapfile("save/", zone_name);
 		if (!w_map) {
-			w_map = WaterMap::LoadWaterMapfile("maps/", zone_name);
+			w_map = WaterMap::LoadWaterMapfile("maps/water/", zone_name);
 		}
 		m_physics->RegisterMesh("CollideWorldMesh", m_zone_geometry->GetCollidableVerts(), m_zone_geometry->GetCollidableInds(), 
 			glm::vec3(0.0f, 0.0f, 0.0f), EQPhysicsFlags::CollidableWorld);

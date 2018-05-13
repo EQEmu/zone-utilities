@@ -1167,7 +1167,7 @@ void ModuleNavigation::SaveNavMesh()
 	if (!m_nav_mesh)
 		return;
 
-	std::string filename = "maps/" + m_scene->GetZoneName() + ".nav";
+	std::string filename = "maps/nav/" + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "wb");
 
 	if (f) {
@@ -1225,7 +1225,7 @@ void ModuleNavigation::SaveNavMesh()
 
 void ModuleNavigation::LoadNavMesh()
 {
-	std::string filename = "maps/" + m_scene->GetZoneName() + ".nav";
+	std::string filename = "maps/nav/" + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[9] = { 0 };

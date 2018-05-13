@@ -174,7 +174,7 @@ void ModuleVolume::OnSceneLoad(const char *zone_name)
 {
 	m_modified = false;
 	if (!LoadVolumes("save/")) {
-		LoadVolumes("maps/");
+		LoadVolumes("maps/water/");
 	}
 	BuildRegionList();
 	BuildRegionModels();

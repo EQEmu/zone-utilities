@@ -127,7 +127,7 @@ bool ModuleWP::CanSave()
 
 void ModuleWP::Save()
 {
-	std::string filename = "maps/" + m_scene->GetZoneName() + ".path";
+	std::string filename = "maps/path/" + m_scene->GetZoneName() + ".path";
 	FILE *f = fopen(filename.c_str(), "wb");
 	if (f) {
 		uint32_t version = 3;
@@ -243,7 +243,7 @@ void ModuleWP::LoadPath()
 	m_selected_node = -1;
 	m_nodes.clear();
 	m_edges.clear();
-	std::string filename = "maps/" + m_scene->GetZoneName() + ".path";
+	std::string filename = "maps/path/" + m_scene->GetZoneName() + ".path";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[9] = { 0 };
