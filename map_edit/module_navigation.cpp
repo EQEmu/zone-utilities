@@ -856,7 +856,7 @@ void ModuleNavigation::SaveNavSettings()
 {
 	//write project setting files
 	//zone_name.navprj
-	std::string filename = "project/" + m_scene->GetZoneName() + ".navprj";
+	std::string filename = "maps/project/" + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str() , "wb");
 
 	if (f) {
@@ -917,7 +917,7 @@ void ModuleNavigation::SaveNavSettings()
 
 bool ModuleNavigation::LoadNavSettings()
 {
-	std::string filename = "project/" + m_scene->GetZoneName() + ".navprj";
+	std::string filename = "maps/project/" + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[6] = { 0 };
