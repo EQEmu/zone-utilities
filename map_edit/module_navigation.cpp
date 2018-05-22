@@ -79,11 +79,17 @@ ModuleNavigation::ModuleNavigation()
 	m_path_end_set = false;
 	m_conn_start_set = false;
 
-	for (int i = 0; i < NavigationAreaFlagDisabled; ++i) {
-		m_path_costs[i] = 1.0f;
-	}
-
-	m_path_costs[NavigationAreaFlagPrefer] = 0.5;
+	m_path_costs[NavigationAreaFlagNormal] = 1.0;
+	m_path_costs[NavigationAreaFlagWater] = 3.0;
+	m_path_costs[NavigationAreaFlagLava] = 5.0;
+	m_path_costs[NavigationAreaFlagZoneLine] = 1.0;
+	m_path_costs[NavigationAreaFlagPvP] = 1.0;
+	m_path_costs[NavigationAreaFlagSlime] = 2.0;
+	m_path_costs[NavigationAreaFlagIce] = 2.0;
+	m_path_costs[NavigationAreaFlagVWater] = 3.0;
+	m_path_costs[NavigationAreaFlagGeneralArea] = 1.0;
+	m_path_costs[NavigationAreaFlagPortal] = 0.1;
+	m_path_costs[NavigationAreaFlagPrefer] = 0.1;
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -776,7 +782,7 @@ void ModuleNavigation::CalcPath()
 
 	glm::vec3 ext(15.0f, 100.0f, 15.0f);
 	dtQueryFilter filter;
-	filter.setIncludeFlags(NavigationPolyFlagAll);
+	filter.setIncludeFlags(NavigationPolyFlagNotDisabled);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
 	filter.setAreaCost(NavigationAreaFlagWater, m_path_costs[NavigationAreaFlagWater]);
 	filter.setAreaCost(NavigationAreaFlagLava, m_path_costs[NavigationAreaFlagLava]);
@@ -1376,6 +1382,10 @@ void ModuleNavigation::LoadVolumes()
 		case RegionTypeGeneralArea:
 			v.area_type = NavigationAreaFlagGeneralArea;
 			break;
+		case RegionTypePreferPathing:
+			v.area_type = NavigationAreaFlagPrefer;
+			break;
+		case RegionTypeDisableNavMesh:
 		default:
 			v.area_type = NavigationAreaFlagDisabled;
 		}

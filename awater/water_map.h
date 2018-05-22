@@ -16,7 +16,9 @@ enum WaterMapRegionType
 	RegionTypeSlime = 5,
 	RegionTypeIce = 6,
 	RegionTypeVWater = 7,
-	RegionTypeGeneralArea = 8
+	RegionTypeGeneralArea = 8,
+	RegionTypePreferPathing = 9,
+	RegionTypeDisableNavMesh = 10
 };
 
 class WaterMap

@@ -50,7 +50,8 @@ enum NavigationPolyFlags
 	NavigationPolyFlagPortal = 512,
 	NavigationPolyFlagPrefer = 1024,
 	NavigationPolyFlagDisabled = 2048,
-	NavigationPolyFlagAll = 0xFFFF
+	NavigationPolyFlagAll = 0xFFFF,
+	NavigationPolyFlagNotDisabled = NavigationPolyFlagAll ^ NavigationPolyFlagDisabled
 };
 
 struct RegionVolume {
