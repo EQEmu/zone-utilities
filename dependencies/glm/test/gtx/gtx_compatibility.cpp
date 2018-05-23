@@ -1,19 +1,18 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Mathematics Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2013-10-25
-// Updated : 2013-10-25
-// Licence : This source is under MIT licence
-// File    : test/gtx/compatibility.cpp
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define GLM_FORCE_RADIANS
-#include <glm/gtc/type_precision.hpp>
 #include <glm/gtx/compatibility.hpp>
 
 int main()
 {
 	int Error(0);
+
+	Error += glm::isfinite(1.0f) ? 0 : 1;
+	Error += glm::isfinite(1.0) ? 0 : 1;
+	Error += glm::isfinite(-1.0f) ? 0 : 1;
+	Error += glm::isfinite(-1.0) ? 0 : 1;
+
+	Error += glm::all(glm::isfinite(glm::vec4(1.0f))) ? 0 : 1;
+	Error += glm::all(glm::isfinite(glm::dvec4(1.0))) ? 0 : 1;
+	Error += glm::all(glm::isfinite(glm::vec4(-1.0f))) ? 0 : 1;
+	Error += glm::all(glm::isfinite(glm::dvec4(-1.0))) ? 0 : 1;
 
 	return Error;
 }

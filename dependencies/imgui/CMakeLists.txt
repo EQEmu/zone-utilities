@@ -1,7 +1,8 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(imgui_sources
 	imgui.cpp
+	imgui_draw.cpp
 )
 
 SET(imgui_headers

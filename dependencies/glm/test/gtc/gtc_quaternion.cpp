@@ -1,13 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Mathematics Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2010-09-16
-// Updated : 2011-05-25
-// Licence : This source is under MIT licence
-// File    : test/gtc/quaternion.cpp
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define GLM_FORCE_RADIANS
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/vector_relational.hpp>
@@ -196,6 +186,15 @@ int test_quat_slerp()
 	// Must be 0 0.00X 0 0.99999
 	glm::quat almostid = glm::slerp(id, glm::angleAxis(0.1f, glm::vec3(0.0f, 1.0f, 0.0f)), 0.5f);
 
+	// Testing quaternions with opposite sign
+	{
+		glm::quat a(-1, 0, 0, 0);
+
+		glm::quat result = glm::slerp(a, id, 0.5f);
+
+		Error += glm::epsilonEqual(glm::pow(glm::dot(id, result), 2.f), 1.f, 0.01f) ? 0 : 1;
+	}
+
 	return Error;
 }
 
@@ -212,6 +211,7 @@ int test_quat_mul()
 	glm::quat temp5 = glm::normalize(temp1 * temp2);
 	glm::vec3 temp6 = temp5 * glm::vec3(0.0, 1.0, 0.0) * glm::inverse(temp5);
 
+#	ifndef GLM_FORCE_NO_CTOR_INIT
 	{
 		glm::quat temp7;
 
@@ -220,6 +220,7 @@ int test_quat_mul()
 
 		Error += temp7 != glm::quat();
 	}
+#	endif
 
 	return Error;
 }
@@ -247,11 +248,37 @@ int test_quat_type()
 	return 0;
 }
 
+int test_quat_mul_vec()
+{
+	int Error(0);
+
+	glm::quat q = glm::angleAxis(glm::pi<float>() * 0.5f, glm::vec3(0, 0, 1));
+	glm::vec3 v(1, 0, 0);
+	glm::vec3 u(q * v);
+	glm::vec3 w(u * q);
+
+	Error += glm::all(glm::epsilonEqual(v, w, 0.01f)) ? 0 : 1;
+
+	return Error;
+}
+
 int test_quat_ctr()
 {
 	int Error(0);
 
-#	if(GLM_HAS_INITIALIZER_LISTS)
+#	if GLM_HAS_TRIVIAL_QUERIES
+	//	Error += std::is_trivially_default_constructible<glm::quat>::value ? 0 : 1;
+	//	Error += std::is_trivially_default_constructible<glm::dquat>::value ? 0 : 1;
+	//	Error += std::is_trivially_copy_assignable<glm::quat>::value ? 0 : 1;
+	//	Error += std::is_trivially_copy_assignable<glm::dquat>::value ? 0 : 1;
+		Error += std::is_trivially_copyable<glm::quat>::value ? 0 : 1;
+		Error += std::is_trivially_copyable<glm::dquat>::value ? 0 : 1;
+
+		Error += std::is_copy_constructible<glm::quat>::value ? 0 : 1;
+		Error += std::is_copy_constructible<glm::dquat>::value ? 0 : 1;
+#	endif
+
+#	if GLM_HAS_INITIALIZER_LISTS
 	{
 		glm::quat A{0, 1, 2, 3};
 
@@ -264,11 +291,26 @@ int test_quat_ctr()
 	return Error;
 }
 
+int test_size()
+{
+	int Error = 0;
+
+	Error += 16 == sizeof(glm::quat) ? 0 : 1;
+	Error += 32 == sizeof(glm::dquat) ? 0 : 1;
+	Error += glm::quat().length() == 4 ? 0 : 1;
+	Error += glm::dquat().length() == 4 ? 0 : 1;
+	Error += glm::quat::length() == 4 ? 0 : 1;
+	Error += glm::dquat::length() == 4 ? 0 : 1;
+
+	return Error;
+}
+
 int main()
 {
-	int Error(0);
+	int Error = 0;
 
 	Error += test_quat_ctr();
+	Error += test_quat_mul_vec();
 	Error += test_quat_two_axis_ctr();
 	Error += test_quat_mul();
 	Error += test_quat_precision();
@@ -279,6 +321,7 @@ int main()
 	Error += test_quat_normalize();
 	Error += test_quat_euler();
 	Error += test_quat_slerp();
+	Error += test_size();
 
 	return Error;
 }

@@ -167,7 +167,7 @@ private:
 	std::vector<unsigned char> m_connection_areas;
 	std::vector<unsigned short> m_connection_flags;
 	std::vector<unsigned int> m_connection_ids;
-	uint8_t m_connection_dir;
+	int m_connection_dir;
 	int m_connection_area;
 	float m_connection_radius;
 	unsigned int m_connection_count;

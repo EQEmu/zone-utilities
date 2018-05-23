@@ -1,18 +1,22 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Mathematics Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2011-01-15
-// Updated : 2011-09-13
-// Licence : This source is under MIT licence
-// File    : test/core/func_noise.cpp
-///////////////////////////////////////////////////////////////////////////////////////////////////
+struct vec4
+{
+	static int length();
+};
 
-#define GLM_FORCE_RADIANS
+int vec4::length()
+{
+	return 4;
+}
 
 int main()
 {
 	int Failed = 0;
-	
+
+	vec4 V;
+
+	int LengthA = V.length();
+	int LengthB = vec4::length();
+
 	return Failed;
 }
 

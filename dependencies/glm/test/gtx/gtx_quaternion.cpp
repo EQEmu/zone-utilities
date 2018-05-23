@@ -1,18 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Mathematics Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2011-05-25
-// Updated : 2011-05-31
-// Licence : This source is under MIT licence
-// File    : test/gtx/quaternion.cpp
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define GLM_FORCE_RADIANS
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/compatibility.hpp>
 #include <glm/ext.hpp>
 
 int test_quat_fastMix()
@@ -87,10 +78,22 @@ int test_rotation()
 	return Error;
 }
 
-int main()
+int test_log()
 {
 	int Error(0);
+	
+	glm::quat q;
+	glm::quat p = glm::log(q);
+	glm::quat r = glm::exp(p);
 
+	return Error;
+}
+
+int main()
+{
+	int Error = 0;
+
+	Error += test_log();
 	Error += test_rotation();
 	Error += test_quat_fastMix();
 	Error += test_quat_shortMix();

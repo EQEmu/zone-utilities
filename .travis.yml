@@ -7,11 +7,11 @@ addons:
     - zlib1g-dev
     - xorg-dev
     - libglu1-mesa-dev
+    - libbullet-dev
+    - libglew-dev
 script:
   - cmake -G "Unix Makefiles" -DEQEMU_ENABLE_GL=ON
   - make -j8
 notifications:
   email: false
-  irc:
-    channels: "irc.eqemulator.net#eqemucoders"
 os: linux

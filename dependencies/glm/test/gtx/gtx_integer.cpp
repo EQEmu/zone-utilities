@@ -1,13 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Mathematics Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2011-10-11
-// Updated : 2011-10-11
-// Licence : This source is under MIT licence
-// File    : test/gtx/gtx_integer.cpp
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define GLM_FORCE_RADIANS
+#include <glm/exponential.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtx/integer.hpp>
 #include <cstdio>
@@ -41,10 +32,10 @@ int test_log2()
 		Error += glm::abs(double(A) - B) <= 24 ? 0 : 1;
 		assert(!Error);
 
-		printf("Log2(%d) Error: %d, %d\n", 1 << i, A, B);
+		printf("Log2(%d) error A=%d, B=%d\n", 1 << i, A, B);
 	}
 
-	printf("log2 error: %d\n", Error);
+	printf("log2 error=%d\n", Error);
 
 	return Error;
 }
@@ -70,3 +61,4 @@ int main()
 
 	return Error;
 }
+
