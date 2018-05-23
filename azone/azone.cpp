@@ -2,6 +2,7 @@
 #include "log_macros.h"
 #include "log_stdout.h"
 #include "log_file.h"
+#include <string.h>
 
 int main(int argc, char **argv) {
 	eqLogInit(EQEMU_LOG_LEVEL);
