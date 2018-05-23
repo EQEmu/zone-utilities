@@ -18,7 +18,7 @@ public:
 	Map();
 	~Map();
 	
-	bool Build(std::string zone_name);
+	bool Build(std::string zone_name, bool ignore_collide_tex);
 	bool Write(std::string filename);
 private:
 	void TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone, glm::vec3 parent_trans, glm::vec3 parent_rot, glm::vec3 parent_scale);
@@ -26,7 +26,8 @@ private:
 	bool CompileS3D(
 		std::vector<EQEmu::S3D::WLDFragment> &zone_frags,
 		std::vector<EQEmu::S3D::WLDFragment> &zone_object_frags,
-		std::vector<EQEmu::S3D::WLDFragment> &object_frags
+		std::vector<EQEmu::S3D::WLDFragment> &object_frags,
+		bool ignore_collide_tex
 		);
 	bool CompileEQG(
 		std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> &models,

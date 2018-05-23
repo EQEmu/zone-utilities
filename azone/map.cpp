@@ -11,7 +11,7 @@ Map::Map() {
 Map::~Map() {
 }
 
-bool Map::Build(std::string zone_name) {
+bool Map::Build(std::string zone_name, bool ignore_collide_tex) {
 	LoadIgnore(zone_name);
 
 	eqLogMessage(LogTrace, "Attempting to load %s.eqg as a standard eqg.", zone_name.c_str());
@@ -48,7 +48,7 @@ bool Map::Build(std::string zone_name) {
 		return false;
 	}
 
-	return CompileS3D(zone_frags, zone_object_frags, object_frags);
+	return CompileS3D(zone_frags, zone_object_frags, object_frags, ignore_collide_tex);
 }
 
 bool Map::Write(std::string filename) {
@@ -437,7 +437,8 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone, gl
 bool Map::CompileS3D(
 	std::vector<EQEmu::S3D::WLDFragment> &zone_frags,
 	std::vector<EQEmu::S3D::WLDFragment> &zone_object_frags,
-	std::vector<EQEmu::S3D::WLDFragment> &object_frags
+	std::vector<EQEmu::S3D::WLDFragment> &object_frags,
+	bool ignore_collide_tex
 	)
 {
 	collide_verts.clear();
@@ -451,7 +452,6 @@ bool Map::CompileS3D(
 	map_models.clear();
 	map_eqg_models.clear();
 	map_placeables.clear();
-    bool treat_collide_tex_as_nc = true;
 
 	eqLogMessage(LogTrace, "Processing s3d zone geometry fragments.");
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
@@ -465,7 +465,7 @@ bool Map::CompileS3D(
 				auto &current_poly = mod_polys[j];
                 bool collide_tex = false;
 
-                auto &tbs = model->GetTextureBrushSet();
+                auto tbs = model->GetTextureBrushSet();
                 if (current_poly.tex >= 0 && current_poly.tex < tbs->GetTextureSet().size()) {
                     auto &tex = tbs->GetTextureSet()[current_poly.tex];
                     auto &textures = tex->GetTextures();
@@ -502,10 +502,7 @@ bool Map::CompileS3D(
 				if(current_poly.flags == 0x10)
 					AddFace(v1.pos, v2.pos, v3.pos, false);
                 else {
-                    if (collide_tex && treat_collide_tex_as_nc) {
-                        AddFace(v1.pos, v2.pos, v3.pos, false);
-                    }
-                    else {
+                    if (!collide_tex || !ignore_collide_tex) {
                         AddFace(v1.pos, v2.pos, v3.pos, true);
                     }
                 }
