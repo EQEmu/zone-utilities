@@ -36,7 +36,16 @@ ADD_EXECUTABLE(map_edit ${map_edit_sources} ${map_edit_headers})
 
 INSTALL(TARGETS map_edit RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
 
-TARGET_LINK_LIBRARIES(map_edit common log glew imgui glfw ${GLFW_LIBRARIES} ${ZLIB_LIBRARY} ${EQEMU_BULLET} libuv recast_navigation)
+TARGET_LINK_LIBRARIES(map_edit common log glew imgui glfw ${GLFW_LIBRARIES} ${ZLIB_LIBRARY} libuv recast_navigation)
+
+IF()
+	TARGET_LINK_LIBRARIES(map_edit ${EQEMU_BULLET})
+ELSE()
+	target_link_libraries(map_edit PRIVATE debug ${BULLET_COLLISION_LIBRARY_DEBUG} optimized ${BULLET_COLLISION_LIBRARY})
+	target_link_libraries(map_edit PRIVATE debug ${BULLET_DYNAMICS_LIBRARY_DEBUG} optimized ${BULLET_DYNAMICS_LIBRARY})
+	target_link_libraries(map_edit PRIVATE debug ${BULLET_MATH_LIBRARY_DEBUG} optimized ${BULLET_MATH_LIBRARY})
+	target_link_libraries(map_edit PRIVATE debug ${BULLET_SOFTBODY_LIBRARY_DEBUG} optimized ${BULLET_SOFTBODY_LIBRARY})
+ENDIF()
 
 IF(WIN32)
 	TARGET_LINK_LIBRARIES(map_edit "ws2_32" "psapi" "iphlpapi" "userenv")
