@@ -545,33 +545,36 @@ void Scene::ProcessSceneInput() {
 		glm::vec3 end;
 		GetClickVectors(x_pos, (double)display_h - y_pos, start, end, display_w, display_h);
 
-		glm::vec3 collidate_hit;
-		bool did_collide_hit = m_physics->GetRaycastClosestHit(start, end, collidate_hit, nullptr, CollidableWorld);
-
-		glm::vec3 non_collidate_hit;
-		bool did_non_collide_hit = m_physics->GetRaycastClosestHit(start, end, non_collidate_hit, nullptr, NonCollidableWorld);
-
-		//here is where i will do selection hits but not needed yet...
-		glm::vec3 select_hit;
+		glm::vec3 hit_loc;
 		std::string ent_name;
-		bool did_select_hit = m_physics->GetRaycastClosestHit(start, end, select_hit, &ent_name, Selectable);
-		Entity *selected_ent = nullptr;
-		if (did_select_hit && ent_name.find("entity_") == 0) {
-			std::string ptr = ent_name.substr(7);
-			auto ptr_addr = std::stoll(ptr, nullptr, 16);
-			selected_ent = (Entity*)ptr_addr;
-		}
+		bool had_hit = m_physics->GetRaycastClosestHit(start, end, hit_loc, &ent_name, CollidableWorld | Selectable);
 
-		for (int i = 0; i < 5; ++i) {
-			if (!process_click[i])
-				continue;
+		if (had_hit) {
+			bool did_collide_hit = false;
+			bool did_select_hit = false;
+			Entity *selected_ent = nullptr;
 
-			for (auto &module : m_modules) {
-				if (module->GetRunning() && module->GetUnpaused()) {
-					module->OnClick(i, (did_collide_hit ? &collidate_hit : nullptr), 
-						(did_non_collide_hit ? &non_collidate_hit : nullptr),
-						(did_select_hit ? &select_hit : nullptr),
-						(did_select_hit ? selected_ent : nullptr));
+			if (ent_name.compare("CollideWorldMesh") == 0) {
+				did_collide_hit = true;
+			}
+			else {
+				did_select_hit = true;
+
+				std::string ptr = ent_name.substr(7);
+				auto ptr_addr = std::stoll(ptr, nullptr, 16);
+				selected_ent = (Entity*)ptr_addr;
+			}
+
+			for (int i = 0; i < 5; ++i) {
+				if (!process_click[i])
+					continue;
+			
+				for (auto &module : m_modules) {
+					if (module->GetRunning() && module->GetUnpaused()) {
+						module->OnClick(i, (did_collide_hit ? &hit_loc : nullptr),
+							(did_select_hit ? &hit_loc : nullptr),
+							(did_select_hit ? selected_ent : nullptr));
+					}
 				}
 			}
 		}

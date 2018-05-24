@@ -9,6 +9,7 @@
 #include "compression.h"
 #include "event/background_task.h"
 
+#include "config.h"
 #include <DetourNavMeshQuery.h>
 
 const uint32_t nav_file_version = 3;
@@ -291,7 +292,7 @@ void ModuleNavigation::OnHotkey(int ident)
 {
 }
 
-void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected)
+void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *select_hit, Entity *selected)
 {
 	auto &io = ImGui::GetIO();
 	if (m_mode == ModeNavMeshGen && mouse_button == GLFW_MOUSE_BUTTON_LEFT && !io.KeyShift && collide_hit) {
@@ -862,7 +863,7 @@ void ModuleNavigation::SaveNavSettings()
 {
 	//write project setting files
 	//zone_name.navprj
-	std::string filename = "maps/project/" + m_scene->GetZoneName() + ".navprj";
+	std::string filename = Config::Instance().GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str() , "wb");
 
 	if (f) {
@@ -923,7 +924,7 @@ void ModuleNavigation::SaveNavSettings()
 
 bool ModuleNavigation::LoadNavSettings()
 {
-	std::string filename = "maps/project/" + m_scene->GetZoneName() + ".navprj";
+	std::string filename = Config::Instance().GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[6] = { 0 };
@@ -1173,7 +1174,7 @@ void ModuleNavigation::SaveNavMesh()
 	if (!m_nav_mesh)
 		return;
 
-	std::string filename = "maps/nav/" + m_scene->GetZoneName() + ".nav";
+	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "wb");
 
 	if (f) {
@@ -1231,7 +1232,7 @@ void ModuleNavigation::SaveNavMesh()
 
 void ModuleNavigation::LoadNavMesh()
 {
-	std::string filename = "maps/nav/" + m_scene->GetZoneName() + ".nav";
+	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[9] = { 0 };

@@ -41,7 +41,7 @@ public:
 	virtual bool CanSave();
 	virtual void Save();
 	virtual void OnHotkey(int ident);
-	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected);
+	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *select_hit, Entity *selected);
 private:
 	void LoadPath();
 	void LoadV2(FILE *f, uint32_t nodes);

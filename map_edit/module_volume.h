@@ -37,24 +37,32 @@ public:
 	virtual bool CanSave();
 	virtual void Save();
 	virtual void OnHotkey(int ident);
-	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected);
+	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *select_hit, Entity *selected);
 private:
-	bool LoadVolumes(const char *dir);
-	void FreeRegionList();
-	void BuildRegionList();
-	void BuildRegionModels();
-	void BuildFromWatermap(const glm::vec3 &pos);
+	bool LoadVolumes();
+	void BuildVolumeEntities();
 
 	Scene *m_scene;
-	bool m_render_volume;
-	bool m_modified;
-
-	char **m_region_list;
-	int m_region_list_size;
-	int m_selected_region;
+	std::vector<std::unique_ptr<DynamicGeometry>> m_volumes;
 	std::vector<Region> m_regions;
 	std::vector<Region> m_regions_orig;
-	std::unique_ptr<DynamicGeometry> m_volume_entity;
+	bool m_modified;
+
+	//void FreeRegionList();
+	//void BuildRegionList();
+	//void BuildRegionModels();
+	//void BuildFromWatermap(const glm::vec3 &pos);
+	//
+	//Scene *m_scene;
+	//bool m_render_volume;
+	//bool m_modified;
+	//
+	//char **m_region_list;
+	//int m_region_list_size;
+	//int m_selected_region;
+	//std::vector<Region> m_regions;
+	//std::vector<Region> m_regions_orig;
+	//std::unique_ptr<DynamicGeometry> m_volume_entity;
 };
 
 #endif

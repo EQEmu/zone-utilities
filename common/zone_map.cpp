@@ -7,6 +7,7 @@
 #include <zlib.h>
 
 #include "zone_map.h"
+#include "config.h"
 
 uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
 	z_stream zstream;
@@ -64,7 +65,7 @@ ZoneMap::~ZoneMap() {
 }
 
 ZoneMap *ZoneMap::LoadMapFile(std::string file) {
-	std::string filename = "maps/base/";
+	std::string filename = Config::Instance().GetPath("base", "maps/base/");
 	std::transform(file.begin(), file.end(), file.begin(), ::tolower);
 	filename += file;
 	filename += ".map";

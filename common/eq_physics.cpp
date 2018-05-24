@@ -157,14 +157,14 @@ bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const {
 	return true;
 }
 
-bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & dest, glm::vec3 &hit, std::string *name, EQPhysicsFlags flag) const
+bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & dest, glm::vec3 &hit, std::string *name, int flag) const
 {
 	btVector3 src_bt(src.x, src.y, src.z);
 	btVector3 dest_bt(dest.x, dest.y, dest.z);
 
 	btCollisionWorld::ClosestRayResultCallback ray_hit(src_bt, dest_bt);
-	ray_hit.m_collisionFilterGroup = (short)flag;
-	ray_hit.m_collisionFilterMask = (short)flag;
+	ray_hit.m_collisionFilterGroup = flag;
+	ray_hit.m_collisionFilterMask = flag;
 	ray_hit.m_flags |= 1;
 
 	imp->collision_world->rayTest(src_bt, dest_bt, ray_hit);

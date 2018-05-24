@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(common_sources
 	compression.cpp
+	config.cpp
 	eq_math.cpp
 	eq_physics.cpp
 	eqg_loader.cpp
@@ -24,6 +25,7 @@ SET(common_headers
 	aligned_bounding_box.h
 	any.h
 	compression.h
+	config.h
 	eq_math.h
 	eq_physics.h
 	eqemu_endian.h

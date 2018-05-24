@@ -105,8 +105,10 @@ static void drawPolyBoundaries(duDebugDraw* dd, const dtMeshTile* tile,
 					if (distancePtLine2d(tv[n],v0,v1) < thr &&
 						distancePtLine2d(tv[m],v0,v1) < thr)
 					{
-						dd->vertex(tv[n], c);
-						dd->vertex(tv[m], c);
+						const float *tvn = tv[n];
+						const float *tvm = tv[m];
+						dd->vertex(tvn[0], tvn[1] + 4.0f, tvn[2], c);
+						dd->vertex(tvm[0], tvm[1] + 4.0f, tvm[2], c);
 					}
 				}
 			}
@@ -150,19 +152,23 @@ static void drawMeshTile(duDebugDraw* dd, const dtNavMesh& mesh, const dtNavMesh
 			const unsigned char* t = &tile->detailTris[(pd->triBase+j)*4];
 			for (int k = 0; k < 3; ++k)
 			{
-				if (t[k] < p->vertCount)
-					dd->vertex(&tile->verts[p->verts[t[k]]*3], col);
-				else
-					dd->vertex(&tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3], col);
+				if (t[k] < p->vertCount) {
+					float *vert = &tile->verts[p->verts[t[k]] * 3];
+					dd->vertex(vert[0], vert[1] + 4.0f, vert[2], col);
+				}
+				else {
+					float *vert = &tile->detailVerts[(pd->vertBase + t[k] - p->vertCount) * 3];
+					dd->vertex(vert[0], vert[1] + 4.0f, vert[2], col);
+				}
 			}
 		}
 	}
 	dd->end();
 	
-	// Draw inter poly boundaries
+	//// Draw inter poly boundaries
 	drawPolyBoundaries(dd, tile, duRGBA(0,48,64,32), 1.5f, true);
-	
-	// Draw outer poly boundaries
+	//
+	//// Draw outer poly boundaries
 	drawPolyBoundaries(dd, tile, duRGBA(0,48,64,220), 2.5f, false);
 
 	if (flags & DU_DRAWNAVMESH_OFFMESHCONS)

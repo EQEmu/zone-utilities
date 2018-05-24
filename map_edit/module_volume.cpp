@@ -1,5 +1,7 @@
 #include "module_volume.h"
 #include <algorithm>
+#include "config.h"
+#include "log_macros.h"
 
 const int HotkeyXNeg = 50;
 const int HotkeyXPos = 51;
@@ -11,7 +13,7 @@ const int HotkeyMode = 56;
 
 ModuleVolume::ModuleVolume()
 {
-	m_render_volume = true;
+	//m_render_volume = true;
 	//m_region_list = nullptr;
 	//m_region_list_size = 0;
 	//m_selected_region = -1;
@@ -187,23 +189,22 @@ void ModuleVolume::OnDrawOptions()
 
 void ModuleVolume::OnSceneLoad(const char *zone_name)
 {
-	//m_modified = false;
-	//if (!LoadVolumes("save/")) {
-	//	LoadVolumes("maps/water/");
-	//}
-	//BuildRegionList();
-	//BuildRegionModels();
-	//if (m_render_volume) {
-	//	m_scene->RegisterEntity(this, m_volume_entity.get());
-	//}
+	m_modified = false;
+	if (LoadVolumes()) {
+		BuildVolumeEntities();
+	}
 }
 
 void ModuleVolume::OnSuspend()
 {
+	m_scene->UnregisterEntitiesByModule(this);
 }
 
 void ModuleVolume::OnResume()
 {
+	for (auto &vol : m_volumes) {
+		m_scene->RegisterEntity(this, vol.get(), true);
+	}
 }
 
 bool ModuleVolume::HasWork()
@@ -279,15 +280,18 @@ void ModuleVolume::OnHotkey(int ident)
 	//}
 }
 
-void ModuleVolume::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected)
+void ModuleVolume::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *select_hit, Entity *selected)
 {
+	if (selected) {
+		eqLogMessage(LogInfo, "Clicked on %p", selected);
+	}
 }
-/*
-bool ModuleVolume::LoadVolumes(const char *dir)
+
+bool ModuleVolume::LoadVolumes()
 {
 	m_regions.clear();
 	m_regions_orig.clear();
-	std::string filename = dir + m_scene->GetZoneName() + ".wtr";
+	std::string filename = Config::Instance().GetPath("water", "maps/water/") + m_scene->GetZoneName() + ".wtr";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 
@@ -418,51 +422,11 @@ bool ModuleVolume::LoadVolumes(const char *dir)
 	return false;
 }
 
-void ModuleVolume::FreeRegionList()
+void ModuleVolume::BuildVolumeEntities()
 {
-	if (m_region_list) {
-		for (int i = 0; i < m_region_list_size; ++i) {
-			delete[] m_region_list[i];
-		}
-
-		delete[] m_region_list;
-		m_region_list = nullptr;
-		m_region_list_size = 0;
-		m_selected_region = -1;
-	}
-}
-
-void ModuleVolume::BuildRegionList()
-{
-	FreeRegionList();
-
-	m_region_list_size = (int)m_regions.size();
-	if (m_region_list_size > 0) {
-		m_region_list = new char*[m_region_list_size];
-		for (int i = 0; i < m_region_list_size; ++i) {
-			m_region_list[i] = new char[16];
-			sprintf(m_region_list[i], "Region %u", i);
-		}
-	}
-}
-
-void ModuleVolume::BuildRegionModels()
-{
-	m_volume_entity->Clear();
-	auto &inds = m_volume_entity->GetInds();
-	auto &verts = m_volume_entity->GetVerts();
-	auto &colors = m_volume_entity->GetVertColors();
-
-	for (size_t i = 0; i < m_regions.size(); ++i) {
-		glm::vec3 color;
-		if (i == m_selected_region) {
-			color = glm::vec3(1.0f, 1.0f, 0.0f);
-		}
-		else {
-			color = glm::vec3(0.0f, 0.0f, 1.0f);
-		}
-
-		auto &region = m_regions[i];
+	for (auto &region : m_regions) {
+		DynamicGeometry *g = new DynamicGeometry();
+		auto color = glm::vec3(1.0f, 1.0f, 1.0f);
 
 		float min_x = region.obb.GetMinX();
 		float min_y = region.obb.GetMinY();
@@ -489,7 +453,10 @@ void ModuleVolume::BuildRegionModels()
 		v7 = region.obb.GetTransformation() * v7;
 		v8 = region.obb.GetTransformation() * v8;
 
-		uint32_t current_index = (uint32_t)verts.size();
+		auto &inds = g->GetInds();
+		auto &verts = g->GetVerts();
+		auto &colors = g->GetVertColors();
+
 		verts.push_back(glm::vec3(v1.y, v1.z, v1.x));
 		verts.push_back(glm::vec3(v2.y, v2.z, v2.x));
 		verts.push_back(glm::vec3(v3.y, v3.z, v3.x));
@@ -509,99 +476,103 @@ void ModuleVolume::BuildRegionModels()
 		colors.push_back(color);
 
 		//top
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 1);
-		inds.push_back(current_index + 2);
-		inds.push_back(current_index + 2);
-		inds.push_back(current_index + 3);
-		inds.push_back(current_index + 0);
+		inds.push_back(0);
+		inds.push_back(1);
+		inds.push_back(2);
+		inds.push_back(2);
+		inds.push_back(3);
+		inds.push_back(0);
 
-		inds.push_back(current_index + 2);
-		inds.push_back(current_index + 1);
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 3);
-		inds.push_back(current_index + 2);
+		inds.push_back(2);
+		inds.push_back(1);
+		inds.push_back(0);
+		inds.push_back(0);
+		inds.push_back(3);
+		inds.push_back(2);
 
 		//back
-		inds.push_back(current_index + 1);
-		inds.push_back(current_index + 2);
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 5);
-		inds.push_back(current_index + 1);
+		inds.push_back(1);
+		inds.push_back(2);
+		inds.push_back(6);
+		inds.push_back(6);
+		inds.push_back(5);
+		inds.push_back(1);
 
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 2);
-		inds.push_back(current_index + 1);
-		inds.push_back(current_index + 1);
-		inds.push_back(current_index + 5);
-		inds.push_back(current_index + 6);
+		inds.push_back(6);
+		inds.push_back(2);
+		inds.push_back(1);
+		inds.push_back(1);
+		inds.push_back(5);
+		inds.push_back(6);
 
 		//bottom
-		inds.push_back(current_index + 4);
-		inds.push_back(current_index + 5);
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 7);
-		inds.push_back(current_index + 4);
+		inds.push_back(4);
+		inds.push_back(5);
+		inds.push_back(6);
+		inds.push_back(6);
+		inds.push_back(7);
+		inds.push_back(4);
 
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 5);
-		inds.push_back(current_index + 4);
-		inds.push_back(current_index + 4);
-		inds.push_back(current_index + 7);
-		inds.push_back(current_index + 6);
+		inds.push_back(6);
+		inds.push_back(5);
+		inds.push_back(4);
+		inds.push_back(4);
+		inds.push_back(7);
+		inds.push_back(6);
 
 		//front
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 3);
-		inds.push_back(current_index + 7);
-		inds.push_back(current_index + 7);
-		inds.push_back(current_index + 4);
-		inds.push_back(current_index + 0);
+		inds.push_back(0);
+		inds.push_back(3);
+		inds.push_back(7);
+		inds.push_back(7);
+		inds.push_back(4);
+		inds.push_back(0);
 
-		inds.push_back(current_index + 7);
-		inds.push_back(current_index + 3);
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 4);
-		inds.push_back(current_index + 7);
+		inds.push_back(7);
+		inds.push_back(3);
+		inds.push_back(0);
+		inds.push_back(0);
+		inds.push_back(4);
+		inds.push_back(7);
 
 		//left
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 1);
-		inds.push_back(current_index + 5);
-		inds.push_back(current_index + 5);
-		inds.push_back(current_index + 4);
-		inds.push_back(current_index + 0);
+		inds.push_back(0);
+		inds.push_back(1);
+		inds.push_back(5);
+		inds.push_back(5);
+		inds.push_back(4);
+		inds.push_back(0);
 
-		inds.push_back(current_index + 5);
-		inds.push_back(current_index + 1);
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 0);
-		inds.push_back(current_index + 4);
-		inds.push_back(current_index + 5);
+		inds.push_back(5);
+		inds.push_back(1);
+		inds.push_back(0);
+		inds.push_back(0);
+		inds.push_back(4);
+		inds.push_back(5);
 
 		//right
-		inds.push_back(current_index + 3);
-		inds.push_back(current_index + 2);
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 7);
-		inds.push_back(current_index + 3);
+		inds.push_back(3);
+		inds.push_back(2);
+		inds.push_back(6);
+		inds.push_back(6);
+		inds.push_back(7);
+		inds.push_back(3);
 
-		inds.push_back(current_index + 6);
-		inds.push_back(current_index + 2);
-		inds.push_back(current_index + 3);
-		inds.push_back(current_index + 3);
-		inds.push_back(current_index + 7);
-		inds.push_back(current_index + 6);
+		inds.push_back(6);
+		inds.push_back(2);
+		inds.push_back(3);
+		inds.push_back(3);
+		inds.push_back(7);
+		inds.push_back(6);
+
+		g->SetBlend(true);
+		g->SetTint(glm::vec4(0.0, 0.0, 0.8, 0.5));
+		g->Update();
+		m_volumes.push_back(std::unique_ptr<DynamicGeometry>(g));
 	}
-
-	m_volume_entity->Update();
 }
 
+/*
 bool RegionPointEqual(const glm::vec4 &a, const glm::vec4 &b) {
 	const float eps = 0.01f;
 	const float n_eps = -0.01f;

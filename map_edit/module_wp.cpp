@@ -180,7 +180,7 @@ void ModuleWP::OnHotkey(int ident)
 	}
 }
 
-void ModuleWP::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *non_collide_hit, const glm::vec3 *select_hit, Entity *selected)
+void ModuleWP::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *select_hit, Entity *selected)
 {
 	if (mouse_button != GLFW_MOUSE_BUTTON_1) {
 		return;
