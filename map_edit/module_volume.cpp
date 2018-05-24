@@ -13,19 +13,11 @@ const int HotkeyMode = 56;
 
 ModuleVolume::ModuleVolume()
 {
-	//m_render_volume = true;
-	//m_region_list = nullptr;
-	//m_region_list_size = 0;
-	//m_selected_region = -1;
-	//m_volume_entity.reset(new DynamicGeometry());
-	//m_volume_entity->SetBlend(true);
-	//m_volume_entity->SetTint(glm::vec4(1.0f, 1.0f, 1.0f, 0.7f));
-	//m_volume_entity->SetDoublePass(true);
+	m_work = 0;
 }
 
 ModuleVolume::~ModuleVolume()
 {
-	//FreeRegionList();
 }
 
 void ModuleVolume::OnLoad(Scene *s)
@@ -55,6 +47,23 @@ void ModuleVolume::OnDrawMenu()
 
 void ModuleVolume::OnDrawUI()
 {
+	ImGui::Begin("Volume");
+
+	ImGui::Text("Volume Module");
+
+	ImGui::Text("Volume Instructions");
+
+	ImGui::Separator();
+
+	auto physics = m_scene->GetZonePhysics();
+	if (physics && physics->GetWaterMap()) {
+		if (ImGui::Button("Approx volumes from water map (useful for s3d zones)")) {
+		}
+	}
+
+
+	ImGui::End();
+
 	/*ImGui::Begin("Volume");
 	if (ImGui::ListBox("Volumes", &m_selected_region, (const char**)m_region_list, m_region_list_size, 5)) {
 		BuildRegionModels();
@@ -209,7 +218,7 @@ void ModuleVolume::OnResume()
 
 bool ModuleVolume::HasWork()
 {
-	return false;
+	return m_work > 0;
 }
 
 bool ModuleVolume::CanSave()
@@ -570,6 +579,16 @@ void ModuleVolume::BuildVolumeEntities()
 		g->Update();
 		m_volumes.push_back(std::unique_ptr<DynamicGeometry>(g));
 	}
+}
+
+void ModuleVolume::BuildFromWatermap()
+{
+	auto physics = m_scene->GetZonePhysics();
+	if (!physics) {
+		return;
+	}
+
+
 }
 
 /*

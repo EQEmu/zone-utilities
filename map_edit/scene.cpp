@@ -4,6 +4,7 @@
 #include <gtc/matrix_transform.hpp>
 
 #include "static_geometry.h"
+#include "config.h"
 
 const char *GetRegionTypeString(WaterRegionType type) {
 	switch (type) {
@@ -94,11 +95,35 @@ void Scene::Init(GLFWwindow *win) {
 	RegisterHotkey(this, MainHotkeyToggleDebug, GLFW_KEY_G, false, true, false);
 
 	m_physics.reset(new EQPhysics());
-#ifdef EQEMU_GL_DEP
-	m_shader.reset(new ShaderProgram("shaders/basic.vert", "shaders/basic.frag"));
-#else
-	m_shader.reset(new ShaderProgram("shaders/basic130.vert", "shaders/basic130.frag"));
-#endif
+
+	const char *vertexProgramData = 
+		"#version 130\n"
+		"in vec3 vp_ms;\n"
+		"in vec3 vc;\n"
+		"uniform mat4 Model;\n"
+		"uniform mat4 View;\n"
+		"uniform mat4 Proj;\n"
+		"uniform vec4 Tint;\n"
+		"out vec4 frag_color;\n"
+		"void main() {\n"
+		"	gl_Position.x = vp_ms.x;\n"
+		"	gl_Position.y = vp_ms.y;\n"
+		"	gl_Position.z = vp_ms.z;\n"
+		"	gl_Position.w = 1.0;\n"
+		"	gl_Position = Proj * View * Model * gl_Position;\n"
+		"	frag_color = vec4(vc.x, vc.y, vc.z, 1.0) * Tint;\n"
+		"}\n";
+
+	const char *fragmentProgramData =
+		"#version 130\n"
+		"in vec4 frag_color;\n"
+		"out vec4 color;\n"
+		"void main()\n"
+		"{\n"
+		"	color = frag_color;\n"
+		"}\n";
+
+	m_shader.reset(new ShaderProgram(vertexProgramData, fragmentProgramData));
 
 	m_model = m_shader->GetUniformLocation("Model");
 	m_view = m_shader->GetUniformLocation("View");
@@ -118,10 +143,7 @@ void Scene::LoadScene(const char *zone_name) {
 	if(m_zone_geometry) {
 		m_physics.reset(new EQPhysics());
 
-		WaterMap *w_map = WaterMap::LoadWaterMapfile("save/", zone_name);
-		if (!w_map) {
-			w_map = WaterMap::LoadWaterMapfile("maps/water/", zone_name);
-		}
+		auto w_map = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("water", "maps/water/"), zone_name);
 		m_physics->RegisterMesh("CollideWorldMesh", m_zone_geometry->GetCollidableVerts(), m_zone_geometry->GetCollidableInds(), 
 			glm::vec3(0.0f, 0.0f, 0.0f), EQPhysicsFlags::CollidableWorld);
 		m_physics->RegisterMesh("NonCollideWorldMesh", m_zone_geometry->GetNonCollidableVerts(), m_zone_geometry->GetNonCollidableInds(), 

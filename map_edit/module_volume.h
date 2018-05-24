@@ -47,6 +47,9 @@ private:
 	std::vector<Region> m_regions;
 	std::vector<Region> m_regions_orig;
 	bool m_modified;
+	int m_work;
+
+	void BuildFromWatermap();
 
 	//void FreeRegionList();
 	//void BuildRegionList();
