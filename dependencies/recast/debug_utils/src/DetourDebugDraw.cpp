@@ -107,8 +107,8 @@ static void drawPolyBoundaries(duDebugDraw* dd, const dtMeshTile* tile,
 					{
 						const float *tvn = tv[n];
 						const float *tvm = tv[m];
-						dd->vertex(tvn[0], tvn[1] + 4.0f, tvn[2], c);
-						dd->vertex(tvm[0], tvm[1] + 4.0f, tvm[2], c);
+						dd->vertex(tvn[0], tvn[1], tvn[2], c);
+						dd->vertex(tvm[0], tvm[1], tvm[2], c);
 					}
 				}
 			}
@@ -154,11 +154,11 @@ static void drawMeshTile(duDebugDraw* dd, const dtNavMesh& mesh, const dtNavMesh
 			{
 				if (t[k] < p->vertCount) {
 					float *vert = &tile->verts[p->verts[t[k]] * 3];
-					dd->vertex(vert[0], vert[1] + 4.0f, vert[2], col);
+					dd->vertex(vert[0], vert[1], vert[2], col);
 				}
 				else {
 					float *vert = &tile->detailVerts[(pd->vertBase + t[k] - p->vertCount) * 3];
-					dd->vertex(vert[0], vert[1] + 4.0f, vert[2], col);
+					dd->vertex(vert[0], vert[1], vert[2], col);
 				}
 			}
 		}

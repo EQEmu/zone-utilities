@@ -143,7 +143,10 @@ void Scene::LoadScene(const char *zone_name) {
 	if(m_zone_geometry) {
 		m_physics.reset(new EQPhysics());
 
-		auto w_map = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("water", "maps/water/"), zone_name);
+		auto w_map = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("volume", "maps/volume") + "/", zone_name);
+		if (!w_map) {
+			w_map = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("water", "maps/water") + "/", zone_name);
+		}
 		m_physics->RegisterMesh("CollideWorldMesh", m_zone_geometry->GetCollidableVerts(), m_zone_geometry->GetCollidableInds(), 
 			glm::vec3(0.0f, 0.0f, 0.0f), EQPhysicsFlags::CollidableWorld);
 		m_physics->RegisterMesh("NonCollideWorldMesh", m_zone_geometry->GetNonCollidableVerts(), m_zone_geometry->GetNonCollidableInds(), 
@@ -422,6 +425,15 @@ void Scene::RenderModulesMenu() {
 			if (!module->GetRunning()) {
 				if (ImGui::MenuItem(module->GetName(), nullptr, &module->GetRunning())) {
 					module->OnResume();
+
+					for (auto &o : m_modules) {
+						if (o != module && o->GetUnpaused()) {
+							if (o->GetRunning()) {
+								o->OnSuspend();
+								o->SetUnpaused(false);
+							}
+						}
+					}
 				}
 			}
 			else {
@@ -431,8 +443,17 @@ void Scene::RenderModulesMenu() {
 					}
 					else {
 						module->OnResume();
-					}
 
+						for (auto &o : m_modules) {
+							if (o != module && o->GetUnpaused()) {
+								if (o->GetRunning()) {
+									o->OnSuspend();
+									o->SetUnpaused(false);
+								}
+							}
+						}
+					}
+			
 					module->SetUnpaused(!module->GetUnpaused());
 				}
 			}
@@ -567,6 +588,7 @@ void Scene::ProcessSceneInput() {
 		glm::vec3 end;
 		GetClickVectors(x_pos, (double)display_h - y_pos, start, end, display_w, display_h);
 
+		glm::vec3 collide_hit_loc;
 		glm::vec3 hit_loc;
 		std::string ent_name;
 		bool had_hit = m_physics->GetRaycastClosestHit(start, end, hit_loc, &ent_name, CollidableWorld | Selectable);
@@ -578,6 +600,7 @@ void Scene::ProcessSceneInput() {
 
 			if (ent_name.compare("CollideWorldMesh") == 0) {
 				did_collide_hit = true;
+				collide_hit_loc = hit_loc;
 			}
 			else {
 				did_select_hit = true;
@@ -585,6 +608,8 @@ void Scene::ProcessSceneInput() {
 				std::string ptr = ent_name.substr(7);
 				auto ptr_addr = std::stoll(ptr, nullptr, 16);
 				selected_ent = (Entity*)ptr_addr;
+
+				did_collide_hit = m_physics->GetRaycastClosestHit(start, end, collide_hit_loc, nullptr, CollidableWorld);
 			}
 
 			for (int i = 0; i < 5; ++i) {
@@ -593,7 +618,7 @@ void Scene::ProcessSceneInput() {
 			
 				for (auto &module : m_modules) {
 					if (module->GetRunning() && module->GetUnpaused()) {
-						module->OnClick(i, (did_collide_hit ? &hit_loc : nullptr),
+						module->OnClick(i, (did_collide_hit ? &collide_hit_loc : nullptr),
 							(did_select_hit ? &hit_loc : nullptr),
 							(did_select_hit ? selected_ent : nullptr));
 					}

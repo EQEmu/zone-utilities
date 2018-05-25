@@ -53,8 +53,8 @@ int main(int argc, char **argv)
 
 	scene.reset(new Scene());
 	scene->RegisterModule(new ModuleNavigation());
-	scene->RegisterModule(new ModuleWP());
 	scene->RegisterModule(new ModuleVolume());
+	scene->RegisterModule(new ModuleWP());
 	scene->Init(win);
 
 	glfwSetFramebufferSizeCallback(win, [](GLFWwindow *win, int width, int height) {

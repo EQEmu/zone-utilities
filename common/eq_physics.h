@@ -26,7 +26,7 @@ public:
 	WaterMap *GetWaterMap();
 	void RegisterMesh(const std::string &ident, const std::vector<glm::vec3>& verts, const std::vector<unsigned int>& inds, const glm::vec3 &pos, EQPhysicsFlags flag);
 	void UnregisterMesh(const std::string &ident);
-
+	void MoveMesh(const std::string &ident, const glm::vec3 &pos);
 	void Step();
 
 	//collision stuff

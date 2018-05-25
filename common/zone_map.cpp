@@ -65,7 +65,7 @@ ZoneMap::~ZoneMap() {
 }
 
 ZoneMap *ZoneMap::LoadMapFile(std::string file) {
-	std::string filename = Config::Instance().GetPath("base", "maps/base/");
+	std::string filename = Config::Instance().GetPath("base", "maps/base") + "/";
 	std::transform(file.begin(), file.end(), file.begin(), ::tolower);
 	filename += file;
 	filename += ".map";

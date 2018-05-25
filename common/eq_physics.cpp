@@ -136,6 +136,22 @@ void EQPhysics::UnregisterMesh(const std::string &ident) {
 	}
 }
 
+void EQPhysics::MoveMesh(const std::string &ident, const glm::vec3 &pos) {
+	auto iter = imp->entity_info->find(ident);
+	if (iter != imp->entity_info->end()) {
+		auto body = iter->second.rb.get();
+		if (body && body->getMotionState()) {
+			auto ms = body->getMotionState();
+
+			btTransform origin_transform;
+			origin_transform.setIdentity();
+			origin_transform.setOrigin(btVector3(pos.x, pos.y, pos.z));
+
+			ms->setWorldTransform(origin_transform);
+		}
+	}
+}
+
 void EQPhysics::Step()
 {
 }

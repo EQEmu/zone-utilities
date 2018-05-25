@@ -2,18 +2,16 @@
 #include <algorithm>
 #include "config.h"
 #include "log_macros.h"
+#include "event/background_task.h"
 
-const int HotkeyXNeg = 50;
-const int HotkeyXPos = 51;
-const int HotkeyYNeg = 52;
-const int HotkeyYPos = 53;
-const int HotkeyZNeg = 54;
-const int HotkeyZPos = 55;
-const int HotkeyMode = 56;
+const int HotkeyGenVolumes = 57;
+const int HotkeyDel = 58;
 
 ModuleVolume::ModuleVolume()
 {
-	m_work = 0;
+	m_work_pending = 0;
+	m_selected = -1;
+	m_render_volume = true;
 }
 
 ModuleVolume::~ModuleVolume()
@@ -23,13 +21,8 @@ ModuleVolume::~ModuleVolume()
 void ModuleVolume::OnLoad(Scene *s)
 {
 	m_scene = s;
-	m_scene->RegisterHotkey(this, HotkeyXNeg, GLFW_KEY_LEFT, false, false, false);
-	m_scene->RegisterHotkey(this, HotkeyXPos, GLFW_KEY_RIGHT, false, false, false);
-	m_scene->RegisterHotkey(this, HotkeyZNeg, GLFW_KEY_UP, false, false, false);
-	m_scene->RegisterHotkey(this, HotkeyZPos, GLFW_KEY_DOWN, false, false, false);
-	m_scene->RegisterHotkey(this, HotkeyYNeg, GLFW_KEY_PAGE_UP, false, false, false);
-	m_scene->RegisterHotkey(this, HotkeyYPos, GLFW_KEY_PAGE_DOWN, false, false, false);
-	m_scene->RegisterHotkey(this, HotkeyMode, GLFW_KEY_F5, false, false, false);
+	m_scene->RegisterHotkey(this, HotkeyDel, GLFW_KEY_DELETE, false, false, false);
+	m_scene->RegisterHotkey(this, HotkeyGenVolumes, GLFW_KEY_F5, false, false, false);
 }
 
 void ModuleVolume::OnShutdown()
@@ -39,84 +32,27 @@ void ModuleVolume::OnShutdown()
 
 void ModuleVolume::OnDrawMenu()
 {
-	//if (ImGui::BeginMenu("Volume"))
-	//{
-	//	ImGui::EndMenu();
-	//}
 }
 
 void ModuleVolume::OnDrawUI()
 {
 	ImGui::Begin("Volume");
 
-	ImGui::Text("Volume Module");
-
-	ImGui::Text("Volume Instructions");
-
+	ImGui::Text("LMB to select a region");
+	ImGui::Text("Shift LMB to place a new region");
+	ImGui::Text("Ctrl LMB to move a selected region to the cursor position");
+	ImGui::Text("F5 to calculate a volume from a water map (approx)");
+	ImGui::Text("Del to delete a selected region");
+	ImGui::Text("Use ui to manipulate selected regions");
 	ImGui::Separator();
 
-	auto physics = m_scene->GetZonePhysics();
-	if (physics && physics->GetWaterMap()) {
-		if (ImGui::Button("Approx volumes from water map (useful for s3d zones)")) {
-		}
-	}
+	if (m_selected >= 0) {
+		ImGui::Separator();
 
+		auto &region = m_regions[m_selected];
+		
+		ImGui::Text("Selected Region: %d", m_selected);
 
-	ImGui::End();
-
-	/*ImGui::Begin("Volume");
-	if (ImGui::ListBox("Volumes", &m_selected_region, (const char**)m_region_list, m_region_list_size, 5)) {
-		BuildRegionModels();
-	}
-
-	if (ImGui::Button("Add")) {
-		Region t;
-		t.area_type = RegionTypeWater;
-		auto &camera_loc = m_scene->GetCameraLoc();
-		t.pos = glm::vec3(camera_loc.z, camera_loc.x, camera_loc.y);
-		t.rot = glm::vec3(0.0f);
-		t.scale = glm::vec3(1.0f);
-		t.extents = glm::vec3(10.0f);
-		t.obb = OrientedBoundingBox(t.pos, t.rot, t.scale, t.extents);
-
-		m_regions.push_back(t);
-		BuildRegionList();
-		BuildRegionModels();
-
-		m_modified = true;
-	}
-
-	ImGui::SameLine();
-
-	if (ImGui::Button("Delete")) {
-		if (m_selected_region != -1) {
-			m_regions.erase(m_regions.begin() + m_selected_region);
-			BuildRegionList();
-			BuildRegionModels();
-
-			m_selected_region = -1;
-			m_modified = true;
-		}
-	}
-
-	ImGui::Separator();
-	if (ImGui::Button("Reset All")) {
-		m_regions = m_regions_orig;
-		BuildRegionList();
-		BuildRegionModels();
-
-		m_selected_region = -1;
-		m_modified = true;
-	}
-
-	ImGui::Separator();
-	if (ImGui::Button("Create region from water map approx")) {
-		BuildFromWatermap(m_scene->GetCameraLoc());
-	}
-
-	if (m_selected_region >= 0 && m_selected_region < m_region_list_size) {
-		auto &region = m_regions[m_selected_region];
-		ImGui::Text("Selected Region: %d", m_selected_region);
 		bool needs_update = false;
 
 		const char* region_identifiers[] = { "Normal", "Water", "Lava", "ZoneLine", "PVP", "Slime", "Ice", "V Water", "Generic Area", "Prefer Pathing", "Disable NavigationMesh" };
@@ -175,50 +111,50 @@ void ModuleVolume::OnDrawUI()
 
 		if (needs_update) {
 			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
-			BuildRegionModels();
+			BuildVolumeEntities();
 		}
 	}
-	ImGui::End();*/
+
+	ImGui::End();
 }
 
 void ModuleVolume::OnDrawOptions()
 {
-	//ImGui::Separator();
-	//ImGui::Text("Volume");
-	//if (ImGui::Checkbox("Render Volumes", &m_render_volume)) {
-	//	if (m_render_volume) {
-	//		m_scene->RegisterEntity(this, m_volume_entity.get(), true);
-	//	}
-	//	else {
-	//		m_scene->UnregisterEntity(this, m_volume_entity.get());
-	//	}
-	//}
-	//ImGui::Separator();
+	if(ImGui::Checkbox("Render Volumes", &m_render_volume)) {
+		if (m_render_volume) {
+			for (auto &vol : m_volumes) {
+				m_scene->RegisterEntity(this, vol.get(), true);
+			}
+		}
+		else {
+			for (auto &vol : m_volumes) {
+				m_scene->UnregisterEntity(this, vol.get());
+			}
+		}
+	}
 }
 
 void ModuleVolume::OnSceneLoad(const char *zone_name)
 {
 	m_modified = false;
-	if (LoadVolumes()) {
-		BuildVolumeEntities();
+	if (!LoadVolumes(Config::Instance().GetPath("volume", "maps/volume") + "/")) {
+		LoadVolumes(Config::Instance().GetPath("water", "maps/water") + "/");
 	}
+
+	BuildVolumeEntities();
 }
 
 void ModuleVolume::OnSuspend()
 {
-	m_scene->UnregisterEntitiesByModule(this);
 }
 
 void ModuleVolume::OnResume()
 {
-	for (auto &vol : m_volumes) {
-		m_scene->RegisterEntity(this, vol.get(), true);
-	}
 }
 
 bool ModuleVolume::HasWork()
 {
-	return m_work > 0;
+	return m_work_pending > 0;
 }
 
 bool ModuleVolume::CanSave()
@@ -228,79 +164,113 @@ bool ModuleVolume::CanSave()
 
 void ModuleVolume::Save()
 {
-	//if (CanSave()) {
-	//	std::string filename = "save/" + m_scene->GetZoneName() + ".wtr";
-	//	FILE *f = fopen(filename.c_str(), "wb");
-	//	if (f) {
-	//		fwrite("EQEMUWATER", 10, 1, f);
-	//		
-	//		uint32_t version = 2;
-	//		fwrite(&version, sizeof(uint32_t), 1, f);
-	//
-	//		uint32_t region_count = (uint32_t)m_regions.size();
-	//		fwrite(&region_count, sizeof(uint32_t), 1, f);
-	//		for (auto &region : m_regions) {
-	//			uint32_t region_type = (uint32_t)region.area_type;
-	//			fwrite(&region_type, sizeof(uint32_t), 1, f);
-	//			fwrite(&region.pos.x, sizeof(float), 1, f);
-	//			fwrite(&region.pos.y, sizeof(float), 1, f);
-	//			fwrite(&region.pos.z, sizeof(float), 1, f);
-	//			fwrite(&region.rot.x, sizeof(float), 1, f);
-	//			fwrite(&region.rot.y, sizeof(float), 1, f);
-	//			fwrite(&region.rot.z, sizeof(float), 1, f);
-	//			fwrite(&region.scale.x, sizeof(float), 1, f);
-	//			fwrite(&region.scale.y, sizeof(float), 1, f);
-	//			fwrite(&region.scale.z, sizeof(float), 1, f);
-	//			fwrite(&region.extents.x, sizeof(float), 1, f);
-	//			fwrite(&region.extents.y, sizeof(float), 1, f);
-	//			fwrite(&region.extents.z, sizeof(float), 1, f);
-	//		}
-	//		fclose(f);
-	//		m_modified = false;
-	//		m_regions_orig = m_regions;
-	//
-	//		WaterMap *wm = WaterMap::LoadWaterMapfile("save/", m_scene->GetZoneName());
-	//		if (wm) {
-	//			m_scene->GetZonePhysics()->SetWaterMap(wm);
-	//		}
-	//	}
-	//}
+	if (CanSave()) {
+		std::string filename = Config::Instance().GetPath("volume", "maps/volume") + "/" + m_scene->GetZoneName() + ".wtr";
+		FILE *f = fopen(filename.c_str(), "wb");
+		if (f) {
+			fwrite("EQEMUWATER", 10, 1, f);
+			
+			uint32_t version = 2;
+			fwrite(&version, sizeof(uint32_t), 1, f);
+	
+			uint32_t region_count = (uint32_t)m_regions.size();
+			fwrite(&region_count, sizeof(uint32_t), 1, f);
+			for (auto &region : m_regions) {
+				uint32_t region_type = (uint32_t)region.area_type;
+				fwrite(&region_type, sizeof(uint32_t), 1, f);
+				fwrite(&region.pos.x, sizeof(float), 1, f);
+				fwrite(&region.pos.y, sizeof(float), 1, f);
+				fwrite(&region.pos.z, sizeof(float), 1, f);
+				fwrite(&region.rot.x, sizeof(float), 1, f);
+				fwrite(&region.rot.y, sizeof(float), 1, f);
+				fwrite(&region.rot.z, sizeof(float), 1, f);
+				fwrite(&region.scale.x, sizeof(float), 1, f);
+				fwrite(&region.scale.y, sizeof(float), 1, f);
+				fwrite(&region.scale.z, sizeof(float), 1, f);
+				fwrite(&region.extents.x, sizeof(float), 1, f);
+				fwrite(&region.extents.y, sizeof(float), 1, f);
+				fwrite(&region.extents.z, sizeof(float), 1, f);
+			}
+			fclose(f);
+			m_modified = false;
+
+			WaterMap *wm = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("volume", "maps/volume") + "/", m_scene->GetZoneName());
+			if (wm) {
+				m_scene->GetZonePhysics()->SetWaterMap(wm);
+			}
+		}
+	}
 }
 
 void ModuleVolume::OnHotkey(int ident)
 {
-	//switch (ident) {
-	//	case HotkeyXNeg:
-	//		break;
-	//	case HotkeyXPos:
-	//		break;
-	//	case HotkeyZNeg:
-	//		break;
-	//	case HotkeyZPos:
-	//		break;
-	//	case HotkeyYNeg:
-	//		break;
-	//	case HotkeyYPos:
-	//		break;
-	//	case HotkeyMode:
-	//		break;
-	//	default:
-	//		break;
-	//}
+	switch (ident) {
+		case HotkeyDel:
+			if (m_selected != -1) {
+				m_regions.erase(m_regions.begin() + m_selected);
+				m_selected = -1;
+				BuildVolumeEntities();
+			}
+			break;
+		case HotkeyGenVolumes:
+			BuildFromWatermap(m_scene->GetCameraLoc());
+			break;
+		default:
+			break;
+	}
 }
 
 void ModuleVolume::OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *select_hit, Entity *selected)
 {
-	if (selected) {
-		eqLogMessage(LogInfo, "Clicked on %p", selected);
+	auto &io = ImGui::GetIO();
+	if (mouse_button == GLFW_MOUSE_BUTTON_1 && !io.KeyShift && !io.KeyCtrl && selected) {
+		int i = 0;
+		for (auto &volume : m_volumes) {
+			if (volume.get() == selected) {
+				if (m_selected >= 0) {
+					auto &c = m_volumes[m_selected];
+					c->SetTint(glm::vec4(0.0, 0.0, 1.0, 0.5));
+				}
+
+				m_selected = i;
+				volume->SetTint(glm::vec4(0.0, 0.8, 0.0, 0.5));
+				return;
+			}
+
+			i++;
+		}
+	}
+	else if (mouse_button == GLFW_MOUSE_BUTTON_1 && io.KeyShift && collide_hit) {
+		Region t;
+		t.area_type = RegionTypeWater;
+		t.pos = glm::vec3(collide_hit->z, collide_hit->x, collide_hit->y);
+		t.rot = glm::vec3(0.0f);
+		t.scale = glm::vec3(1.0f);
+		t.extents = glm::vec3(10.0f);
+		t.obb = OrientedBoundingBox(t.pos, t.rot, t.scale, t.extents);
+
+		m_regions.push_back(t);
+		m_selected = m_regions.size() - 1;
+
+		BuildVolumeEntities();
+
+		m_modified = true;
+	}
+	else if (mouse_button == GLFW_MOUSE_BUTTON_1 && io.KeyCtrl && collide_hit) {
+		if (m_selected >= 0) {
+			auto &region = m_regions[m_selected];
+			region.pos = glm::vec3(collide_hit->z, collide_hit->x, collide_hit->y);
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+
+			BuildVolumeEntities();
+		}
 	}
 }
 
-bool ModuleVolume::LoadVolumes()
+bool ModuleVolume::LoadVolumes(const std::string &dir)
 {
 	m_regions.clear();
-	m_regions_orig.clear();
-	std::string filename = Config::Instance().GetPath("water", "maps/water/") + m_scene->GetZoneName() + ".wtr";
+	std::string filename = dir + m_scene->GetZoneName() + ".wtr";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 
@@ -416,7 +386,6 @@ bool ModuleVolume::LoadVolumes()
 				r.extents = glm::vec3(x_extent, y_extent, z_extent);
 				r.obb = OrientedBoundingBox(r.pos, r.rot, r.scale, r.extents);
 				m_regions.push_back(r);
-				m_regions_orig.push_back(r);
 			}
 
 			fclose(f);
@@ -433,6 +402,13 @@ bool ModuleVolume::LoadVolumes()
 
 void ModuleVolume::BuildVolumeEntities()
 {
+	for (auto &ent : m_volumes) {
+		m_scene->UnregisterEntity(this, ent.get());
+	}
+
+	m_volumes.clear();
+
+	int i = 0;
 	for (auto &region : m_regions) {
 		DynamicGeometry *g = new DynamicGeometry();
 		auto color = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -575,44 +551,22 @@ void ModuleVolume::BuildVolumeEntities()
 		inds.push_back(6);
 
 		g->SetBlend(true);
-		g->SetTint(glm::vec4(0.0, 0.0, 0.8, 0.5));
+		if (i == m_selected) {
+			g->SetTint(glm::vec4(0.0, 0.8, 0.0, 0.5));
+		}
+		else {
+			g->SetTint(glm::vec4(0.0, 0.0, 0.8, 0.5));
+		}
+
 		g->Update();
 		m_volumes.push_back(std::unique_ptr<DynamicGeometry>(g));
-	}
-}
 
-void ModuleVolume::BuildFromWatermap()
-{
-	auto physics = m_scene->GetZonePhysics();
-	if (!physics) {
-		return;
+		++i;
 	}
 
-
-}
-
-/*
-bool RegionPointEqual(const glm::vec4 &a, const glm::vec4 &b) {
-	const float eps = 0.01f;
-	const float n_eps = -0.01f;
-
-	float x = a.x - b.x;
-	float y = a.y - b.y;
-	float z = a.z - b.z;
-
-	if (x > eps || x < n_eps) {
-		return false;
+	for (auto &vol : m_volumes) {
+		m_scene->RegisterEntity(this, vol.get(), true);
 	}
-
-	if (y > eps || y < n_eps) {
-		return false;
-	}
-
-	if (z > eps || z < n_eps) {
-		return false;
-	}
-
-	return true;
 }
 
 void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
@@ -621,12 +575,12 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	if (!physics) {
 		return;
 	}
-	
+
 	auto region_type = physics->ReturnRegionType(pos);
 	if (region_type == RegionTypeNormal || region_type == RegionTypeUntagged || region_type == RegionTypeUnsupported) {
 		return;
 	}
-
+	
 	glm::vec3 new_region_min = pos;
 	glm::vec3 new_region_max = pos;
 	
@@ -690,7 +644,7 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	
 		new_region_min.z -= step_size;
 	}
-
+	
 	Region t;
 	t.area_type = (uint32_t)region_type;
 	t.pos = glm::vec3((new_region_max.z + new_region_min.z) / 2.0f, (new_region_max.x + new_region_min.x) / 2.0f, (new_region_max.y + new_region_min.y) / 2.0f);
@@ -700,7 +654,6 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	m_regions.push_back(t);
 	
 	m_modified = true;
-	BuildRegionList();
-	BuildRegionModels();
+	BuildVolumeEntities();
 }
-*/
+
