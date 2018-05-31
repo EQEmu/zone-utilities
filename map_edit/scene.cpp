@@ -86,7 +86,6 @@ void Scene::Init(GLFWwindow *win) {
 
 	glfwSetInputMode(win, GLFW_STICKY_MOUSE_BUTTONS, 1);
 	glfwSetInputMode(win, GLFW_STICKY_KEYS, 1);
-	ImGui_ImplGlfwGL3_Init(win, true);
 
 	RegisterHotkey(this, MainHotkeyQuit, GLFW_KEY_Q, false, true, false);
 	RegisterHotkey(this, MainHotkeyOpen, GLFW_KEY_O, true, false, false);
@@ -96,31 +95,31 @@ void Scene::Init(GLFWwindow *win) {
 
 	m_physics.reset(new EQPhysics());
 
-	const char *vertexProgramData = 
-		"#version 130\n"
-		"in vec3 vp_ms;\n"
-		"in vec3 vc;\n"
+	const char *vertexProgramData =
+		"#version 330 core\n"
+		"layout(location = 0) in vec3 vp_ms;\n"
+		"layout(location = 1) in vec3 vc;\n"
 		"uniform mat4 Model;\n"
 		"uniform mat4 View;\n"
 		"uniform mat4 Proj;\n"
 		"uniform vec4 Tint;\n"
 		"out vec4 frag_color;\n"
-		"void main() {\n"
-		"	gl_Position.x = vp_ms.x;\n"
-		"	gl_Position.y = vp_ms.y;\n"
-		"	gl_Position.z = vp_ms.z;\n"
-		"	gl_Position.w = 1.0;\n"
-		"	gl_Position = Proj * View * Model * gl_Position;\n"
-		"	frag_color = vec4(vc.x, vc.y, vc.z, 1.0) * Tint;\n"
+		"void main(){\n"
+		"gl_Position.x = vp_ms.x;\n"
+		"gl_Position.y = vp_ms.y;\n"
+		"gl_Position.z = vp_ms.z;\n"
+		"gl_Position.w = 1.0;\n"
+		"gl_Position = Proj * View * Model * gl_Position;\n"
+		"frag_color = vec4(vc.x, vc.y, vc.z, 1.0) * Tint;\n"
 		"}\n";
 
 	const char *fragmentProgramData =
-		"#version 130\n"
+		"#version 330 core\n"
 		"in vec4 frag_color;\n"
 		"out vec4 color;\n"
 		"void main()\n"
 		"{\n"
-		"	color = frag_color;\n"
+		"color = frag_color;\n"
 		"}\n";
 
 	m_shader.reset(new ShaderProgram(vertexProgramData, fragmentProgramData));

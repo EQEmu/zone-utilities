@@ -58,6 +58,11 @@ struct ZoneMap::impl
 
 ZoneMap::ZoneMap() {
 	imp = new impl;
+
+	imp->min = glm::vec3(0.0f);
+	imp->max = glm::vec3(0.0f);
+	imp->nc_min = glm::vec3(0.0f);
+	imp->nc_max = glm::vec3(0.0f);
 }
 
 ZoneMap::~ZoneMap() {

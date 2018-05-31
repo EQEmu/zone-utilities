@@ -4,7 +4,6 @@
 #define GLM_FORCE_RADIANS
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
-#include <gtx/transform.hpp>
 
 glm::mat4 CreateRotateMatrix(float rx, float ry, float rz);
 glm::mat4 CreateTranslateMatrix(float tx, float ty, float tz);

@@ -8,7 +8,11 @@
 class Entity
 {
 public:
-	Entity() { m_tint = glm::vec4(1.0); }
+	Entity() { 
+		m_tint = glm::vec4(1.0); 
+		m_loc = glm::vec3(0);  
+	}
+
 	~Entity() { }
 
 	virtual void Draw() = 0;
