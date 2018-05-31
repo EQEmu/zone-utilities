@@ -3,13 +3,19 @@ compiler: gcc
 sudo: false
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
-    - zlib1g-dev
-    - xorg-dev
-    - libglu1-mesa-dev
-    - libbullet-dev
-    - libglew-dev
+      - zlib1g-dev
+      - xorg-dev
+      - libglu1-mesa-dev
+      - libbullet-dev
+      - libglew-dev
+      - g++-7
+    env:
+      - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 before_install:
+  - eval "${MATRIX_EVAL}"
   - mkdir $HOME/usr
   - export PATH="$HOME/usr/bin:$PATH"
   - wget https://cmake.org/files/v3.11/cmake-3.11.2-Linux-x86_64.sh
