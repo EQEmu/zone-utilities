@@ -1,0 +1,31 @@
+version: 1.0.{build}
+branches:
+  except:
+  - v2
+configuration: Release
+clone_folder: c:\projects\zone-utilities
+init:
+- ps: git config --global core.autocrlf input
+install:
+- ps: >-
+    vcpkg install Zlib:x64-windows
+
+    vcpkg install bullet3:x64-windows
+
+    vcpkg install glew:x64-windows
+before_build:
+- cmd: >-
+    mkdir build
+
+    cd build
+
+    cmake -G "Visual Studio 14 2015 Win64" -DEQEMU_ENABLE_GL=ON -DCMAKE_TOOLCHAIN_FILE=c:/tools/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+build:
+  project: C:\projects\zone-utilities\build\EQEmuZoneUtils.sln
+  parallel: true
+  verbosity: minimal
+after_build:
+- cmd: >-
+    7z a build_x64.zip C:\projects\zone-utilities\build\bin\Release\*.*
+
+    appveyor PushArtifact build_x64.zip
