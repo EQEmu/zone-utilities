@@ -1,31 +1,16 @@
 language: cpp
 compiler: gcc
-sudo: false
-matrix:
-  include:
-    - os: linux
-      apt:
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - zlib1g-dev
-          - xorg-dev
-          - libglu1-mesa-dev
-          - libbullet-dev
-          - libglew-dev
-          - g++-7
-        env:
-          - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+dist: trusty
+
 before_install:
-  - eval "${MATRIX_EVAL}"
-  - mkdir $HOME/usr
-  - export PATH="$HOME/usr/bin:$PATH"
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update -qq
   - wget https://cmake.org/files/v3.11/cmake-3.11.2-Linux-x86_64.sh
   - chmod +x cmake-3.11.2-Linux-x86_64.sh
   - ./cmake-3.11.2-Linux-x86_64.sh --prefix=$HOME/usr --exclude-subdir --skip-license
+install:
+  - sudo apt-get install -qq g++-7
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
 script:
   - cmake -G "Unix Makefiles" -DEQEMU_ENABLE_GL=ON
   - make -j8
-notifications:
-  email: false
-os: linux
