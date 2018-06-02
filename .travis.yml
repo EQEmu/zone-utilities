@@ -7,7 +7,7 @@ before_install:
   - sudo apt-get update -qq
   - wget https://cmake.org/files/v3.11/cmake-3.11.2-Linux-x86_64.sh
   - chmod +x cmake-3.11.2-Linux-x86_64.sh
-  - ./cmake-3.11.2-Linux-x86_64.sh --prefix=$HOME/usr --exclude-subdir --skip-license
+  - sudo ./cmake-3.11.2-Linux-x86_64.sh --prefix=$HOME/usr --exclude-subdir --skip-license
 install:
   - sudo apt-get install -qq g++-7
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
