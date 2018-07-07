@@ -68,6 +68,23 @@ SET(common_headers
 	event/timer.h
 )
 
+IF(EQEMU_ENABLE_GL)
+	SET(common_sources
+		${common_sources}
+		graphics/imgui_glfw.cpp
+	)
+	
+	SET(common_headers
+		${common_headers}
+		graphics/imgui_glfw.h
+	)
+	
+	SOURCE_GROUP(graphics
+		graphics/imgui_glfw.cpp
+		graphics/imgui_glfw.h
+	)
+ENDIF()
+
 ADD_LIBRARY(common ${common_sources} ${common_headers})
 
 

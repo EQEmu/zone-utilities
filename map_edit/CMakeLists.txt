@@ -3,7 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 SET(map_edit_sources
 	debug_draw.cpp
 	dynamic_geometry.cpp
-	imgui_glfw.cpp
 	main.cpp
 	module_navigation.cpp
 	module_navigation_build_tile.cpp
@@ -19,7 +18,6 @@ SET(map_edit_headers
 	debug_draw.h
 	dynamic_geometry.h
 	entity.h
-	imgui_glfw.h
 	module.h
 	module_navigation.h
 	module_navigation_build_tile.h

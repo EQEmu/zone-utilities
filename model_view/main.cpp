@@ -1,24 +1,20 @@
-//std
 #include <memory>
 
-//local
 #include <graphics/imgui_glfw.h>
-#include <log_file.h>
 #include <event/event_loop.h>
-#include "scene.h"
-#include "module_navigation.h"
-#include "module_wp.h"
-#include "module_volume.h"
-
-std::unique_ptr<Scene> scene;
+#include <log_macros.h>
+#include <log_stdout.h>
+#include <log_file.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 int main(int argc, char **argv)
 {
 	eqLogInit(EQEMU_LOG_LEVEL);
 	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogStdOut()));
-	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogFile("map_edit.log")));
+	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogFile("model_view.log")));
 
-	if(!glfwInit()) {
+	if (!glfwInit()) {
 		eqLogMessage(LogFatal, "Couldn't init graphical system.");
 		return -1;
 	}
@@ -35,9 +31,8 @@ int main(int argc, char **argv)
 	glfwWindowHint(GLFW_DEPTH_BITS, 32);
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-
-	GLFWwindow *win = glfwCreateWindow(mode->width, mode->height, "Map Edit", nullptr, nullptr);
-	if(!win) {
+	GLFWwindow *win = glfwCreateWindow(mode->width, mode->height, "Model Viewer", nullptr, nullptr);
+	if (!win) {
 		eqLogMessage(LogFatal, "Couldn't create an OpenGL window.");
 		glfwTerminate();
 		return -1;
@@ -46,30 +41,19 @@ int main(int argc, char **argv)
 	glfwMakeContextCurrent(win);
 
 	glewExperimental = GL_TRUE;
-	if(glewInit() != GLEW_OK) {
+	if (glewInit() != GLEW_OK) {
 		eqLogMessage(LogFatal, "Couldn't init glew.");
 		glfwTerminate();
 		return -1;
 	}
 
-	scene.reset(new Scene());
-	scene->RegisterModule(new ModuleNavigation());
-	scene->RegisterModule(new ModuleVolume());
-	scene->RegisterModule(new ModuleWP());
-	scene->Init(win);
-
 	glfwSetFramebufferSizeCallback(win, [](GLFWwindow *win, int width, int height) {
-		scene->Resize(width, height);
 	});
 
 	ImGui_ImplGlfwGL3_Init(win, true);
-	while(!glfwWindowShouldClose(win)) {
-		scene->Tick();
-		scene->Render();
+	while (!glfwWindowShouldClose(win)) {
 		EQ::EventLoop::Get().Process();
 	}
-
-	scene->UnregisterAllModules();
 
 	ImGui_ImplGlfwGL3_Shutdown();
 	glfwTerminate();
