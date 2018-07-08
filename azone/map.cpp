@@ -1,7 +1,7 @@
 #include "map.h"
 #include <sstream>
 #include <fstream>
-#include "compression.h"
+#include "core/compression.h"
 #include "log_macros.h"
 #include <gtc/matrix_transform.hpp>
 

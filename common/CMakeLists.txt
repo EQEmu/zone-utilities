@@ -1,65 +1,65 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(common_sources
-	compression.cpp
-	config.cpp
-	eq_physics.cpp
-	eqg_loader.cpp
-	eqg_model_loader.cpp
-	eqg_v4_loader.cpp
-	pfs.cpp
-	pfs_crc.cpp
-	s3d_loader.cpp
-	string_util.cpp
-	water_map.cpp
-	water_map_v1.cpp
-	water_map_v2.cpp
-	wld_fragment.cpp
-	zone_map.cpp
+	core/compression.cpp
+	core/config.cpp
+	core/string_util.cpp
+	eq/eq_physics.cpp
+	eq/eqg_loader.cpp
+	eq/eqg_model_loader.cpp
+	eq/eqg_v4_loader.cpp
+	eq/pfs.cpp
+	eq/pfs_crc.cpp
+	eq/s3d_loader.cpp
+	eq/water_map.cpp
+	eq/water_map_v1.cpp
+	eq/water_map_v2.cpp
+	eq/wld_fragment.cpp
+	eq/zone_map.cpp
 	math/eq_math.cpp
 	math/oriented_bounding_box.cpp
 	event/event_loop.cpp
 )
 
 SET(common_headers
-	any.h
-	compression.h
-	config.h
-	eq_physics.h
-	eqemu_endian.h
-	eqg_geometry.h
-	eqg_invis_wall.h
-	eqg_loader.h
-	eqg_material.h
-	eqg_model_loader.h
-	eqg_region.h
-	eqg_structs.h
-	eqg_terrain.h
-	eqg_terrain_tile.h
-	eqg_v4_loader.h
-	eqg_water_sheet.h
-	light.h
-	octree.h
-	pfs.h
-	pfs_crc.h
-	placeable.h
-	placeable_group.h
-	safe_alloc.h
-	s3d_bsp.h
-	s3d_geometry.h
-	s3d_loader.h
-	s3d_skeleton_track.h
-	s3d_texture.h
-	s3d_texture_brush.h
-	s3d_texture_brush_set.h
-	string_util.h
-	water_map.h
-	water_map_v1.h
-	water_map_v2.h
-	wld_fragment_reference.h
-	wld_fragment.h
-	wld_structs.h
-	zone_map.h
+	core/any.h
+	core/compression.h
+	core/config.h
+	core/octree.h
+	core/safe_alloc.h
+	core/string_util.h
+	eq/eq_physics.h
+	eq/eqemu_endian.h
+	eq/eqg_geometry.h
+	eq/eqg_invis_wall.h
+	eq/eqg_loader.h
+	eq/eqg_material.h
+	eq/eqg_model_loader.h
+	eq/eqg_region.h
+	eq/eqg_structs.h
+	eq/eqg_terrain.h
+	eq/eqg_terrain_tile.h
+	eq/eqg_v4_loader.h
+	eq/eqg_water_sheet.h
+	eq/light.h
+	eq/pfs.h
+	eq/pfs_crc.h
+	eq/placeable.h
+	eq/placeable_group.h
+	eq/s3d_bsp.h
+	eq/s3d_geometry.h
+	eq/s3d_loader.h
+	eq/s3d_skeleton_track.h
+	eq/s3d_texture.h
+	eq/s3d_texture_brush.h
+	eq/s3d_texture_brush_set.h
+	eq/water_map.h
+	eq/water_map_v1.h
+	eq/water_map_v2.h
+	eq/wld_fragment_reference.h
+	eq/wld_fragment.h
+	eq/wld_structs.h
+	eq/zone_map.h
 	math/aligned_bounding_box.h
 	math/eq_math.h
 	math/oriented_bounding_box.h
@@ -70,10 +70,63 @@ SET(common_headers
 
 SOURCE_GROUP(core
 	FILES
+	core/any.h
+	core/compression.cpp
+	core/compression.h
+	core/config.cpp
+	core/config.h
+	core/octree.h
+	core/safe_alloc.h
+	core/string_util.cpp
+	core/string_util.h
 )
 
 SOURCE_GROUP(eq
 	FILES
+	eq/eq_physics.cpp
+	eq/eq_physics.h
+	eq/eqemu_endian.h
+	eq/eqg_geometry.h
+	eq/eqg_invis_wall.h
+	eq/eqg_loader.cpp
+	eq/eqg_loader.h
+	eq/eqg_material.h
+	eq/eqg_model_loader.cpp
+	eq/eqg_model_loader.h
+	eq/eqg_region.h
+	eq/eqg_structs.h
+	eq/eqg_terrain.h
+	eq/eqg_terrain_tile.h
+	eq/eqg_v4_loader.cpp
+	eq/eqg_v4_loader.h
+	eq/eqg_water_sheet.h
+	eq/light.h
+	eq/pfs.cpp
+	eq/pfs.h
+	eq/pfs_crc.cpp
+	eq/pfs_crc.h
+	eq/placeable.h
+	eq/placeable_group.h
+	eq/s3d_bsp.h
+	eq/s3d_geometry.h
+	eq/s3d_loader.cpp
+	eq/s3d_loader.h
+	eq/s3d_skeleton_track.h
+	eq/s3d_texture.h
+	eq/s3d_texture_brush.h
+	eq/s3d_texture_brush_set.h
+	eq/water_map.cpp
+	eq/water_map.h
+	eq/water_map_v1.cpp
+	eq/water_map_v1.h
+	eq/water_map_v2.cpp
+	eq/water_map_v2.h
+	eq/wld_fragment_reference.h
+	eq/wld_fragment.cpp
+	eq/wld_fragment.h
+	eq/wld_structs.h
+	eq/zone_map.cpp
+	eq/zone_map.h
 )
 
 SOURCE_GROUP(graphics

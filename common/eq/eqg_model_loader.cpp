@@ -1,6 +1,6 @@
 #include "eqg_model_loader.h"
 #include "eqg_structs.h"
-#include "safe_alloc.h"
+#include "core/safe_alloc.h"
 #include "log_macros.h"
 #include <algorithm>
 #include <cctype> 

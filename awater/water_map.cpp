@@ -1,8 +1,8 @@
 #include "water_map.h"
 #include "log_macros.h"
-#include "s3d_loader.h"
-#include "eqg_loader.h"
-#include "eqg_v4_loader.h"
+#include "eq/s3d_loader.h"
+#include "eq/eqg_loader.h"
+#include "eq/eqg_v4_loader.h"
 #include <string.h>
 
 uint32_t BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);

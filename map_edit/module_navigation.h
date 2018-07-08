@@ -10,7 +10,6 @@
 #include "module.h"
 #include "scene.h"
 #include "rc_chunky_tri_mesh.h"
-#include "thread_pool.h"
 #include "debug_draw.h"
 
 enum NavigationPartitionType

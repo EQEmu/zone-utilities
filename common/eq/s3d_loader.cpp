@@ -1,7 +1,7 @@
 #include "s3d_loader.h"
 #include "pfs.h"
 #include "wld_structs.h"
-#include "safe_alloc.h"
+#include "core/safe_alloc.h"
 #include "log_macros.h"
 
 void decode_string_hash(char *str, size_t len) {

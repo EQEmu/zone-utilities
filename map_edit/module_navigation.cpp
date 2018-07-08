@@ -1,15 +1,14 @@
 #include <algorithm>
 #include <sstream>
-#include "string_util.h"
+#include "core/string_util.h"
 #include "imgui.h"
 #include "module_navigation.h"
-#include "thread_pool.h"
 #include "log_macros.h"
 #include "module_navigation_build_tile.h"
-#include "compression.h"
+#include "core/compression.h"
 #include "event/background_task.h"
 
-#include "config.h"
+#include "core/config.h"
 #include <DetourNavMeshQuery.h>
 
 const uint32_t nav_file_version = 3;

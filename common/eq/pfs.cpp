@@ -1,6 +1,6 @@
 #include "pfs.h"
 #include "pfs_crc.h"
-#include "compression.h"
+#include "core/compression.h"
 #include <algorithm>
 #include <cctype>
 #include <cstring>

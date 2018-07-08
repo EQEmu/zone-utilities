@@ -2,9 +2,9 @@
 #include <algorithm>
 #include <cctype>
 #include "eqg_structs.h"
-#include "safe_alloc.h"
+#include "core/safe_alloc.h"
 #include "eqg_model_loader.h"
-#include "string_util.h"
+#include "core/string_util.h"
 #include "log_macros.h"
 
 EQEmu::EQG4Loader::EQG4Loader() {

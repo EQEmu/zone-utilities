@@ -1,10 +1,10 @@
 #include "scene.h"
 #include <graphics/imgui_glfw.h>
-#include <string_util.h>
+#include <core/string_util.h>
 #include <gtc/matrix_transform.hpp>
 
 #include "static_geometry.h"
-#include "config.h"
+#include "core/config.h"
 
 const char *GetRegionTypeString(WaterRegionType type) {
 	switch (type) {

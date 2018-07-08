@@ -7,7 +7,7 @@
 #include <zlib.h>
 
 #include "zone_map.h"
-#include "config.h"
+#include "core/config.h"
 
 uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
 	z_stream zstream;
