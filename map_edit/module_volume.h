@@ -4,7 +4,7 @@
 #include "module.h"
 #include "scene.h"
 #include "dynamic_geometry.h"
-#include <oriented_bounding_box.h>
+#include <math/oriented_bounding_box.h>
 #include <vector>
 #include <memory>
 

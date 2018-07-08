@@ -3,12 +3,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 SET(common_sources
 	compression.cpp
 	config.cpp
-	eq_math.cpp
 	eq_physics.cpp
 	eqg_loader.cpp
 	eqg_model_loader.cpp
 	eqg_v4_loader.cpp
-	oriented_bounding_box.cpp
 	pfs.cpp
 	pfs_crc.cpp
 	s3d_loader.cpp
@@ -18,15 +16,15 @@ SET(common_sources
 	water_map_v2.cpp
 	wld_fragment.cpp
 	zone_map.cpp
+	math/eq_math.cpp
+	math/oriented_bounding_box.cpp
 	event/event_loop.cpp
 )
 
 SET(common_headers
-	aligned_bounding_box.h
 	any.h
 	compression.h
 	config.h
-	eq_math.h
 	eq_physics.h
 	eqemu_endian.h
 	eqg_geometry.h
@@ -42,7 +40,6 @@ SET(common_headers
 	eqg_water_sheet.h
 	light.h
 	octree.h
-	oriented_bounding_box.h
 	pfs.h
 	pfs_crc.h
 	placeable.h
@@ -63,9 +60,33 @@ SET(common_headers
 	wld_fragment.h
 	wld_structs.h
 	zone_map.h
+	math/aligned_bounding_box.h
+	math/eq_math.h
+	math/oriented_bounding_box.h
 	event/background_task.h
 	event/event_loop.h
 	event/timer.h
+)
+
+SOURCE_GROUP(core
+	FILES
+)
+
+SOURCE_GROUP(eq
+	FILES
+)
+
+SOURCE_GROUP(graphics
+	FILES
+)
+
+SOURCE_GROUP(math
+	FILES
+	math/aligned_bounding_box.h
+	math/eq_math.cpp
+	math/eq_math.h
+	math/oriented_bounding_box.cpp
+	math/oriented_bounding_box.h
 )
 
 IF(EQEMU_ENABLE_GL)
@@ -80,6 +101,7 @@ IF(EQEMU_ENABLE_GL)
 	)
 	
 	SOURCE_GROUP(graphics
+		FILES
 		graphics/imgui_glfw.cpp
 		graphics/imgui_glfw.h
 	)

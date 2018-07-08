@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "eq_math.h"
+#include "math/eq_math.h"
 
 enum WaterRegionType {
 	RegionTypeUnsupported = -2,
