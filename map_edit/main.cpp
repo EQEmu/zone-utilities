@@ -1,5 +1,13 @@
+#include "map_edit_app.h"
+
+int main(int argc, char **argv)
+{
+	MapEditApp app;
+	return app.Run("Map Edit");
+}
+
 //std
-#include <memory>
+/*#include <memory>
 
 //local
 #include <graphics/imgui_glfw.h>
@@ -34,7 +42,6 @@ int main(int argc, char **argv)
 	glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 	glfwWindowHint(GLFW_DEPTH_BITS, 32);
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
 
 	GLFWwindow *win = glfwCreateWindow(mode->width, mode->height, "Map Edit", nullptr, nullptr);
 	if(!win) {
@@ -74,4 +81,4 @@ int main(int argc, char **argv)
 	ImGui_ImplGlfwGL3_Shutdown();
 	glfwTerminate();
 	return 0;
-}
+}*/

@@ -4,6 +4,7 @@ SET(map_edit_sources
 	debug_draw.cpp
 	dynamic_geometry.cpp
 	main.cpp
+	map_edit_app.cpp
 	module_navigation.cpp
 	module_navigation_build_tile.cpp
 	module_volume.cpp
@@ -18,6 +19,7 @@ SET(map_edit_headers
 	debug_draw.h
 	dynamic_geometry.h
 	entity.h
+	map_edit_app.h
 	module.h
 	module_navigation.h
 	module_navigation_build_tile.h

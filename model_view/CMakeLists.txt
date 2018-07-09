@@ -2,9 +2,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(model_view_sources
 	main.cpp
+	model_view_app.cpp
 )
 
 SET(model_view_headers
+	model_view_app.h
 )
 
 ADD_EXECUTABLE(model_view ${model_view_sources} ${model_view_headers})

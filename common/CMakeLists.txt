@@ -129,10 +129,6 @@ SOURCE_GROUP(eq
 	eq/zone_map.h
 )
 
-SOURCE_GROUP(graphics
-	FILES
-)
-
 SOURCE_GROUP(math
 	FILES
 	math/aligned_bounding_box.h
@@ -145,16 +141,20 @@ SOURCE_GROUP(math
 IF(EQEMU_ENABLE_GL)
 	SET(common_sources
 		${common_sources}
+		graphics/app.cpp
 		graphics/imgui_glfw.cpp
 	)
 	
 	SET(common_headers
 		${common_headers}
+		graphics/app.h
 		graphics/imgui_glfw.h
 	)
 	
 	SOURCE_GROUP(graphics
 		FILES
+		graphics/app.cpp
+		graphics/app.h
 		graphics/imgui_glfw.cpp
 		graphics/imgui_glfw.h
 	)

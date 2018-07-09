@@ -190,9 +190,6 @@ void Scene::LoadScene(const char *zone_name) {
 }
 
 void Scene::Render() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	ImGui_ImplGlfwGL3_NewFrame();
-
 	if (m_backface_cull) {
 		glEnable(GL_CULL_FACE);
 	}
@@ -276,9 +273,6 @@ void Scene::Render() {
 			module->OnDrawUI();
 		}
 	}
-
-	ImGui::Render();
-	glfwSwapBuffers(m_window);
 }
 
 void Scene::RenderMainMenu() {
@@ -840,7 +834,6 @@ void Scene::Resize(int width, int height)
 {
 	m_width = width;
 	m_height = height;
-	glViewport(0, 0, m_width, m_height);
 }
 
 void Scene::GetEntityName(Entity *ent, std::string &name) {
