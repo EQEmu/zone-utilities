@@ -4,7 +4,6 @@
 
 #include <btBulletDynamicsCommon.h>
 
-#include "log_macros.h"
 #include "eq_physics.h"
 
 struct btMeshInfo

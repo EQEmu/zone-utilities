@@ -7,19 +7,35 @@
 #include "module_navigation.h"
 #include "module_wp.h"
 #include "module_volume.h"
-#include "log_file.h"
 #include "event/event_loop.h"
+#include "dependency/container.h"
+#include "log/composite_logger.h"
+#include "log/console_logger.h"
+#include "log/file_logger.h"
+
+void setup_dependencies() {
+	EQEmu::Container::Get().RegisterSingleton<EQEmu::ILogger, EQEmu::CompositeLogger>();
+	auto logger = std::dynamic_pointer_cast<EQEmu::CompositeLogger>(EQEmu::Container::Get().Resolve<EQEmu::ILogger>());
+
+	logger->Add(new EQEmu::ConsoleLogger());
+	logger->Add(new EQEmu::FileLogger("awater.log"));
+	logger->Enable(EQEmu::LogCritical);
+	logger->Enable(EQEmu::LogError);
+	logger->Enable(EQEmu::LogDebug);
+	logger->Enable(EQEmu::LogWarning);
+	logger->Enable(EQEmu::LogInfo);
+}
 
 std::unique_ptr<Scene> scene;
 
 int main(int argc, char **argv)
 {
-	eqLogInit(EQEMU_LOG_LEVEL);
-	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogStdOut()));
-	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogFile("map_edit.log")));
+	setup_dependencies();
+
+	auto logger = EQEmu::Container::Get().Resolve<EQEmu::ILogger>();
 
 	if(!glfwInit()) {
-		eqLogMessage(LogFatal, "Couldn't init graphical system.");
+		logger->LogCritical("Couldn't init graphical system.");
 		return -1;
 	}
 
@@ -38,7 +54,7 @@ int main(int argc, char **argv)
 
 	GLFWwindow *win = glfwCreateWindow(mode->width, mode->height, "Map Edit", nullptr, nullptr);
 	if(!win) {
-		eqLogMessage(LogFatal, "Couldn't create an OpenGL window.");
+		logger->LogCritical("Couldn't create an OpenGL window.");
 		glfwTerminate();
 		return -1;
 	}
@@ -47,7 +63,7 @@ int main(int argc, char **argv)
 
 	glewExperimental = GL_TRUE;
 	if(glewInit() != GLEW_OK) {
-		eqLogMessage(LogFatal, "Couldn't init glew.");
+		logger->LogCritical("Couldn't init glew.");
 		glfwTerminate();
 		return -1;
 	}

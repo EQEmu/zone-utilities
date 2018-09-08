@@ -5,6 +5,7 @@
 #include <memory>
 #include "pfs.h"
 #include "eqg_geometry.h"
+#include "log/logger_interface.h"
 
 namespace EQEmu
 {
@@ -15,6 +16,9 @@ public:
 	EQGModelLoader();
 	~EQGModelLoader();
 	bool Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out);
+
+private:
+	std::shared_ptr<EQEmu::ILogger> _logger;
 };
 
 }

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string>
+#include "log/logger_interface.h"
 
 enum WaterMapRegionType
 {
@@ -21,6 +22,13 @@ enum WaterMapRegionType
 	RegionTypeDisableNavMesh = 10
 };
 
+namespace EQEmu
+{
+	namespace S3D {
+		class BSPTree;
+	}
+}
+
 class WaterMap
 {
 public:
@@ -31,6 +39,9 @@ public:
 	bool BuildAndWriteS3D(std::string zone_name);
 	bool BuildAndWriteEQG(std::string zone_name);
 	bool BuildAndWriteEQG4(std::string zone_name);
+private:
+	uint32_t BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
+	std::shared_ptr<EQEmu::ILogger> _logger;
 };
 
 #endif

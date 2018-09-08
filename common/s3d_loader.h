@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string>
 #include "wld_fragment.h"
+#include "log/logger_interface.h"
 
 void decode_string_hash(char *str, size_t len);
 
@@ -17,6 +18,8 @@ public:
 	S3DLoader();
 	~S3DLoader();
 	bool ParseWLDFile(std::string file_name, std::string wld_name, std::vector<S3D::WLDFragment> &out);
+private:
+	std::shared_ptr<EQEmu::ILogger> _logger;
 };
 
 }

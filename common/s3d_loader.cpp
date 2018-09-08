@@ -2,7 +2,7 @@
 #include "pfs.h"
 #include "wld_structs.h"
 #include "safe_alloc.h"
-#include "log_macros.h"
+#include "dependency/container.h"
 
 void decode_string_hash(char *str, size_t len) {
 	uint8_t encarr[] = { 0x95, 0x3A, 0xC5, 0x2A, 0x95, 0x7A, 0x95, 0x6A };
@@ -12,6 +12,7 @@ void decode_string_hash(char *str, size_t len) {
 }
 
 EQEmu::S3DLoader::S3DLoader() {
+	_logger = Container::Get().Resolve<ILogger>();
 }
 
 EQEmu::S3DLoader::~S3DLoader() {
@@ -25,12 +26,12 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 
 	EQEmu::PFS::Archive archive;
 	if (!archive.Open(file_name)) {
-		eqLogMessage(LogDebug, "Unable to open file %s.", file_name.c_str());
+		_logger->LogDebug("Unable to open file {0}.", file_name);
 		return false;
 	}
 
 	if (!archive.Get(wld_name, buffer)) {
-		eqLogMessage(LogDebug, "Unable to open wld file %s.", wld_name.c_str());
+		_logger->LogDebug("Unable to open wld file %s.", wld_name);
 		return false;
 	}
 
@@ -38,7 +39,7 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 	SafeStructAllocParse(wld_header, header);
 	
 	if (header->magic != 0x54503d02) {
-		eqLogMessage(LogDebug, "Header magic of %x did not match expected 0x54503d02", header->magic);
+		_logger->LogDebug("Header magic of {0:x} did not match expected 0x54503d02", header->magic);
 		return false;
 	}
 
@@ -52,11 +53,11 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
 	out.clear();
 	out.reserve(header->fragments);
 
-	eqLogMessage(LogTrace, "Parsing WLD fragments.");
+	_logger->LogTrace("Parsing WLD fragments.");
 	for (uint32_t i = 0; i < header->fragments; ++i) {
 		SafeStructAllocParse(wld_fragment_header, frag_header);
 
-		eqLogMessage(LogTrace, "Dispatching WLD fragment of type %x", frag_header->id);
+		_logger->LogTrace("Dispatching WLD fragment of type {0:x}", frag_header->id);
 		switch (frag_header->id) {
 			case 0x03: {
 				S3D::WLDFragment03 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);

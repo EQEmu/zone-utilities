@@ -7,8 +7,6 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <log_macros.h>
-#include <log_stdout.h>
 #include <imgui.h>
 #include <glm.hpp>
 

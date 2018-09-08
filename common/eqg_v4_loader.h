@@ -9,6 +9,7 @@
 #include "placeable_group.h"
 #include "eqg_terrain.h"
 #include "pfs.h"
+#include "log/logger_interface.h"
 
 namespace EQEmu
 {
@@ -26,6 +27,8 @@ private:
 	bool GetZon(std::string file, std::vector<char> &buffer);
 	void ParseConfigFile(std::vector<char> &buffer, std::vector<std::string> &tokens);
 	bool ParseZon(std::vector<char> &buffer, EQG::Terrain::ZoneOptions &opts);
+
+	std::shared_ptr<EQEmu::ILogger> _logger;
 };
 
 }

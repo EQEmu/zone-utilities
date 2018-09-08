@@ -4,11 +4,10 @@
 #include "imgui.h"
 #include "module_navigation.h"
 #include "thread_pool.h"
-#include "log_macros.h"
 #include "module_navigation_build_tile.h"
 #include "compression.h"
 #include "event/background_task.h"
-
+#include "dependency/container.h"
 #include "config.h"
 #include <DetourNavMeshQuery.h>
 
@@ -48,6 +47,8 @@ void calcChunkSize(const float* bmin, const float* bmax, float cs, int* x, int* 
 
 ModuleNavigation::ModuleNavigation()
 {
+	_logger = EQEmu::Container::Get().Resolve<EQEmu::ILogger>();
+
 	m_mode = 1;
 	Clear();
 	ClearConnections();
@@ -800,7 +801,7 @@ void ModuleNavigation::CalcPath()
 	dtPolyRef start_ref;
 	dtPolyRef end_ref;
 
-	eqLogMessage(LogInfo, "Calculating path from (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)",
+	_logger->LogInfo("Calculating path from ({} {} {}) -> ({} {} {})",
 		m_path_start[0], m_path_start[1], m_path_start[2],
 		m_path_end[0], m_path_end[1], m_path_end[2]);
 

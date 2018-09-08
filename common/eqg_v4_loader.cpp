@@ -5,9 +5,10 @@
 #include "safe_alloc.h"
 #include "eqg_model_loader.h"
 #include "string_util.h"
-#include "log_macros.h"
+#include "dependency/container.h"
 
 EQEmu::EQG4Loader::EQG4Loader() {
+	_logger = Container::Get().Resolve<ILogger>();
 }
 
 EQEmu::EQG4Loader::~EQG4Loader() {
@@ -17,7 +18,7 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain> &te
 {
 	EQEmu::PFS::Archive archive;
 	if (!archive.Open(file + ".eqg")) {
-		eqLogMessage(LogTrace, "Failed to open %s.eqg as an eqgv4 file because the file does not exist.", file.c_str());
+		_logger->LogTrace("Failed to open {0}.eqg as an eqgv4 file because the file does not exist.", file);
 		return false;
 	}
 
@@ -43,25 +44,25 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain> &te
 	}
 
 	if (!zon_found) {
-		eqLogMessage(LogError, "Failed to open %s.eqg because the %s.zon file could not be found.", file.c_str(), file.c_str());
+		_logger->LogError("Failed to open {0}.eqg because the {0}.zon file could not be found.", file);
 		return false;
 	}
 
-	eqLogMessage(LogTrace, "Parsing zone file.");
+	_logger->LogTrace("Parsing zone file.");
 	terrain.reset(new EQG::Terrain());
 	if (!ParseZon(zon, terrain->GetOpts())) {
 		return false;
 	}
 
-	eqLogMessage(LogTrace, "Parsing zone data file.");
+	_logger->LogTrace("Parsing zone data file.");
 	if(!ParseZoneDat(archive, terrain)) {
 		return false;
 	}
 
-	eqLogMessage(LogTrace, "Parsing water data file.");
+	_logger->LogTrace("Parsing water data file.");
 	ParseWaterDat(archive, terrain);
 
-	eqLogMessage(LogTrace, "Parsing invisible walls file.");
+	_logger->LogTrace("Parsing invisible walls file.");
 	ParseInvwDat(archive, terrain);
 
 	return true;
@@ -116,13 +117,13 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 	std::string filename = terrain->GetOpts().name + ".dat";
 	std::vector<char> buffer;
 	if(!archive.Get(filename, buffer)) {
-		eqLogMessage(LogError, "Failed to open %s.", filename.c_str());
+		_logger->LogError("Failed to open {0}.", filename);
 		return false;
 	}
 
 	uint32_t idx = 0;
 	SafeVarAllocParse(v4_zone_dat_header, header);
-	eqLogMessage(LogError, "Header info for %s.eqg v4 %d %d %d", filename.c_str(), header.unk000, header.unk004, header.unk008);
+	_logger->LogTrace("Header info for {0}.eqg v4 {1} {2} {3}", filename, header.unk000, header.unk004, header.unk008);
 
 	SafeStringAllocParse(base_tile_texture);
 	SafeVarAllocParse(uint32_t, tile_count);
@@ -139,7 +140,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 	terrain->SetQuadsPerTile(terrain->GetOpts().quads_per_tile);
 	terrain->SetUnitsPerVertex(terrain->GetOpts().units_per_vert);
 
-	eqLogMessage(LogTrace, "Parsing zone terrain tiles.");
+	_logger->LogTrace("Parsing zone terrain tiles.");
 	for(uint32_t i = 0; i < tile_count; ++i) {
 		std::shared_ptr<EQG::TerrainTile> tile(new EQG::TerrainTile());
 		terrain->AddTile(tile);
@@ -445,10 +446,10 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 			std::vector<char> tog_buffer;
 			if(!archive.Get(tog_name + ".tog", tog_buffer))
 			{
-				eqLogMessage(LogWarn, "Failed to load tog file %s.tog.", tog_name.c_str());
+				_logger->LogWarning("Failed to load tog file {0}.tog.", tog_name);
 				continue;
 			} else {
-				eqLogMessage(LogTrace, "Loaded tog file %s.tog.", tog_name.c_str());
+				_logger->LogTrace("Loaded tog file {0}.tog.", tog_name);
 			}
 
 			std::shared_ptr<PlaceableGroup> pg(new PlaceableGroup());
@@ -560,7 +561,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 		}
 		else if (token.compare("*END_SHEET") == 0) {
 			if(ws) {
-				eqLogMessage(LogTrace, "Adding finite water sheet.");
+				_logger->LogTrace("Adding finite water sheet.");
 				terrain->AddWaterSheet(ws);
 			}
 
@@ -574,7 +575,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive &archive, std::shared_
 		}
 		else if (token.compare("*ENDWATERSHEETDATA") == 0) {
 			if (ws) {
-				eqLogMessage(LogTrace, "Adding infinite water sheet.");
+				_logger->LogTrace("Adding infinite water sheet.");
 				terrain->AddWaterSheet(ws);
 			}
 		

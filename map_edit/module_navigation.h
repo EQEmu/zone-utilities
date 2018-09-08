@@ -12,6 +12,7 @@
 #include "rc_chunky_tri_mesh.h"
 #include "thread_pool.h"
 #include "debug_draw.h"
+#include "log/logger_interface.h"
 
 enum NavigationPartitionType
 {
@@ -198,6 +199,8 @@ private:
 	std::vector<RegionVolume> m_volumes;
 
 	int m_work_pending;
+
+	std::shared_ptr<EQEmu::ILogger> _logger;
 };
 
 #endif

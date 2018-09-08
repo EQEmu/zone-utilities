@@ -1,7 +1,6 @@
 #include "module_volume.h"
 #include <algorithm>
 #include "config.h"
-#include "log_macros.h"
 #include "event/background_task.h"
 
 const int HotkeyGenVolumes = 57;

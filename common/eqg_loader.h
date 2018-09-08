@@ -10,6 +10,7 @@
 #include "eqg_region.h"
 #include "light.h"
 #include "pfs.h"
+#include "log/logger_interface.h"
 
 namespace EQEmu
 {
@@ -25,6 +26,7 @@ private:
 	bool GetZon(std::string file, std::vector<char> &buffer);
 	bool ParseZon(EQEmu::PFS::Archive &archive, std::vector<char> &buffer, std::vector<std::shared_ptr<EQG::Geometry>> &models, std::vector<std::shared_ptr<Placeable>> &placeables,
 		std::vector<std::shared_ptr<EQG::Region>> &regions, std::vector<std::shared_ptr<Light>> &lights);
+	std::shared_ptr<ILogger> _logger;
 };
 
 }

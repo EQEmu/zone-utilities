@@ -1,13 +1,12 @@
 #include "water_map.h"
-#include "log_macros.h"
 #include "s3d_loader.h"
 #include "eqg_loader.h"
 #include "eqg_v4_loader.h"
+#include "dependency/container.h"
 #include <string.h>
 
-uint32_t BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type);
-
 WaterMap::WaterMap() {
+	_logger = EQEmu::Container::Get().Resolve<EQEmu::ILogger>();
 }
 
 WaterMap::~WaterMap() {
@@ -30,7 +29,7 @@ bool WaterMap::BuildAndWrite(std::string zone_name) {
 }
 
 bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
-	eqLogMessage(LogTrace, "Loading %s.s3d", zone_name.c_str());
+	_logger->LogTrace("Loading {0}.s3d", zone_name);
 
 	EQEmu::S3DLoader s3d;
 	std::vector<EQEmu::S3D::WLDFragment> zone_frags;
@@ -38,7 +37,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 		return false;
 	}
 
-	eqLogMessage(LogTrace, "Loaded %s.s3d.", zone_name.c_str());
+	_logger->LogTrace("Loaded {0}.s3d.", zone_name);
 	std::shared_ptr<EQEmu::S3D::BSPTree> tree;
 	for(uint32_t i = 0; i < zone_frags.size(); ++i) {
 		if(zone_frags[i].type == 0x21) {
@@ -55,7 +54,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 			auto regions = region->GetRegions();
 			WaterMapRegionType region_type = RegionTypeUntagged;
 
-			eqLogMessage(LogTrace, "Processing region '%s' '%s' for s3d.", region->GetName().c_str(), region->GetExtendedInfo().c_str());
+			_logger->LogTrace("Processing region '{0}' '{1}' for s3d.", region->GetName(), region->GetExtendedInfo());
 
 			if (!strncmp(region->GetName().c_str(), "WT", 2)) {
 				region_type = RegionTypeWater;
@@ -111,7 +110,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 		return false;
 	}
 
-	eqLogMessage(LogTrace, "Writing v1 map file out.");
+	_logger->LogTrace("Writing v1 map file out.");
 	std::string filename = zone_name + ".wtr";
 	FILE *f = fopen(filename.c_str(), "wb");
 	if(f) {
@@ -202,7 +201,7 @@ bool WaterMap::BuildAndWriteS3D(std::string zone_name) {
 }
 
 bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
-	eqLogMessage(LogTrace, "Loading standard eqg %s.eqg", zone_name.c_str());
+	_logger->LogTrace("Loading standard eqg {0}.eqg", zone_name);
 
 	EQEmu::EQGLoader eqg;
 	std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> models;
@@ -213,7 +212,7 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 		return false;
 	}
 
-	eqLogMessage(LogTrace, "Loaded standard eqg %s.eqg", zone_name.c_str());
+	_logger->LogTrace("Loaded standard eqg %s.eqg", zone_name);
 	std::string filename = zone_name + ".wtr";
 	FILE *f = fopen(filename.c_str(), "wb");
 	if (f) {
@@ -239,7 +238,7 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 		for (uint32_t i = 0; i < region_count; ++i) {
 			auto &region = regions[i];
 
-			eqLogMessage(LogTrace, "Writing region %s.", region->GetName().c_str());
+			_logger->LogTrace("Writing region {0}.", region->GetName());
 			int32_t region_type = 0;
 			float x = region->GetX();
 			float y = region->GetY();
@@ -278,7 +277,7 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 					region_type = RegionTypeGeneralArea;
 				}
 				else {
-					eqLogMessage(LogWarn, "Unsupported region type %s (%s).", region->GetName().c_str(), region_code.c_str());
+					_logger->LogWarning("Unsupported region type {0} ({1}).", region->GetName(), region_code);
 					region_type = RegionTypeWater;
 				}
 			}
@@ -361,7 +360,7 @@ bool WaterMap::BuildAndWriteEQG(std::string zone_name) {
 }
 
 bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
-	eqLogMessage(LogTrace, "Loading standard eqg %s.eqg", zone_name.c_str());
+	_logger->LogTrace("Loading standard eqg {0}.eqg", zone_name);
 
 	EQEmu::EQG4Loader eqg;
 	std::shared_ptr<EQEmu::EQG::Terrain> terrain;
@@ -369,7 +368,7 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 		return false;
 	}
 
-	eqLogMessage(LogTrace, "Loaded v4 eqg %s.eqg", zone_name.c_str());
+	_logger->LogTrace("Loaded v4 eqg {0}.eqg", zone_name);
 	std::string filename = zone_name + ".wtr";
 	FILE *f = fopen(filename.c_str(), "wb");
 	if (f) {
@@ -396,7 +395,7 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 		for (uint32_t i = 0; i < region_count; ++i) {
 			auto &region = regions[i];
 
-			eqLogMessage(LogTrace, "Writing region %s.", region->GetName().c_str());
+			_logger->LogTrace("Writing region {0}.", region->GetName());
 			int32_t region_type = 0;
 			float x = region->GetX();
 			float y = region->GetY();
@@ -525,9 +524,9 @@ bool WaterMap::BuildAndWriteEQG4(std::string zone_name) {
 	return false;
 }
 
-uint32_t BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
+uint32_t WaterMap::BSPMarkRegion(std::shared_ptr<EQEmu::S3D::BSPTree> tree, uint32_t node_number, uint32_t region, int32_t region_type) {
 	if (node_number < 1) {
-		eqLogMessage(LogError, "BSPMarkRegion was passed a node < 1.");
+		_logger->LogError("BSPMarkRegion was passed a node < 1.");
 		return 0;
 	}
 

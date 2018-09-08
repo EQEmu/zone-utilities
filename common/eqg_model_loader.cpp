@@ -1,21 +1,22 @@
 #include "eqg_model_loader.h"
 #include "eqg_structs.h"
 #include "safe_alloc.h"
-#include "log_macros.h"
+#include "dependency/container.h"
 #include <algorithm>
 #include <cctype> 
 
 EQEmu::EQGModelLoader::EQGModelLoader() {
+	_logger = Container::Get().Resolve<ILogger>();
 }
 
 EQEmu::EQGModelLoader::~EQGModelLoader() {
 }
 
 bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model, std::shared_ptr<EQG::Geometry> model_out) {
-	eqLogMessage(LogTrace, "Loading model %s.", model.c_str());
+	_logger->LogTrace("Loading model {0}.", model);
 	std::vector<char> buffer;
 	if(!archive.Get(model, buffer)) {
-		eqLogMessage(LogError, "Unable to load %s, file was not found.", model.c_str());
+		_logger->LogError("Unable to load {0}, file was not found.", model);
 		return false;
 	}
 
@@ -24,7 +25,7 @@ bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model
 	uint32_t bone_count = 0;
 
 	if (header->magic[0] != 'E' || header->magic[1] != 'Q' || header->magic[2] != 'G') {
-		eqLogMessage(LogError, "Unable to load %s, file header was corrupt.", model.c_str());
+		_logger->LogError("Unable to load {0}, file header was corrupt.", model);
 		return false;
 	}
 
@@ -35,14 +36,14 @@ bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model
 	}
 	else if(header->magic[3] != 'T')
 	{
-		eqLogMessage(LogDebug, "Attempted to load an eqg model that was not type M or T.");
+		_logger->LogDebug("Attempted to load an eqg model that was not type M or T.");
 		return false;
 	}
 	
 	uint32_t list_loc = idx;
 	idx += header->list_length;
 
-	eqLogMessage(LogTrace, "Parsing model materials.");
+	_logger->LogTrace("Parsing model materials.");
 	auto &mats = model_out->GetMaterials();
 	mats.resize(header->material_count);
 	for(uint32_t i = 0; i < header->material_count; ++i) {
@@ -73,7 +74,7 @@ bool EQEmu::EQGModelLoader::Load(EQEmu::PFS::Archive &archive, std::string model
 		}
 	}
 
-	eqLogMessage(LogTrace, "Parsing model geometry.");
+	_logger->LogTrace("Parsing model geometry.");
 	auto &verts = model_out->GetVertices();
 	verts.resize(header->vert_count);
 	for(uint32_t i = 0; i < header->vert_count; ++i) {
