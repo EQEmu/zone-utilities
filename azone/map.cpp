@@ -15,7 +15,7 @@ Map::~Map() {
 bool Map::Build(std::string zone_name, bool ignore_collide_tex) {
 	LoadIgnore(zone_name);
 
-	_logger->LogTrace("Attempting to load %s.eqg as a standard eqg.", zone_name.c_str());
+	_logger->LogTrace("Attempting to load {0}.eqg as a standard eqg.", zone_name);
 	
 	EQEmu::EQGLoader eqg;
 	std::vector<std::shared_ptr<EQEmu::EQG::Geometry>> eqg_models;
@@ -26,13 +26,13 @@ bool Map::Build(std::string zone_name, bool ignore_collide_tex) {
 		return CompileEQG(eqg_models, eqg_placables, eqg_regions, eqg_lights);
 	}
 
-	_logger->LogTrace("Attempting to load %s.eqg as a v4 eqg.", zone_name.c_str());
+	_logger->LogTrace("Attempting to load {0}.eqg as a v4 eqg.", zone_name);
 	EQEmu::EQG4Loader eqg4;
 	if (eqg4.Load(zone_name, terrain)) {
 		return CompileEQGv4();
 	}
 	
-	_logger->LogTrace("Attempting to load %s.s3d as a standard s3d.", zone_name.c_str());
+	_logger->LogTrace("Attempting to load {0}.s3d as a standard s3d.", zone_name);
 	EQEmu::S3DLoader s3d;
 	std::vector<EQEmu::S3D::WLDFragment> zone_frags;
 	std::vector<EQEmu::S3D::WLDFragment> zone_object_frags;
@@ -55,20 +55,20 @@ bool Map::Build(std::string zone_name, bool ignore_collide_tex) {
 bool Map::Write(std::string filename) {
 	//if there are no verts and no terrain
 	if ((collide_verts.size() == 0 && collide_indices.size() == 0 && non_collide_verts.size() == 0 && non_collide_indices.size() == 0) && !terrain) {
-		_logger->LogError("Failed to write %s because the map to build has no information to write.", filename.c_str());
+		_logger->LogError("Failed to write {0} because the map to build has no information to write.", filename);
 		return false;
 	}
 
 	FILE *f = fopen(filename.c_str(), "wb");
 
 	if(!f) {
-		_logger->LogError("Failed to write %s because the file could not be opened to write.", filename.c_str());
+		_logger->LogError("Failed to write {0} because the file could not be opened to write.", filename);
 		return false;
 	}
 	
 	uint32_t version = 0x02000000;
 	if (fwrite(&version, sizeof(uint32_t), 1, f) != 1) {
-		_logger->LogError("Failed to write %s because the version header could not be written.", filename.c_str());
+		_logger->LogError("Failed to write {0} because the version header could not be written.", filename);
 		fclose(f);
 		return false;
 	}
@@ -139,7 +139,7 @@ bool Map::Write(std::string filename) {
 		auto textureBrushSet = model_iter->second->GetTextureBrushSet();
 		auto textureSet = textureBrushSet->GetTextureSet();
 		for (auto &set : textureSet) {
-			_logger->LogTrace("Texture set for model %s with flag %u", model_iter->second->GetName().c_str(), set->GetFlags());
+			_logger->LogTrace("Texture set for model {0} with flag {1}", model_iter->second->GetName(), set->GetFlags());
 		} 
 
 		ss.write((const char*)&vert_count, sizeof(uint32_t));
@@ -162,7 +162,7 @@ bool Map::Write(std::string filename) {
 			uint8_t vis = poly.flags == 0x10 ? 0 : 1;
 			
 			if (poly.tex < textureSet.size()) {
-				_logger->LogTrace("Poly with texture %u", poly.tex);
+				_logger->LogTrace("Poly with texture {0}", poly.tex);
 				auto texture = textureSet[poly.tex];
 				if (texture->GetFlags() == 1) {
 					vis = 0;
@@ -349,21 +349,21 @@ bool Map::Write(std::string filename) {
 
 	uint32_t out_size = EQEmu::DeflateData(ss.str().c_str(), (uint32_t)ss.str().length(), &buffer[0], buffer_len);
 	if (fwrite(&out_size, sizeof(uint32_t), 1, f) != 1) {
-		_logger->LogError("Failed to write %s because the compressed size header could not be written.", filename.c_str());
+		_logger->LogError("Failed to write {0} because the compressed size header could not be written.", filename);
 		fclose(f);
 		return false;
 	}
 	
 	uint32_t uncompressed_size = (uint32_t)ss.str().length();
 	if (fwrite(&uncompressed_size, sizeof(uint32_t), 1, f) != 1) {
-		_logger->LogError("Failed to write %s because the uncompressed size header could not be written.", filename.c_str());
+		_logger->LogError("Failed to write {0} because the uncompressed size header could not be written.", filename);
 		fclose(f);
 		return false;
 	}
 
 
 	if (fwrite(&buffer[0], out_size, 1, f) != 1) {
-		_logger->LogError("Failed to write %s because the compressed data could not be written.", filename.c_str());
+		_logger->LogError("Failed to write {0} because the compressed data could not be written.", filename);
 		fclose(f);
 		return false;
 	}
@@ -427,7 +427,7 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone, gl
 		gen_plac->SetScale(scale_x, scale_y, scale_z);
 		map_placeables.push_back(gen_plac);
 
-		_logger->LogTrace("Adding placeable %s at (%f, %f, %f)",bone->model->GetName().c_str(), pos.x, pos.y, pos.z);
+		_logger->LogTrace("Adding placeable {0} at ({1}, {2}, {3})",bone->model->GetName(), pos.x, pos.y, pos.z);
 	}
 
 	for(size_t i = 0; i < bone->children.size(); ++i) {
@@ -529,7 +529,7 @@ bool Map::CompileS3D(
 				continue;
 			}
 
-			_logger->LogTrace("Loading placeable %s", plac->GetName().c_str());
+			_logger->LogTrace("Loading placeable {0}", plac->GetName());
 			bool found = false;
 			for (uint32_t o = 0; o < object_frags.size(); ++o) {
 				if (object_frags[o].type == 0x14) {
@@ -566,7 +566,7 @@ bool Map::CompileS3D(
 			}
 
 			if(!found) {
-				_logger->LogWarning("Could not find model for placeable %s", plac->GetName().c_str());
+				_logger->LogWarning("Could not find model for placeable {0}", plac->GetName());
 			}
 		}
 	}
@@ -604,7 +604,7 @@ bool Map::CompileS3D(
 		gen_plac->SetScale(scale_x, scale_y, scale_z);
 		map_placeables.push_back(gen_plac);
 
-		_logger->LogTrace("Adding placeable %s at (%f, %f, %f)", model->GetName().c_str(), offset_x, offset_y, offset_z);
+		_logger->LogTrace("Adding placeable {0} at ({1}, {2}, {3})", model->GetName(), offset_x, offset_y, offset_z);
 	}
 
 	_logger->LogTrace("Processing s3d animated placeables.");
@@ -669,7 +669,7 @@ bool Map::CompileEQG(
 		}
 
 		if (!model) {
-			_logger->LogWarning("Could not find placeable %s.", plac->GetFileName().c_str());
+			_logger->LogWarning("Could not find placeable {0}.", plac->GetFileName());
 			continue;
 		}
 
@@ -701,7 +701,7 @@ bool Map::CompileEQG(
 			gen_plac->SetScale(scale_x, scale_y, scale_z);
 			map_placeables.push_back(gen_plac);
 
-			_logger->LogTrace("Adding placeable %s at (%f, %f, %f)", model->GetName().c_str(), offset_x, offset_y, offset_z);
+			_logger->LogTrace("Adding placeable {0} at ({1}, {2}, {3})", model->GetName(), offset_x, offset_y, offset_z);
 			continue;
 		}
 

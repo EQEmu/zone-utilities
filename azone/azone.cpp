@@ -34,14 +34,14 @@ int main(int argc, char **argv) {
 	
 	for(; i < argc; ++i) {
 		Map m;
-		logger->LogInfo("Attempting to build map for zone: %s", argv[i]);
+		logger->LogInfo("Attempting to build map for zone: {0}", argv[i]);
 		if(!m.Build(argv[i], ignore_collide_tex)) {
-			logger->LogError("Failed to build map for zone: %s", argv[i]);
+			logger->LogError("Failed to build map for zone: {0}", argv[i]);
 		} else {
 			if(!m.Write(std::string(argv[i]) + std::string(".map"))) {
-				logger->LogError("Failed to write map for zone %s", argv[i]);
+				logger->LogError("Failed to write map for zone {0}", argv[i]);
 			} else {
-				logger->LogInfo("Wrote map for zone: %s", argv[i]);
+				logger->LogInfo("Wrote map for zone: {0}", argv[i]);
 			}
 		}
 	}
