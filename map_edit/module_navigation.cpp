@@ -8,7 +8,6 @@
 #include "compression.h"
 #include "event/background_task.h"
 #include "dependency/container.h"
-#include "config.h"
 #include <DetourNavMeshQuery.h>
 
 const uint32_t nav_file_version = 3;
@@ -48,6 +47,7 @@ void calcChunkSize(const float* bmin, const float* bmax, float cs, int* x, int* 
 ModuleNavigation::ModuleNavigation()
 {
 	_logger = EQEmu::Container::Get().Resolve<EQEmu::ILogger>();
+	_config = EQEmu::Container::Get().Resolve<EQEmu::IConfig>();
 
 	m_mode = 1;
 	Clear();
@@ -864,7 +864,7 @@ void ModuleNavigation::SaveNavSettings()
 {
 	//write project setting files
 	//zone_name.navprj
-	std::string filename = Config::Instance().GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
+	std::string filename = _config->GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str() , "wb");
 
 	if (f) {
@@ -925,7 +925,7 @@ void ModuleNavigation::SaveNavSettings()
 
 bool ModuleNavigation::LoadNavSettings()
 {
-	std::string filename = Config::Instance().GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
+	std::string filename = _config->GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[6] = { 0 };
@@ -1175,7 +1175,7 @@ void ModuleNavigation::SaveNavMesh()
 	if (!m_nav_mesh)
 		return;
 
-	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
+	std::string filename = _config->GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "wb");
 
 	if (f) {
@@ -1233,7 +1233,7 @@ void ModuleNavigation::SaveNavMesh()
 
 void ModuleNavigation::LoadNavMesh()
 {
-	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
+	std::string filename = _config->GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[9] = { 0 };

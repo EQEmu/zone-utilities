@@ -7,7 +7,8 @@
 #include <zlib.h>
 
 #include "zone_map.h"
-#include "config.h"
+#include "dependency/container.h"
+#include "core/config_interface.h"
 
 uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
 	z_stream zstream;
@@ -70,7 +71,8 @@ ZoneMap::~ZoneMap() {
 }
 
 ZoneMap *ZoneMap::LoadMapFile(std::string file) {
-	std::string filename = Config::Instance().GetPath("base", "maps/base") + "/";
+	auto config = EQEmu::Container::Get().Resolve<EQEmu::IConfig>();
+	std::string filename = config->GetPath("base", "maps/base") + "/";
 	std::transform(file.begin(), file.end(), file.begin(), ::tolower);
 	filename += file;
 	filename += ".map";

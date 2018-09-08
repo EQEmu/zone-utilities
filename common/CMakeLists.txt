@@ -2,7 +2,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(common_sources
 	compression.cpp
-	config.cpp
 	eq_math.cpp
 	eq_physics.cpp
 	eqg_loader.cpp
@@ -18,6 +17,7 @@ SET(common_sources
 	water_map_v2.cpp
 	wld_fragment.cpp
 	zone_map.cpp
+	core/config.cpp
 	event/event_loop.cpp
 	log/composite_logger.cpp
 	log/console_logger.cpp
@@ -28,7 +28,6 @@ SET(common_headers
 	aligned_bounding_box.h
 	any.h
 	compression.h
-	config.h
 	eq_math.h
 	eq_physics.h
 	eqemu_endian.h
@@ -66,6 +65,8 @@ SET(common_headers
 	wld_fragment.h
 	wld_structs.h
 	zone_map.h
+	core/config.h
+	core/config_interface.h
 	dependency/container.h
 	event/background_task.h
 	event/event_loop.h
@@ -74,6 +75,12 @@ SET(common_headers
 	log/console_logger.h
 	log/file_logger.h
 	log/logger_interface.h
+)
+
+SOURCE_GROUP(core FILES 
+	core/config.cpp
+	core/config.h
+	core/config_interface.h
 )
 
 SOURCE_GROUP(dependency FILES 

@@ -4,6 +4,7 @@
 #include "module.h"
 #include "scene.h"
 #include "dynamic_geometry.h"
+#include <core/config_interface.h>
 #include <oriented_bounding_box.h>
 #include <vector>
 #include <memory>
@@ -49,6 +50,8 @@ private:
 	bool m_modified;
 	int m_work_pending;
 	bool m_render_volume;
+
+	std::shared_ptr<EQEmu::IConfig> _config;
 
 	void BuildFromWatermap(const glm::vec3 &pos);
 };

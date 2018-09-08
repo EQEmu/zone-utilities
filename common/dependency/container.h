@@ -40,7 +40,7 @@ namespace EQEmu
 		}
 
 		template<typename Interface, typename Instance>
-		void RegisterSingleton()
+		std::shared_ptr<Interface> RegisterSingleton()
 		{
 			const std::type_info &info = typeid(Interface);
 			std::string name = info.name();
@@ -49,6 +49,10 @@ namespace EQEmu
 				static std::shared_ptr<Instance> inst(new Instance());
 				return inst;
 			});
+
+			auto baseFactory = mRegisteredFactories[name];
+			auto factory = std::static_pointer_cast<ContainerFactory<Interface>>(baseFactory);
+			return factory->Construct();
 		}
 
 		template<typename Interface, typename Instance>
@@ -60,6 +64,22 @@ namespace EQEmu
 			mRegisteredFactories[name] = std::make_shared<ContainerFactory<Interface>>([=] {
 				return std::shared_ptr<Instance>(new Instance());
 			});
+		}
+
+		template<typename Interface, typename Instance>
+		std::shared_ptr<Interface> RegisterInstance(Instance *inst)
+		{
+			const std::type_info &info = typeid(Interface);
+			std::string name = info.name();
+
+			mRegisteredFactories[name] = std::make_shared<ContainerFactory<Interface>>([=] {
+				static std::shared_ptr<Instance> inst(inst);
+				return inst;
+			});
+
+			auto baseFactory = mRegisteredFactories[name];
+			auto factory = std::static_pointer_cast<ContainerFactory<Interface>>(baseFactory);
+			return factory->Construct();
 		}
 
 		template<typename Interface>

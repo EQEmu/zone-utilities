@@ -18,13 +18,6 @@ IF(MSVC)
 ENDIF(MSVC)
 
 OPTION(EQEMU_ENABLE_GL "Enable programs that rely on OpenGL (turn off if you only want command line)" ON)
-OPTION(EQEMU_ENABLE_LOG_TRACE "Enable trace logging" OFF)
-OPTION(EQEMU_ENABLE_LOG_DEBUG "Enable debug logging" OFF)
-OPTION(EQEMU_ENABLE_LOG_INFO "Enable info logging" ON)
-OPTION(EQEMU_ENABLE_LOG_WARN "Enable warning logging" ON)
-OPTION(EQEMU_ENABLE_LOG_ERROR "Enable error logging" ON)
-OPTION(EQEMU_ENABLE_LOG_FATAL "Enable fatal error logging" ON)
-
 FIND_PACKAGE(ZLIB REQUIRED)
 FIND_PACKAGE(Bullet REQUIRED)
 

@@ -14,6 +14,7 @@
 #include "thread_pool.h"
 #include "debug_draw.h"
 #include "log/logger_interface.h"
+#include "core/config_interface.h"
 
 enum NavigationPartitionType
 {
@@ -202,6 +203,7 @@ private:
 	int m_work_pending;
 
 	std::shared_ptr<EQEmu::ILogger> _logger;
+	std::shared_ptr<EQEmu::IConfig> _config;
 };
 
 #endif

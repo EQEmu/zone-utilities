@@ -1,14 +1,16 @@
 #include "module_volume.h"
 #include <algorithm>
 #include <memory>
-#include "config.h"
 #include "event/background_task.h"
+#include "dependency/container.h"
 
 const int HotkeyGenVolumes = 57;
 const int HotkeyDel = 58;
 
 ModuleVolume::ModuleVolume()
 {
+	_config = EQEmu::Container::Get().Resolve<EQEmu::IConfig>();
+
 	m_work_pending = 0;
 	m_selected = -1;
 	m_render_volume = true;
@@ -137,8 +139,8 @@ void ModuleVolume::OnDrawOptions()
 void ModuleVolume::OnSceneLoad(const char *zone_name)
 {
 	m_modified = false;
-	if (!LoadVolumes(Config::Instance().GetPath("volume", "maps/volume") + "/")) {
-		LoadVolumes(Config::Instance().GetPath("water", "maps/water") + "/");
+	if (!LoadVolumes(_config->GetPath("volume", "maps/volume") + "/")) {
+		LoadVolumes(_config->GetPath("water", "maps/water") + "/");
 	}
 
 	BuildVolumeEntities();
@@ -165,7 +167,7 @@ bool ModuleVolume::CanSave()
 void ModuleVolume::Save()
 {
 	if (CanSave()) {
-		std::string filename = Config::Instance().GetPath("volume", "maps/volume") + "/" + m_scene->GetZoneName() + ".wtr";
+		std::string filename = _config->GetPath("volume", "maps/volume") + "/" + m_scene->GetZoneName() + ".wtr";
 		FILE *f = fopen(filename.c_str(), "wb");
 		if (f) {
 			fwrite("EQEMUWATER", 10, 1, f);
@@ -194,7 +196,7 @@ void ModuleVolume::Save()
 			fclose(f);
 			m_modified = false;
 
-			WaterMap *wm = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("volume", "maps/volume") + "/", m_scene->GetZoneName());
+			WaterMap *wm = WaterMap::LoadWaterMapfile(_config->GetPath("volume", "maps/volume") + "/", m_scene->GetZoneName());
 			if (wm) {
 				m_scene->GetZonePhysics()->SetWaterMap(wm);
 			}

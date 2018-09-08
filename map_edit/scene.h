@@ -17,6 +17,7 @@
 #include "entity.h"
 #include "shader.h"
 #include "dynamic_geometry.h"
+#include "core/config_interface.h"
 
 class SceneHotkeyListener
 {
@@ -141,6 +142,9 @@ private:
 	bool m_render_non_collide;
 	bool m_render_bb;
 	bool m_backface_cull;
+
+	//Dependencies
+	std::shared_ptr<EQEmu::IConfig> _config;
 };
 
 #endif

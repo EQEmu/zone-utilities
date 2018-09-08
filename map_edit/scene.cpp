@@ -4,7 +4,7 @@
 #include <gtc/matrix_transform.hpp>
 
 #include "static_geometry.h"
-#include "config.h"
+#include "dependency/container.h"
 
 const char *GetRegionTypeString(WaterRegionType type) {
 	switch (type) {
@@ -32,6 +32,7 @@ const char *GetRegionTypeString(WaterRegionType type) {
 }
 
 Scene::Scene() {
+	_config = EQEmu::Container::Get().Resolve<EQEmu::IConfig>();
 }
 
 Scene::~Scene() {
@@ -142,9 +143,9 @@ void Scene::LoadScene(const char *zone_name) {
 	if(m_zone_geometry) {
 		m_physics.reset(new EQPhysics());
 
-		auto w_map = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("volume", "maps/volume") + "/", zone_name);
+		auto w_map = WaterMap::LoadWaterMapfile(_config->GetPath("volume", "maps/volume") + "/", zone_name);
 		if (!w_map) {
-			w_map = WaterMap::LoadWaterMapfile(Config::Instance().GetPath("water", "maps/water") + "/", zone_name);
+			w_map = WaterMap::LoadWaterMapfile(_config->GetPath("water", "maps/water") + "/", zone_name);
 		}
 		m_physics->RegisterMesh("CollideWorldMesh", m_zone_geometry->GetCollidableVerts(), m_zone_geometry->GetCollidableInds(), 
 			glm::vec3(0.0f, 0.0f, 0.0f), EQPhysicsFlags::CollidableWorld);
