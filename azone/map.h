@@ -8,9 +8,9 @@
 #include <tuple>
 #define GLM_FORCE_RADIANS
 #include <glm.hpp>
-#include "s3d_loader.h"
-#include "eqg_loader.h"
-#include "eqg_v4_loader.h"
+#include "graphics/s3d_loader.h"
+#include "graphics/eqg_loader.h"
+#include "graphics/eqg_v4_loader.h"
 #include "log/logger_interface.h"
 
 class Map

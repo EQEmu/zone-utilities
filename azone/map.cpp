@@ -1,8 +1,8 @@
 #include "map.h"
 #include <sstream>
 #include <fstream>
-#include "compression.h"
 #include <gtc/matrix_transform.hpp>
+#include "core/compression.h"
 #include "dependency/container.h"
 
 Map::Map() {
