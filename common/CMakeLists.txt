@@ -19,6 +19,10 @@ SET(common_sources
 	wld_fragment.cpp
 	zone_map.cpp
 	event/event_loop.cpp
+	log/composite_logger.cpp
+	log/console_logger.cpp
+	log/file_logger.cpp
+	log/logger_interface.cpp
 )
 
 SET(common_headers
@@ -63,9 +67,36 @@ SET(common_headers
 	wld_fragment.h
 	wld_structs.h
 	zone_map.h
+	dependency/container.h
 	event/background_task.h
 	event/event_loop.h
 	event/timer.h
+	log/composite_logger.h
+	log/console_logger.h
+	log/file_logger.h
+	log/logger_interface.h
+)
+
+SOURCE_GROUP(dependency FILES 
+	dependency/container.h
+)
+
+SOURCE_GROUP(event FILES 
+	event/background_task.h
+	event/event_loop.cpp
+	event/event_loop.h
+	event/timer.h
+)
+
+SOURCE_GROUP(log FILES 
+	log/composite_logger.cpp
+	log/composite_logger.h
+	log/console_logger.cpp
+	log/console_logger.h
+	log/file_logger.cpp
+	log/file_logger.h
+	log/logger_interface.cpp
+	log/logger_interface.h
 )
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})

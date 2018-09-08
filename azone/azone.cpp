@@ -1,13 +1,27 @@
 #include "map.h"
-#include "log_macros.h"
-#include "log_stdout.h"
-#include "log_file.h"
+#include "dependency/container.h"
+#include "log/composite_logger.h"
+#include "log/console_logger.h"
+#include "log/file_logger.h"
 #include <string.h>
 
+void setup_dependencies() {
+	EQEmu::Container::Get().RegisterSingleton<EQEmu::ILogger, EQEmu::CompositeLogger>();
+	auto logger = std::dynamic_pointer_cast<EQEmu::CompositeLogger>(EQEmu::Container::Get().Resolve<EQEmu::ILogger>());
+
+	logger->Add(new EQEmu::ConsoleLogger());
+	logger->Add(new EQEmu::FileLogger("azone.log"));
+	logger->Enable(EQEmu::LogCritical);
+	logger->Enable(EQEmu::LogError);
+	logger->Enable(EQEmu::LogDebug);
+	logger->Enable(EQEmu::LogWarning);
+	logger->Enable(EQEmu::LogInfo);
+}
+
 int main(int argc, char **argv) {
-	eqLogInit(EQEMU_LOG_LEVEL);
-	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogStdOut()));
-	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogFile("azone.log")));
+	setup_dependencies();
+	
+	auto logger = EQEmu::Container::Get().Resolve<EQEmu::ILogger>();
 
 	int i = 1;
 	bool ignore_collide_tex = true;
@@ -17,20 +31,20 @@ int main(int argc, char **argv) {
 			i = 2;
 		}
 	}
-
+	
 	for(; i < argc; ++i) {
 		Map m;
-		eqLogMessage(LogInfo, "Attempting to build map for zone: %s", argv[i]);
+		logger->LogInfo("Attempting to build map for zone: %s", argv[i]);
 		if(!m.Build(argv[i], ignore_collide_tex)) {
-			eqLogMessage(LogError, "Failed to build map for zone: %s", argv[i]);
+			logger->LogError("Failed to build map for zone: %s", argv[i]);
 		} else {
 			if(!m.Write(std::string(argv[i]) + std::string(".map"))) {
-				eqLogMessage(LogError, "Failed to write map for zone %s", argv[i]);
+				logger->LogError("Failed to write map for zone %s", argv[i]);
 			} else {
-				eqLogMessage(LogInfo, "Wrote map for zone: %s", argv[i]);
+				logger->LogInfo("Wrote map for zone: %s", argv[i]);
 			}
 		}
 	}
-
+	
 	return 0;
 }

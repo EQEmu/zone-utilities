@@ -11,6 +11,7 @@
 #include "s3d_loader.h"
 #include "eqg_loader.h"
 #include "eqg_v4_loader.h"
+#include "log/logger_interface.h"
 
 class Map
 {
@@ -62,6 +63,8 @@ private:
 	std::vector<std::shared_ptr<EQEmu::Placeable>> map_placeables;
 	std::vector<std::shared_ptr<EQEmu::PlaceableGroup>> map_group_placeables;
 	std::map<std::string, bool> ignore_placs;
+
+	std::shared_ptr<EQEmu::ILogger> _logger;
 };
 
 #endif
