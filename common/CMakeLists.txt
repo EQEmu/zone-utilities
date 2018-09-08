@@ -22,7 +22,6 @@ SET(common_sources
 	log/composite_logger.cpp
 	log/console_logger.cpp
 	log/file_logger.cpp
-	log/logger_interface.cpp
 )
 
 SET(common_headers
@@ -95,7 +94,6 @@ SOURCE_GROUP(log FILES
 	log/console_logger.h
 	log/file_logger.cpp
 	log/file_logger.h
-	log/logger_interface.cpp
 	log/logger_interface.h
 )
 
