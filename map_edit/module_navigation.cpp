@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <sstream>
-#include "string_util.h"
+#include "core/string_util.h"
 #include "imgui.h"
 #include "module_navigation.h"
-#include "thread_pool.h"
+#include "core/thread_pool.h"
 #include "module_navigation_build_tile.h"
-#include "compression.h"
+#include "core/compression.h"
 #include "event/background_task.h"
 #include "dependency/container.h"
 #include <DetourNavMeshQuery.h>

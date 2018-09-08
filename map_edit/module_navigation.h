@@ -11,7 +11,7 @@
 #include "module.h"
 #include "scene.h"
 #include "rc_chunky_tri_mesh.h"
-#include "thread_pool.h"
+#include "core/thread_pool.h"
 #include "debug_draw.h"
 #include "log/logger_interface.h"
 #include "core/config_interface.h"

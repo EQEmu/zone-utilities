@@ -1,6 +1,6 @@
 #include "scene.h"
 #include "imgui_glfw.h"
-#include "string_util.h"
+#include "core/string_util.h"
 #include <gtc/matrix_transform.hpp>
 
 #include "static_geometry.h"

@@ -2,7 +2,7 @@
 
 #include "module.h"
 #include "scene.h"
-#include "thread_pool.h"
+#include "core/thread_pool.h"
 #include <vector>
 
 struct WPNode

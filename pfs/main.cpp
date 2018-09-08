@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "pfs.h"
+#include "eq/pfs.h"
 
 enum CommandType
 {

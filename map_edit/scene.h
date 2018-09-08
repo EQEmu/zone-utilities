@@ -12,8 +12,8 @@
 #include <glm.hpp>
 
 #include "module.h"
-#include "eq_physics.h"
-#include "zone_map.h"
+#include "eq/eq_physics.h"
+#include "eq/zone_map.h"
 #include "entity.h"
 #include "shader.h"
 #include "dynamic_geometry.h"

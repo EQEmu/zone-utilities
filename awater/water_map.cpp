@@ -1,7 +1,7 @@
 #include "water_map.h"
-#include "s3d_loader.h"
-#include "eqg_loader.h"
-#include "eqg_v4_loader.h"
+#include "graphics/s3d_loader.h"
+#include "graphics/eqg_loader.h"
+#include "graphics/eqg_v4_loader.h"
 #include "dependency/container.h"
 #include <string.h>
 
