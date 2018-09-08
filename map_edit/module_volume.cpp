@@ -1,5 +1,6 @@
 #include "module_volume.h"
 #include <algorithm>
+#include <memory>
 #include "config.h"
 #include "event/background_task.h"
 

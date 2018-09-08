@@ -2,6 +2,7 @@
 #define EQEMU_MAP_VIEW_MODULE_NAVIGATION_H
 
 #include <vector>
+#include <memory>
 #include <Recast.h>
 #include <DetourNavMesh.h>
 #include <DebugDraw.h>
