@@ -9,9 +9,9 @@
 #include <log/console_logger.h>
 #include <log/file_logger.h>
 #include <core/config.h>
-#include "renderer.h"
+#include "application.h"
 
-std::unique_ptr<Renderer> renderer;
+std::unique_ptr<Application> application;
 
 void setup_dependencies() {
 	auto config = EQEmu::Container::Get().RegisterSingleton<EQEmu::IConfig, EQEmu::Config>();
@@ -87,17 +87,17 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	renderer.reset(new Renderer());
-	renderer->Init(win);
+	application.reset(new Application());
+	application->Init(win);
 
 	glfwSetFramebufferSizeCallback(win, [](GLFWwindow *win, int width, int height) {
-		renderer->Resize(width, height);
+		application->Resize(width, height);
 	});
 
 	ImGui_ImplGlfwGL3_Init(win, true);
 	while (!glfwWindowShouldClose(win)) {
-		renderer->Tick();
-		renderer->Render();
+		application->Tick();
+		application->Render();
 		EQ::EventLoop::Get().Process();
 	}
 

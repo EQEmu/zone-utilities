@@ -1,14 +1,18 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(physics_sources
+	actor.cpp
+	application.cpp
 	imgui_glfw.cpp
 	main.cpp
-	renderer.cpp
+	shader.cpp
 )
 
 SET(physics_headers
+	actor.h
+	application.h
 	imgui_glfw.h
-	renderer.h
+	shader.h
 )
 
 ADD_EXECUTABLE(physics ${physics_sources} ${physics_headers})
