@@ -43,7 +43,7 @@ struct zon_region
 	float center_x; 
 	float center_y; 
 	float center_z; 
-	float unknown016; 
+	float rotation; //z rotation in EQ heading units eg out of 512 instead of 360
 	uint32_t flag_unknown020; //0 about half the time, non-zero other half
 	uint32_t flag_unknown024; //almost always 0
 	float extend_x; 
