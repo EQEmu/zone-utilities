@@ -50,7 +50,7 @@ public:
 	void RenderUI();
 	void RenderModulesMenu();
 	void Tick();
-	void ProcessSceneInput();
+	void ProcessSceneInput(float delta_time);
 
 	//hotkeys
 	void RegisterHotkey(SceneHotkeyListener *system, int ident, int key, bool ctrl, bool alt, bool shift);
@@ -79,6 +79,8 @@ public:
 	void Resize(int width, int height);
 
 	double GetLastFrameTime() { return m_last_time; }
+
+	GLFWwindow* GetWindow() const { return m_window; }
 private:
 	void GetEntityName(Entity *ent, std::string &name);
 	void GetClickVectors(double x, double y, glm::vec3 &start, glm::vec3 &end, int width, int height);

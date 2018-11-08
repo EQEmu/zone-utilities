@@ -38,6 +38,7 @@ public:
 	virtual void Save();
 	virtual void OnHotkey(int ident);
 	virtual void OnClick(int mouse_button, const glm::vec3 *collide_hit, const glm::vec3 *select_hit, Entity *selected);
+	virtual void Tick(float delta_time);
 private:
 	bool LoadVolumes(const std::string &dir);
 	void BuildVolumeEntities();

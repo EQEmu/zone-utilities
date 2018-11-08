@@ -4,7 +4,6 @@
 #include "log_macros.h"
 #include "event/background_task.h"
 
-const int HotkeyGenVolumes = 57;
 const int HotkeyDel = 58;
 
 ModuleVolume::ModuleVolume()
@@ -22,7 +21,6 @@ void ModuleVolume::OnLoad(Scene *s)
 {
 	m_scene = s;
 	m_scene->RegisterHotkey(this, HotkeyDel, GLFW_KEY_DELETE, false, false, false);
-	m_scene->RegisterHotkey(this, HotkeyGenVolumes, GLFW_KEY_F5, false, false, false);
 }
 
 void ModuleVolume::OnShutdown()
@@ -40,11 +38,7 @@ void ModuleVolume::OnDrawUI()
 
 	ImGui::Text("LMB to select a region");
 	ImGui::Text("Shift LMB to place a new region");
-	ImGui::Text("Ctrl LMB to move a selected region to the cursor position");
-	ImGui::Text("F5 to calculate a volume from a water map (approx)");
-	ImGui::Text("Del to delete a selected region");
-	ImGui::Text("Use ui to manipulate selected regions");
-	ImGui::Separator();
+	ImGui::Text("DEL to delete a selected region");
 
 	if (m_selected >= 0) {
 		ImGui::Separator();
@@ -115,6 +109,16 @@ void ModuleVolume::OnDrawUI()
 		}
 	}
 
+	ImGui::Separator();
+	if (m_work_pending == 0) {
+		if (ImGui::Button("Build From Watermap (slow)")) {
+			BuildFromWatermap(glm::vec3(0));
+		}
+	}
+	else {
+		ImGui::Text("Jobs in progress: %i", m_work_pending);
+	}
+
 	ImGui::End();
 }
 
@@ -137,6 +141,7 @@ void ModuleVolume::OnDrawOptions()
 void ModuleVolume::OnSceneLoad(const char *zone_name)
 {
 	m_modified = false;
+	m_selected = -1;
 	if (!LoadVolumes(Config::Instance().GetPath("volume", "maps/volume") + "/")) {
 		LoadVolumes(Config::Instance().GetPath("water", "maps/water") + "/");
 	}
@@ -212,9 +217,6 @@ void ModuleVolume::OnHotkey(int ident)
 				BuildVolumeEntities();
 			}
 			break;
-		case HotkeyGenVolumes:
-			BuildFromWatermap(m_scene->GetCameraLoc());
-			break;
 		default:
 			break;
 	}
@@ -233,7 +235,7 @@ void ModuleVolume::OnClick(int mouse_button, const glm::vec3 *collide_hit, const
 				}
 
 				m_selected = i;
-				volume->SetTint(glm::vec4(0.0, 0.8, 0.0, 0.5));
+				volume->SetTint(glm::vec4(0.0, 0.0, 0.8, 0.5));
 				return;
 			}
 
@@ -256,12 +258,192 @@ void ModuleVolume::OnClick(int mouse_button, const glm::vec3 *collide_hit, const
 
 		m_modified = true;
 	}
-	else if (mouse_button == GLFW_MOUSE_BUTTON_1 && io.KeyCtrl && collide_hit) {
-		if (m_selected >= 0) {
-			auto &region = m_regions[m_selected];
-			region.pos = glm::vec3(collide_hit->z, collide_hit->x, collide_hit->y);
-			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+}
 
+void ModuleVolume::Tick(float delta_time)
+{
+	auto &io = ImGui::GetIO();
+	auto window = m_scene->GetWindow();
+
+	float speed = 20.0f;
+	if (!io.WantCaptureKeyboard && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)) {
+		speed *= 6.0f;
+	}
+
+	//Translate X
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+			auto &trans = region.obb.GetTransformation();
+			auto new_trans = glm::translate(trans, glm::vec3(-speed * delta_time, 0.0f, 0.0f));
+			auto new_pos = new_trans[3];
+			region.pos = glm::vec3(new_pos[0], new_pos[1], new_pos[2]);
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+			auto &trans = region.obb.GetTransformation();
+			auto new_trans = glm::translate(trans, glm::vec3(speed * delta_time, 0.0f, 0.0f));
+			auto new_pos = new_trans[3];
+			region.pos = glm::vec3(new_pos[0], new_pos[1], new_pos[2]);
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	//Translate Y
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+			auto &trans = region.obb.GetTransformation();
+			auto new_trans = glm::translate(trans, glm::vec3(0.0f, -speed * delta_time, 0.0f));
+			auto new_pos = new_trans[3];
+			region.pos = glm::vec3(new_pos[0], new_pos[1], new_pos[2]);
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+			auto &trans = region.obb.GetTransformation();
+			auto new_trans = glm::translate(trans, glm::vec3(0.0f, speed * delta_time, 0.0f));
+			auto new_pos = new_trans[3];
+			region.pos = glm::vec3(new_pos[0], new_pos[1], new_pos[2]);
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	//Translate Z
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+			auto &trans = region.obb.GetTransformation();
+			auto new_trans = glm::translate(trans, glm::vec3(0.0f, 0.0f, -speed * delta_time));
+			auto new_pos = new_trans[3];
+			region.pos = glm::vec3(new_pos[0], new_pos[1], new_pos[2]);
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+			auto &trans = region.obb.GetTransformation();
+			auto new_trans = glm::translate(trans, glm::vec3(0.0f, 0.0f, speed * delta_time));
+			auto new_pos = new_trans[3];
+			region.pos = glm::vec3(new_pos[0], new_pos[1], new_pos[2]);
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	//Rotate around Z
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.rot.z -= speed * 0.25f;
+			if (region.rot.z < -90.0f) {
+				region.rot.z += 180.0f;
+			}
+
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.rot.z += speed * 0.25f;
+			if (region.rot.z > 90.0f) {
+				region.rot.z -= 180.0f;
+			}
+
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	//Expand
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.extents.x += speed * 0.01f;
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_SEMICOLON) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.extents.y += speed * 0.01f;
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_APOSTROPHE) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.extents.z += speed * 0.01f;
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	//Shrink
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_COMMA) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.extents.x -= speed * 0.01f;
+			if (region.extents.x < 0.1f) {
+				region.extents.x = 0.1f;
+			}
+
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.extents.y -= speed * 0.01f;
+			if (region.extents.y < 0.1f) {
+				region.extents.y = 0.1f;
+			}
+
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
+			BuildVolumeEntities();
+		}
+	}
+
+	if (!io.WantCaptureKeyboard && glfwGetKey(window, GLFW_KEY_SLASH) == GLFW_PRESS) {
+		if (m_selected != -1) {
+			auto &region = m_regions[m_selected];
+
+			region.extents.z -= speed * 0.01f;
+			if (region.extents.z < 0.1f) {
+				region.extents.z = 0.1f;
+			}
+
+			region.obb = OrientedBoundingBox(region.pos, region.rot, region.scale, region.extents);
 			BuildVolumeEntities();
 		}
 	}
@@ -569,9 +751,58 @@ void ModuleVolume::BuildVolumeEntities()
 	}
 }
 
+struct WaterMapTile
+{
+	glm::vec2 min;
+	glm::vec2 max;
+};
+
 void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 {
 	auto physics = m_scene->GetZonePhysics();
+	if (!physics) {
+		return;
+	}
+
+	if (m_work_pending != 0) {
+		return;
+	}
+
+	auto &min = m_scene->GetBoundingBoxMin();
+	auto &max = m_scene->GetBoundingBoxMax();
+
+	auto steps_x = (int)ceilf((max.x - min.x) / 256.0f);
+	auto steps_y = (int)ceilf((max.y - min.y) / 256.0f);
+
+	//chunk zone into tiles
+	for (auto i = 0; i < steps_x; ++i) {
+		for (auto j = 0; j < steps_y; ++j) {
+			glm::vec2 minv(min.x + (256.0f * i), min.y + (256.0f * j));
+			glm::vec2 maxv(min.x + (256.0f * (i + 1)), min.y + (256.0f * (j + 1)));
+
+			if (maxv.x > max.x) {
+				maxv.x = max.x;
+			}
+
+			if (maxv.y > max.y) {
+				maxv.y = max.y;
+			}
+
+			eqLogMessage(LogInfo, "Create Tile (%.2f, %.2f) (%.2f, %.2f)", minv.x, minv.y, maxv.x, maxv.y);
+			m_work_pending++;
+		}
+	}
+
+	/*
+	EQ::BackgroundTask task([work]() {
+				work->Run();
+			}, [work]() {
+				work->Finished();
+				delete work;
+			});
+	*/
+
+	/*auto physics = m_scene->GetZonePhysics();
 	if (!physics) {
 		return;
 	}
@@ -654,6 +885,6 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 	m_regions.push_back(t);
 	
 	m_modified = true;
-	BuildVolumeEntities();
+	BuildVolumeEntities();*/
 }
 

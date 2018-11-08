@@ -471,14 +471,6 @@ void Scene::RenderModulesMenu() {
 void Scene::Tick() {
 	glfwPollEvents();
 
-	if (!TryHotkey()) {
-		ProcessSceneInput();
-	}
-}
-
-void Scene::ProcessSceneInput() {
-	auto &io = ImGui::GetIO();
-
 	if (m_first_input) {
 		m_last_time = glfwGetTime();
 		m_first_input = false;
@@ -486,6 +478,22 @@ void Scene::ProcessSceneInput() {
 
 	double current_time = glfwGetTime();
 	float delta_time = float(current_time - m_last_time);
+
+	if (!TryHotkey()) {
+		ProcessSceneInput(delta_time);
+	}
+
+	for (auto &module : m_modules) {
+		if (module->GetRunning() && module->GetUnpaused()) {
+			module->Tick(delta_time);
+		}
+	}
+
+	m_last_time = current_time;
+}
+
+void Scene::ProcessSceneInput(float delta_time) {
+	auto &io = ImGui::GetIO();
 
 	if (!io.WantCaptureMouse && glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		if (m_right_was_down) {
@@ -551,7 +559,12 @@ void Scene::ProcessSceneInput() {
 		m_camera_loc -= right * delta_time * speed;
 	}
 
-	m_camera_proj = glm::perspective(m_fov, (float)m_width / (float)m_height, m_near_clip, m_far_clip);
+	float aspect = 1.0f;
+	if (m_height > 0) {
+		aspect = (float)m_width / (float)m_height;
+	}
+
+	m_camera_proj = glm::perspective(m_fov, aspect, m_near_clip, m_far_clip);
 	m_camera_view = glm::lookAt(m_camera_loc, m_camera_loc + direction, up);
 
 	bool click_to_process = false;
@@ -625,8 +638,6 @@ void Scene::ProcessSceneInput() {
 			}
 		}
 	}
-
-	m_last_time = current_time;
 }
 
 bool Scene::TryHotkey() {
