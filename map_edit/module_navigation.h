@@ -34,6 +34,7 @@ enum NavigationAreaFlags
 	NavigationAreaFlagPortal,
 	NavigationAreaFlagPrefer,
 	NavigationAreaFlagDisabled,
+	NavigationAreaFlagMax
 };
 
 enum NavigationPolyFlags
@@ -194,7 +195,8 @@ private:
 	glm::vec3 m_path_end;
 	bool m_path_end_set;
 
-	float m_path_costs[NavigationAreaFlagDisabled];
+	float m_path_costs[NavigationAreaFlagMax];
+	bool m_flag_enabled[NavigationAreaFlagMax];
 
 	std::vector<RegionVolume> m_volumes;
 

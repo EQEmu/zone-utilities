@@ -39,7 +39,12 @@ void ModuleVolume::OnDrawUI()
 	ImGui::Text("LMB to select a region");
 	ImGui::Text("Shift LMB to place a new region");
 	ImGui::Text("DEL to delete a selected region");
-
+	ImGui::Text("Arrow keys to move a selected region");
+	ImGui::Text("PgUp/PgDown to adjust region up and down");
+	ImGui::Text("[ & ] to rotate a selected region");
+	ImGui::Text("l to expand & , to shrink a region on the x axis");
+	ImGui::Text("; to expand & . to shrink a region on the y axis");
+	ImGui::Text("' to expand & / to shrink a region on the z axis");
 	if (m_selected >= 0) {
 		ImGui::Separator();
 
@@ -109,15 +114,15 @@ void ModuleVolume::OnDrawUI()
 		}
 	}
 
-	ImGui::Separator();
-	if (m_work_pending == 0) {
-		if (ImGui::Button("Build From Watermap (slow)")) {
-			BuildFromWatermap(glm::vec3(0));
-		}
-	}
-	else {
-		ImGui::Text("Jobs in progress: %i", m_work_pending);
-	}
+	//ImGui::Separator();
+	//if (m_work_pending == 0) {
+	//	if (ImGui::Button("Build From Watermap (slow)")) {
+	//		BuildFromWatermap(glm::vec3(0));
+	//	}
+	//}
+	//else {
+	//	ImGui::Text("Jobs in progress: %i", m_work_pending);
+	//}
 
 	ImGui::End();
 }
@@ -757,6 +762,13 @@ struct WaterMapTile
 	glm::vec2 max;
 };
 
+struct RegionSpan
+{
+	WaterRegionType region_type;
+	double start;
+	double end;
+};
+
 void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 {
 	auto physics = m_scene->GetZonePhysics();
@@ -790,101 +802,13 @@ void ModuleVolume::BuildFromWatermap(const glm::vec3 &pos)
 
 			eqLogMessage(LogInfo, "Create Tile (%.2f, %.2f) (%.2f, %.2f)", minv.x, minv.y, maxv.x, maxv.y);
 			m_work_pending++;
-		}
-	}
 
-	/*
-	EQ::BackgroundTask task([work]() {
-				work->Run();
-			}, [work]() {
-				work->Finished();
-				delete work;
+			EQ::BackgroundTask task([]() {
+
+			}, [this]() {
+				m_work_pending--;
 			});
-	*/
-
-	/*auto physics = m_scene->GetZonePhysics();
-	if (!physics) {
-		return;
-	}
-
-	auto region_type = physics->ReturnRegionType(pos);
-	if (region_type == RegionTypeNormal || region_type == RegionTypeUntagged || region_type == RegionTypeUnsupported) {
-		return;
-	}
-	
-	glm::vec3 new_region_min = pos;
-	glm::vec3 new_region_max = pos;
-	
-	//X+
-	const float step_size = 0.1f;
-	for (float x = pos.x; x < 30000.0f; x += step_size) {
-		auto temp_region_type = physics->ReturnRegionType(glm::vec3(x, pos.y, pos.z));
-		if (temp_region_type != region_type) {
-			break;
 		}
-	
-		new_region_max.x += step_size;
 	}
-	
-	//X-
-	for (float x = pos.x; x > -30000.0f; x -= step_size) {
-		auto temp_region_type = physics->ReturnRegionType(glm::vec3(x, pos.y, pos.z));
-		if (temp_region_type != region_type) {
-			break;
-		}
-	
-		new_region_min.x -= step_size;
-	}
-	
-	//Y+
-	for (float y = pos.y; y < 30000.0f; y += step_size) {
-		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, y, pos.z));
-		if (temp_region_type != region_type) {
-			break;
-		}
-	
-		new_region_max.y += step_size;
-	}
-	
-	//Y-
-	for (float y = pos.y; y > -30000.0f; y -= step_size) {
-		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, y, pos.z));
-		if (temp_region_type != region_type) {
-			break;
-		}
-	
-		new_region_min.y -= step_size;
-	}
-	
-	//Z+
-	for (float z = pos.z; z < 30000.0f; z += step_size) {
-		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, pos.y, z));
-		if (temp_region_type != region_type) {
-			break;
-		}
-	
-		new_region_max.z += step_size;
-	}
-	
-	//Z-
-	for (float z = pos.z; z > -30000.0f; z -= step_size) {
-		auto temp_region_type = physics->ReturnRegionType(glm::vec3(pos.x, pos.y, z));
-		if (temp_region_type != region_type) {
-			break;
-		}
-	
-		new_region_min.z -= step_size;
-	}
-	
-	Region t;
-	t.area_type = (uint32_t)region_type;
-	t.pos = glm::vec3((new_region_max.z + new_region_min.z) / 2.0f, (new_region_max.x + new_region_min.x) / 2.0f, (new_region_max.y + new_region_min.y) / 2.0f);
-	t.scale = glm::vec3(1.0f);
-	t.extents = glm::vec3((new_region_max.z - new_region_min.z) / 2.0f, (new_region_max.x - new_region_min.x) / 2.0f, (new_region_max.y - new_region_min.y) / 2.0f); // calc extents
-	t.obb = OrientedBoundingBox(t.pos, t.rot, t.scale, t.extents);
-	m_regions.push_back(t);
-	
-	m_modified = true;
-	BuildVolumeEntities();*/
 }
 

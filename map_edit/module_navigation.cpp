@@ -91,6 +91,19 @@ ModuleNavigation::ModuleNavigation()
 	m_path_costs[NavigationAreaFlagGeneralArea] = 1.0;
 	m_path_costs[NavigationAreaFlagPortal] = 0.1;
 	m_path_costs[NavigationAreaFlagPrefer] = 0.1;
+
+	m_flag_enabled[NavigationAreaFlagNormal] = true;
+	m_flag_enabled[NavigationAreaFlagWater] = true;
+	m_flag_enabled[NavigationAreaFlagLava] = true;
+	m_flag_enabled[NavigationAreaFlagZoneLine] = true;
+	m_flag_enabled[NavigationAreaFlagPvP] = true;
+	m_flag_enabled[NavigationAreaFlagSlime] = true;
+	m_flag_enabled[NavigationAreaFlagIce] = true;
+	m_flag_enabled[NavigationAreaFlagVWater] = true;
+	m_flag_enabled[NavigationAreaFlagGeneralArea] = true;
+	m_flag_enabled[NavigationAreaFlagPortal] = true;
+	m_flag_enabled[NavigationAreaFlagPrefer] = true;
+	m_flag_enabled[NavigationAreaFlagDisabled] = false;
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -508,16 +521,31 @@ void ModuleNavigation::DrawTestUI()
 	ImGui::Separator();
 
 	ImGui::Text("Area Costs");
-	bool status = ImGui::SliderFloat("Normal", &m_path_costs[NavigationAreaFlagNormal], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Water", &m_path_costs[NavigationAreaFlagWater], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Lava", &m_path_costs[NavigationAreaFlagLava], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("PvP", &m_path_costs[NavigationAreaFlagPvP], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Slime", &m_path_costs[NavigationAreaFlagSlime], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Ice", &m_path_costs[NavigationAreaFlagIce], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("V Water", &m_path_costs[NavigationAreaFlagVWater], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Teleport", &m_path_costs[NavigationAreaFlagPortal], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 0.1f, 10.0f, "%.1f");
-	status = status || ImGui::SliderFloat("Prefer", &m_path_costs[NavigationAreaFlagPrefer], 0.1f, 10.0f, "%.1f");
+	bool status = ImGui::SliderFloat("Cost: Normal", &m_path_costs[NavigationAreaFlagNormal], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: Water", &m_path_costs[NavigationAreaFlagWater], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: Lava", &m_path_costs[NavigationAreaFlagLava], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: PvP", &m_path_costs[NavigationAreaFlagPvP], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: Slime", &m_path_costs[NavigationAreaFlagSlime], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: Ice", &m_path_costs[NavigationAreaFlagIce], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: V Water", &m_path_costs[NavigationAreaFlagVWater], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: Teleport", &m_path_costs[NavigationAreaFlagPortal], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: General Area", &m_path_costs[NavigationAreaFlagGeneralArea], 0.1f, 10.0f, "%.1f");
+	status = status || ImGui::SliderFloat("Cost: Prefer", &m_path_costs[NavigationAreaFlagPrefer], 0.1f, 10.0f, "%.1f");
+
+	ImGui::Separator();
+	ImGui::Text("Area Flags");
+	status = status || ImGui::Checkbox("Flag: Normal", &m_flag_enabled[NavigationAreaFlagNormal]);
+	status = status || ImGui::Checkbox("Flag: Water", &m_flag_enabled[NavigationAreaFlagWater]);
+	status = status || ImGui::Checkbox("Flag: Lava", &m_flag_enabled[NavigationAreaFlagLava]);
+	status = status || ImGui::Checkbox("Flag: Zone Line", &m_flag_enabled[NavigationAreaFlagZoneLine]);
+	status = status || ImGui::Checkbox("Flag: PvP", &m_flag_enabled[NavigationAreaFlagPvP]);
+	status = status || ImGui::Checkbox("Flag: Slime", &m_flag_enabled[NavigationAreaFlagSlime]);
+	status = status || ImGui::Checkbox("Flag: Ice", &m_flag_enabled[NavigationAreaFlagIce]);
+	status = status || ImGui::Checkbox("Flag: V Water", &m_flag_enabled[NavigationAreaFlagVWater]);
+	status = status || ImGui::Checkbox("Flag: General Area", &m_flag_enabled[NavigationAreaFlagGeneralArea]);
+	status = status || ImGui::Checkbox("Flag: Portal", &m_flag_enabled[NavigationAreaFlagPortal]);
+	status = status || ImGui::Checkbox("Flag: Prefer", &m_flag_enabled[NavigationAreaFlagPrefer]);
+	status = status || ImGui::Checkbox("Flag: Disabled", &m_flag_enabled[NavigationAreaFlagDisabled]);
 
 	if (status) {
 		CalcPath();
@@ -783,7 +811,57 @@ void ModuleNavigation::CalcPath()
 
 	glm::vec3 ext(15.0f, 100.0f, 15.0f);
 	dtQueryFilter filter;
-	filter.setIncludeFlags(NavigationPolyFlagNotDisabled);
+
+	unsigned short flags = 0;
+	if (m_flag_enabled[NavigationAreaFlagNormal]) {
+		flags |= NavigationPolyFlagNormal;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagWater]) {
+		flags |= NavigationPolyFlagWater;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagLava]) {
+		flags |= NavigationPolyFlagLava;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagZoneLine]) {
+		flags |= NavigationPolyFlagZoneLine;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagPvP]) {
+		flags |= NavigationPolyFlagPvP;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagSlime]) {
+		flags |= NavigationPolyFlagSlime;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagIce]) {
+		flags |= NavigationPolyFlagIce;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagVWater]) {
+		flags |= NavigationPolyFlagVWater;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagGeneralArea]) {
+		flags |= NavigationPolyFlagGeneralArea;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagPortal]) {
+		flags |= NavigationPolyFlagPortal;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagPrefer]) {
+		flags |= NavigationPolyFlagPrefer;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagDisabled]) {
+		flags |= NavigationPolyFlagDisabled;
+	}
+
+	filter.setIncludeFlags(flags);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
 	filter.setAreaCost(NavigationAreaFlagWater, m_path_costs[NavigationAreaFlagWater]);
 	filter.setAreaCost(NavigationAreaFlagLava, m_path_costs[NavigationAreaFlagLava]);
@@ -863,7 +941,7 @@ void ModuleNavigation::SaveNavSettings()
 {
 	//write project setting files
 	//zone_name.navprj
-	std::string filename = Config::Instance().GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
+	std::string filename = Config::Instance().GetPath("project", "maps/project/") + "/" + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str() , "wb");
 
 	if (f) {
@@ -924,7 +1002,7 @@ void ModuleNavigation::SaveNavSettings()
 
 bool ModuleNavigation::LoadNavSettings()
 {
-	std::string filename = Config::Instance().GetPath("project", "maps/project/") + m_scene->GetZoneName() + ".navprj";
+	std::string filename = Config::Instance().GetPath("project", "maps/project/") + "/" + m_scene->GetZoneName() + ".navprj";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[6] = { 0 };
@@ -1174,7 +1252,7 @@ void ModuleNavigation::SaveNavMesh()
 	if (!m_nav_mesh)
 		return;
 
-	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
+	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + "/" + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "wb");
 
 	if (f) {
@@ -1232,7 +1310,7 @@ void ModuleNavigation::SaveNavMesh()
 
 void ModuleNavigation::LoadNavMesh()
 {
-	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + m_scene->GetZoneName() + ".nav";
+	std::string filename = Config::Instance().GetPath("nav", "maps/nav/") + "/" + m_scene->GetZoneName() + ".nav";
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (f) {
 		char magic[9] = { 0 };
