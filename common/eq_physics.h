@@ -30,7 +30,7 @@ public:
 	void Step();
 
 	//collision stuff
-	bool CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const;
+	bool CheckLOS(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 *result) const;
 	bool GetRaycastClosestHit(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 &hit, std::string *name, int flag = CollidableWorld) const;
 	float FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const;
 	bool IsUnderworld(const glm::vec3 &point) const;

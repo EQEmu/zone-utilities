@@ -11,6 +11,7 @@
 
 #include "config.h"
 #include <DetourNavMeshQuery.h>
+#include <DetourCommon.h>
 
 const uint32_t nav_file_version = 3;
 const uint32_t nav_mesh_file_version = 2;
@@ -72,9 +73,11 @@ ModuleNavigation::ModuleNavigation()
 
 	m_path_renderable.reset(new DynamicGeometry());
 	m_path_renderable->SetDrawType(GL_LINES);
-	m_path_renderable->SetDepthWriteEnabled(false);
-	m_path_renderable->SetDepthTestEnabled(false);
 	m_path_renderable->SetLineWidth(2.0f);
+
+	m_path_debug_renderable.reset(new DynamicGeometry());
+	m_path_debug_renderable->SetDrawType(GL_LINES);
+	m_path_debug_renderable->SetLineWidth(2.0f);
 
 	m_path_start_set = false;
 	m_path_end_set = false;
@@ -104,6 +107,9 @@ ModuleNavigation::ModuleNavigation()
 	m_flag_enabled[NavigationAreaFlagPortal] = true;
 	m_flag_enabled[NavigationAreaFlagPrefer] = true;
 	m_flag_enabled[NavigationAreaFlagDisabled] = false;
+
+	m_step_size = 10.0f;
+	m_complex_path = false;
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -133,9 +139,11 @@ void ModuleNavigation::OnDrawMenu()
 			m_start_path_renderable->Clear();
 			m_end_path_renderable->Clear();
 			m_path_renderable->Clear();
+			m_path_debug_renderable->Clear();
 			m_start_path_renderable->Update();
 			m_end_path_renderable->Update();
 			m_path_renderable->Update();
+			m_path_debug_renderable->Update();
 			m_path_start_set = false;
 			m_path_end_set = false;
 			m_conn_start_set = false;
@@ -224,9 +232,11 @@ void ModuleNavigation::OnSceneLoad(const char *zone_name)
 	m_start_path_renderable->Clear();
 	m_end_path_renderable->Clear();
 	m_path_renderable->Clear();
+	m_path_debug_renderable->Clear();
 	m_start_path_renderable->Update();
 	m_end_path_renderable->Update();
 	m_path_renderable->Update();
+	m_path_debug_renderable->Update();
 	m_path_start_set = false;
 	m_path_end_set = false;
 	m_conn_start_set = false;
@@ -278,6 +288,10 @@ void ModuleNavigation::OnResume()
 
 	if (m_path_renderable) {
 		m_scene->RegisterEntity(this, m_path_renderable.get());
+	}
+
+	if (m_path_debug_renderable) {
+		m_scene->RegisterEntity(this, m_path_debug_renderable.get());
 	}
 }
 
@@ -478,7 +492,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI()
 	ImGui::Separator();
 
 	ImGui::Text("Tiling");
-	ImGui::SliderFloat("TileSize", &m_tile_size, 64.0f, 4096.0f, "%.0f");
+	ImGui::SliderFloat("TileSize", &m_tile_size, 16.0f, 4096.0f, "%.0f");
 
 	const int ts = (int)m_tile_size;
 	const int tw = (gw + ts - 1) / ts;
@@ -546,6 +560,12 @@ void ModuleNavigation::DrawTestUI()
 	status = status || ImGui::Checkbox("Flag: Portal", &m_flag_enabled[NavigationAreaFlagPortal]);
 	status = status || ImGui::Checkbox("Flag: Prefer", &m_flag_enabled[NavigationAreaFlagPrefer]);
 	status = status || ImGui::Checkbox("Flag: Disabled", &m_flag_enabled[NavigationAreaFlagDisabled]);
+
+	ImGui::Separator();
+	status = status || ImGui::Checkbox("Smooth Path", &m_complex_path);
+	if (m_complex_path) {
+		status = status || ImGui::SliderFloat("Step Size", &m_step_size, 0.5f, 256.0f);
+	}
 
 	if (status) {
 		CalcPath();
@@ -803,6 +823,64 @@ void ModuleNavigation::SetNavigationTestNodeEnd(const glm::vec3 &p)
 	m_end_path_renderable->Update();
 }
 
+dtStatus ModuleNavigation::GetPolyHeightNoConnections(const dtNavMeshQuery *query, dtPolyRef ref, const float *pos, float *height) const
+{
+	auto *m_nav = query->getAttachedNavMesh();
+
+	if (!m_nav) {
+		return DT_FAILURE;
+	}
+
+	const dtMeshTile* tile = 0;
+	const dtPoly* poly = 0;
+	if (dtStatusFailed(m_nav->getTileAndPolyByRef(ref, &tile, &poly))) {
+		return DT_FAILURE | DT_INVALID_PARAM;
+	}
+
+	if (poly->getType() != DT_POLYTYPE_OFFMESH_CONNECTION) {
+		const unsigned int ip = (unsigned int)(poly - tile->polys);
+		const dtPolyDetail* pd = &tile->detailMeshes[ip];
+		for (int j = 0; j < pd->triCount; ++j)
+		{
+			const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+			const float* v[3];
+			for (int k = 0; k < 3; ++k)
+			{
+				if (t[k] < poly->vertCount)
+					v[k] = &tile->verts[poly->verts[t[k]] * 3];
+				else
+					v[k] = &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3];
+			}
+			float h;
+			if (dtClosestHeightPointTriangle(pos, v[0], v[1], v[2], h))
+			{
+				if (height)
+					*height = h;
+				return DT_SUCCESS;
+			}
+		}
+	}
+
+	return DT_FAILURE | DT_INVALID_PARAM;
+}
+
+dtStatus ModuleNavigation::GetPolyHeightOnPath(const dtPolyRef *path, const int path_len, const glm::vec3 &pos, const dtNavMeshQuery *query, float *h) const
+{
+	if (!path || !path_len) {
+		return DT_FAILURE;
+	}
+
+	for (int i = 0; i < path_len; ++i) {
+		dtPolyRef ref = path[i];
+
+		if (dtStatusSucceed(GetPolyHeightNoConnections(query, ref, &pos[0], h))) {
+			return DT_SUCCESS;
+		}
+	}
+
+	return DT_FAILURE;
+}
+
 void ModuleNavigation::CalcPath()
 {
 	if (!m_path_start_set || !m_path_end_set || !m_nav_mesh) {
@@ -811,56 +889,56 @@ void ModuleNavigation::CalcPath()
 
 	glm::vec3 ext(15.0f, 100.0f, 15.0f);
 	dtQueryFilter filter;
-
+	
 	unsigned short flags = 0;
 	if (m_flag_enabled[NavigationAreaFlagNormal]) {
 		flags |= NavigationPolyFlagNormal;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagWater]) {
 		flags |= NavigationPolyFlagWater;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagLava]) {
 		flags |= NavigationPolyFlagLava;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagZoneLine]) {
 		flags |= NavigationPolyFlagZoneLine;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagPvP]) {
 		flags |= NavigationPolyFlagPvP;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagSlime]) {
 		flags |= NavigationPolyFlagSlime;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagIce]) {
 		flags |= NavigationPolyFlagIce;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagVWater]) {
 		flags |= NavigationPolyFlagVWater;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagGeneralArea]) {
 		flags |= NavigationPolyFlagGeneralArea;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagPortal]) {
 		flags |= NavigationPolyFlagPortal;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagPrefer]) {
 		flags |= NavigationPolyFlagPrefer;
 	}
-
+	
 	if (m_flag_enabled[NavigationAreaFlagDisabled]) {
 		flags |= NavigationPolyFlagDisabled;
 	}
-
+	
 	filter.setIncludeFlags(flags);
 	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
 	filter.setAreaCost(NavigationAreaFlagWater, m_path_costs[NavigationAreaFlagWater]);
@@ -872,68 +950,121 @@ void ModuleNavigation::CalcPath()
 	filter.setAreaCost(NavigationAreaFlagGeneralArea, m_path_costs[NavigationAreaFlagGeneralArea]);
 	filter.setAreaCost(NavigationAreaFlagPortal, m_path_costs[NavigationAreaFlagPortal]);
 	filter.setAreaCost(NavigationAreaFlagPrefer, m_path_costs[NavigationAreaFlagPrefer]);
-
+	
 	dtNavMeshQuery *query = dtAllocNavMeshQuery();
 	query->init(m_nav_mesh, 32768);
 	dtPolyRef start_ref;
 	dtPolyRef end_ref;
-
+	
 	eqLogMessage(LogInfo, "Calculating path from (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)",
 		m_path_start[0], m_path_start[1], m_path_start[2],
 		m_path_end[0], m_path_end[1], m_path_end[2]);
-
+	
 	query->findNearestPoly(&m_path_start[0], &ext[0], &filter, &start_ref, 0);
 	query->findNearestPoly(&m_path_end[0], &ext[0], &filter, &end_ref, 0);
-
+	
 	if (!start_ref || !end_ref) {
 		m_path_renderable->Clear();
 		m_path_renderable->Update();
+		m_path_debug_renderable->Clear();
+		m_path_debug_renderable->Update();
 		dtFreeNavMeshQuery(query);
 		return;
 	}
 
-	int npoly = 0;
-	dtPolyRef path[1024] = { 0 };
-	query->findPath(start_ref, end_ref, &m_path_start[0], &m_path_end[0], &filter, path, &npoly, 1024);
+	static const int MAX_POLYS = 256;
+	static const int MAX_SMOOTH = 2048;
+	
+	dtPolyRef polys[MAX_POLYS];
+	int npolys = 0;
+	
+	query->findPath(start_ref, end_ref, &m_path_start[0], &m_path_end[0], &filter, &polys[0], &npolys, MAX_POLYS);
+	
+	if (m_complex_path) {
+		if (npolys) {
+			int spath_n = 0;
+			glm::vec3 spath[MAX_POLYS];
+			unsigned char spath_flags[MAX_POLYS];
+			dtPolyRef spath_refs[MAX_POLYS];
+			query->findStraightPath(&m_path_start[0], &m_path_end[0], polys, npolys, (float*)&spath[0], spath_flags, spath_refs, &spath_n, MAX_POLYS, 
+				DT_STRAIGHTPATH_AREA_CROSSINGS | DT_STRAIGHTPATH_ALL_CROSSINGS);
 
-	if (npoly) {
-		glm::vec3 epos = m_path_end;
-		if (path[npoly - 1] != end_ref)
-			query->closestPointOnPoly(path[npoly - 1], &m_path_end[0], &epos[0], 0);
-
-		float straight_path[2048 * 3];
-		unsigned char straight_path_flags[2048];
-		int n_straight_polys;
-		dtPolyRef straight_path_polys[2048];
-		query->findStraightPath(&m_path_start[0], &epos[0], path, npoly,
-			straight_path, straight_path_flags,
-			straight_path_polys, &n_straight_polys, 2048, DT_STRAIGHTPATH_ALL_CROSSINGS);
-
-		dtFreeNavMeshQuery(query);
-
-		if (n_straight_polys) {
 			m_path_renderable->Clear();
 
-			for (int i = 0; i < n_straight_polys - 1; ++i) {
-				glm::vec3 color(1.0f, 1.0f, 0.0f);
-				unsigned short flag = 0;
-				if (dtStatusSucceed(m_nav_mesh->getPolyFlags(straight_path_polys[i], &flag))) {
-					if (flag & NavigationPolyFlagPortal) {
-						color = glm::vec3(0.0, 1.0, 0.0);
+			for (auto i = 0; i < spath_n - 1; ++i) {
+				auto &p1 = spath[i];
+				auto &p2 = spath[i + 1];
+				auto &flag = spath_flags[i];
+
+				if (flag & DT_STRAIGHTPATH_OFFMESH_CONNECTION) {
+					m_path_renderable->AddLine(p1, p2, glm::vec3(0.0f, 0.0f, 1.0f));
+				}
+				else {
+					auto dist = glm::distance(p1, p2);
+					auto dir = glm::normalize(p2 - p1);
+					float total = 0.0f;
+					glm::vec3 previous_pt = p1;
+
+					m_path_renderable->AddLineCylinder(glm::vec3(previous_pt.x - 0.5f, previous_pt.y - 0.5f, previous_pt.z - 0.5f), glm::vec3(previous_pt.x + 0.5f, previous_pt.y + 0.5f, previous_pt.z + 0.5f), glm::vec3(1.0f, 1.0f, 0.0f));
+
+					while (total < dist) {
+						glm::vec3 current_pt;
+						float dist_to_move = m_step_size;
+						float ff = m_step_size / 2.0f;
+
+						if (total + dist_to_move + ff >= dist) {
+							current_pt = p2;
+							total = dist;
+						}
+						else {
+							current_pt = p1 + dir * (total + dist_to_move);
+							total += dist_to_move;
+						}
+
+						float h = 0.0f;
+						if (dtStatusSucceed(GetPolyHeightOnPath(polys, npolys, current_pt, query, &h))) {
+							current_pt.y = h;
+						}
+
+						m_path_renderable->AddLineCylinder(glm::vec3(current_pt.x - 0.5f, current_pt.y - 0.5f, current_pt.z - 0.5f), glm::vec3(current_pt.x + 0.5f, current_pt.y + 0.5f, current_pt.z + 0.5f), glm::vec3(1.0f, 1.0f, 0.0f));
+
+						previous_pt = current_pt;
 					}
 				}
-
-				glm::vec3 s(straight_path[i * 3], straight_path[i * 3 + 1] + 0.4f, straight_path[i * 3 + 2]);
-				glm::vec3 e(straight_path[(i + 1) * 3], straight_path[(i + 1) * 3 + 1] + 0.4f, straight_path[(i + 1) * 3 + 2]);
-				m_path_renderable->AddLine(s, e, color);
 			}
 
 			m_path_renderable->Update();
 		}
+		
+		dtFreeNavMeshQuery(query);
 	}
 	else {
-		dtFreeNavMeshQuery(query);
-		return;
+		if (npolys) {
+			float spath[MAX_POLYS * 3];
+			unsigned char spath_flags[MAX_POLYS];
+			dtPolyRef spath_refs[MAX_POLYS];
+			int spath_n = 0;
+			query->findStraightPath(&m_path_start[0], &m_path_end[0], polys, npolys, spath, spath_flags, spath_refs, &spath_n, MAX_POLYS, DT_STRAIGHTPATH_AREA_CROSSINGS | DT_STRAIGHTPATH_ALL_CROSSINGS);
+
+			if (spath_n) {
+				m_path_renderable->Clear();
+				
+				for (auto i = 0; i < spath_n - 1; ++i) {
+					auto &x1 = spath[i * 3];
+					auto &y1 = spath[i * 3 + 1];
+					auto &z1 = spath[i * 3 + 2];
+					auto &x2 = spath[i * 3 + 3];
+					auto &y2 = spath[i * 3 + 4];
+					auto &z2 = spath[i * 3 + 5];
+					m_path_renderable->AddLine(glm::vec3(x1, y1, z1), glm::vec3(x2, y2, z2), glm::vec3(1.0f, 1.0f, 0.0f));
+				}
+
+				m_path_renderable->Update();
+			}
+		}
+		else {
+			dtFreeNavMeshQuery(query);
+		}
 	}
 }
 

@@ -291,7 +291,7 @@ void ModuleNavigationBuildTile::Finished() {
 		}
 	}
 	m_nav_module->m_work_pending--;
-	if(m_nav_module->m_work_pending % 100 == 0) {
+	if(m_nav_module->m_work_pending == 0) {
 		m_nav_module->CreateNavMeshModel();
 		m_nav_module->CalcPath();
 	}

@@ -127,6 +127,8 @@ private:
 	void CreateNavMeshModel();
 	void SetNavigationTestNodeStart(const glm::vec3 &p);
 	void SetNavigationTestNodeEnd(const glm::vec3 &p);
+	dtStatus GetPolyHeightNoConnections(const dtNavMeshQuery *query, dtPolyRef ref, const float* pos, float* height) const;
+	dtStatus GetPolyHeightOnPath(const dtPolyRef *path, const int path_len, const glm::vec3 &pos, const dtNavMeshQuery *query, float *h) const;
 	void CalcPath();
 	void SaveNavSettings();
 	bool LoadNavSettings();
@@ -188,6 +190,7 @@ private:
 	std::unique_ptr<DynamicGeometry> m_start_path_renderable;
 	std::unique_ptr<DynamicGeometry> m_end_path_renderable;
 	std::unique_ptr<DynamicGeometry> m_path_renderable;
+	std::unique_ptr<DynamicGeometry> m_path_debug_renderable;
 
 	glm::vec3 m_path_start;
 	bool m_path_start_set;
@@ -197,6 +200,8 @@ private:
 
 	float m_path_costs[NavigationAreaFlagMax];
 	bool m_flag_enabled[NavigationAreaFlagMax];
+	bool m_complex_path;
+	float m_step_size;
 
 	std::vector<RegionVolume> m_volumes;
 

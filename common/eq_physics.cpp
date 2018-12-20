@@ -156,7 +156,7 @@ void EQPhysics::Step()
 {
 }
 
-bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const {
+bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest, glm::vec3 *result) const {
 	btVector3 src_bt(src.x, src.y, src.z);
 	btVector3 dest_bt(dest.x, dest.y, dest.z);
 
@@ -167,6 +167,14 @@ bool EQPhysics::CheckLOS(const glm::vec3 &src, const glm::vec3 &dest) const {
 	imp->collision_world->rayTest(src_bt, dest_bt, los_hit);
 
 	if(los_hit.hasHit()) {
+		btVector3 p = src_bt.lerp(dest_bt, los_hit.m_closestHitFraction);
+
+		if (result) {
+			result->x = p.getX();
+			result->y = p.getY();
+			result->z = p.getZ();
+		}
+
 		return false;
 	}
 
@@ -202,57 +210,83 @@ bool EQPhysics::GetRaycastClosestHit(const glm::vec3 & src, const glm::vec3 & de
 }
 
 float EQPhysics::FindBestFloor(const glm::vec3 &start, glm::vec3 *result, glm::vec3 *normal) const {
-	btVector3 from(start.x, start.y + 1.0f, start.z);
-	btVector3 to(start.x, start.y - 3000.0f, start.z);
-
+	const float radius = 25.0f;
+	const float offset = 3.25f;
+	btVector3 from(start.x, start.y + offset, start.z);
+	btVector3 to(start.x, start.y - radius, start.z);
+	
 	btCollisionWorld::ClosestRayResultCallback hit_below(from, to);
 	hit_below.m_collisionFilterGroup = (short)CollidableWorld;
 	hit_below.m_collisionFilterMask = (short)CollidableWorld;
 	hit_below.m_flags |= 1;
-
+	
 	imp->collision_world->rayTest(from, to, hit_below);
-
 	if(hit_below.hasHit()) {
 		if(normal) {
 			normal->x = hit_below.m_hitNormalWorld.getX();
 			normal->y = hit_below.m_hitNormalWorld.getY();
 			normal->z = hit_below.m_hitNormalWorld.getZ();
 		}
-
+	
 		btVector3 p = from.lerp(to, hit_below.m_closestHitFraction);
-
+	
 		if(result) {
 			result->x = p.getX();
 			result->y = p.getY();
 			result->z = p.getZ();
 		}
-
-		return p.getY();
+	
+		return p.getY() + offset;
 	}
-
-	to.setY(start.y + 3000.0f);
+	
+	to.setY(start.y + radius);
 	btCollisionWorld::ClosestRayResultCallback hit_above(from, to);
 	hit_above.m_collisionFilterGroup = (short)CollidableWorld;
 	hit_above.m_collisionFilterMask = (short)CollidableWorld;
-
+	
 	imp->collision_world->rayTest(from, to, hit_above);
-
+	
 	if(hit_above.hasHit()) {
 		if(normal) {
 			normal->x = hit_above.m_hitNormalWorld.getX();
 			normal->y = hit_above.m_hitNormalWorld.getY();
 			normal->z = hit_above.m_hitNormalWorld.getZ();
 		}
-
+	
 		btVector3 p = from.lerp(to, hit_above.m_closestHitFraction);
-
+	
 		if(result) {
 			result->x = p.getX();
 			result->y = p.getY();
 			result->z = p.getZ();
 		}
+	
+		return p.getY() + offset;
+	}
 
-		return p.getY();
+	to.setY(start.y - 3000.0f);
+	btCollisionWorld::ClosestRayResultCallback hit_far_below(from, to);
+	hit_far_below.m_collisionFilterGroup = (short)CollidableWorld;
+	hit_far_below.m_collisionFilterMask = (short)CollidableWorld;
+	
+	imp->collision_world->rayTest(from, to, hit_far_below);
+
+	if (hit_far_below.hasHit()) {
+		if (normal) {
+			normal->x = hit_far_below.m_hitNormalWorld.getX();
+			normal->y = hit_far_below.m_hitNormalWorld.getY();
+			normal->z = hit_far_below.m_hitNormalWorld.getZ();
+		}
+
+		btVector3 p = from.lerp(to, hit_far_below.m_closestHitFraction);
+
+		if (result) {
+			result->x = p.getX();
+			result->y = p.getY();
+			result->z = p.getZ();
+		}
+
+		return p.getY() + offset;
 	}
 
 	return -FLT_MAX;
