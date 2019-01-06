@@ -8,6 +8,7 @@
 #include "module_navigation_build_tile.h"
 #include "compression.h"
 #include "event/background_task.h"
+#include "event/task.h"
 
 #include "config.h"
 #include <DetourNavMeshQuery.h>
@@ -628,12 +629,12 @@ void ModuleNavigation::BuildNavigationMesh()
 			glm::vec3 tile_max(bmin[0] + (x + 1) * tcs, bmax[1], bmin[2] + (y + 1) * tcs);
 			
 			auto work = new ModuleNavigationBuildTile(this, x, y, tile_min, tile_max, phys);
-			EQ::BackgroundTask task([work]() {
+			EQ::Task([work](EQ::Task::ResolveFn resolve, EQ::Task::RejectFn reject) {
 				work->Run();
-			}, [work]() {
+			}).Finally([work]() {
 				work->Finished();
 				delete work;
-			});
+			}).Run();
 		}
 	}
 }
@@ -699,12 +700,12 @@ void ModuleNavigation::BuildTile(const glm::vec3 &pos)
 	m_work_pending++;
 
 	auto work = new ModuleNavigationBuildTile(this, tx, ty, tile_min, tile_max, phys);
-	EQ::BackgroundTask task([work]() {
+	EQ::Task([work](EQ::Task::ResolveFn resolve, EQ::Task::RejectFn reject) {
 		work->Run();
-	}, [work]() {
+	}).Finally([work]() {
 		work->Finished();
 		delete work;
-	});
+	}).Run();
 }
 
 void ModuleNavigation::RemoveTile(const glm::vec3 &pos)
@@ -991,6 +992,10 @@ void ModuleNavigation::CalcPath()
 
 			m_path_renderable->Clear();
 
+			auto &initial = spath[0];
+			m_path_renderable->AddLineCylinder(glm::vec3(initial.x - 0.5f, initial.y - 0.5f, initial.z - 0.5f), glm::vec3(initial.x + 0.5f, initial.y + 0.5f, initial.z + 0.5f), glm::vec3(1.0f, 1.0f, 0.0f));
+			eqLogMessage(LogInfo, "Adding initial point (%.2f, %.2f, %.2f)", initial.x, initial.y, initial.z);
+
 			for (auto i = 0; i < spath_n - 1; ++i) {
 				auto &p1 = spath[i];
 				auto &p2 = spath[i + 1];
@@ -1005,8 +1010,6 @@ void ModuleNavigation::CalcPath()
 					float total = 0.0f;
 					glm::vec3 previous_pt = p1;
 
-					m_path_renderable->AddLineCylinder(glm::vec3(previous_pt.x - 0.5f, previous_pt.y - 0.5f, previous_pt.z - 0.5f), glm::vec3(previous_pt.x + 0.5f, previous_pt.y + 0.5f, previous_pt.z + 0.5f), glm::vec3(1.0f, 1.0f, 0.0f));
-
 					while (total < dist) {
 						glm::vec3 current_pt;
 						float dist_to_move = m_step_size;
@@ -1017,8 +1020,8 @@ void ModuleNavigation::CalcPath()
 							total = dist;
 						}
 						else {
-							current_pt = p1 + dir * (total + dist_to_move);
 							total += dist_to_move;
+							current_pt = p1 + dir * total;
 						}
 
 						float h = 0.0f;
@@ -1026,6 +1029,7 @@ void ModuleNavigation::CalcPath()
 							current_pt.y = h;
 						}
 
+						eqLogMessage(LogInfo, "Adding current point (%.2f, %.2f, %.2f) %.2f/%.2f", current_pt.x, current_pt.y, current_pt.z, total, dist);
 						m_path_renderable->AddLineCylinder(glm::vec3(current_pt.x - 0.5f, current_pt.y - 0.5f, current_pt.z - 0.5f), glm::vec3(current_pt.x + 0.5f, current_pt.y + 0.5f, current_pt.z + 0.5f), glm::vec3(1.0f, 1.0f, 0.0f));
 
 						previous_pt = current_pt;
