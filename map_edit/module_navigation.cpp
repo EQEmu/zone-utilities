@@ -378,7 +378,7 @@ void ModuleNavigation::OnClick(int mouse_button, const glm::vec3 *collide_hit, c
 				flag = NavigationPolyFlagPortal;
 				break;
 			case NavigationAreaFlagPrefer:
-				flag = NavigationAreaFlagPrefer;
+				flag = NavigationPolyFlagPrefer;
 				break;
 			case NavigationAreaFlagDisabled:
 			default:
@@ -587,7 +587,7 @@ void ModuleNavigation::DrawMeshConnectionUI()
 
 	const char* area_types[] = { "Normal", "Water", "Lava", "ZoneLine", "PVP", "Slime", "Ice", "V Water", "Generic Area", "Portal", "Prefer" };
 
-	ImGui::Combo("Area Type", &m_connection_area, area_types, 11);
+	ImGui::ListBox("Area Type", &m_connection_area, area_types, IM_ARRAYSIZE(area_types), 11);
 	
 	ImGui::Separator();
 	if (ImGui::SliderFloat("Radius", &m_connection_radius, 0.3f, 30.0f, "%.1f")) {
@@ -1650,7 +1650,7 @@ void ModuleNavigation::ClearConnections()
 	m_connection_id_counter = 1000;
 	m_connection_count = 0;
 	m_connection_dir = 1;
-	m_connection_area = 9;
+	m_connection_area = NavigationAreaFlagNormal;
 	m_connection_radius = 1.5f;
 }
 
