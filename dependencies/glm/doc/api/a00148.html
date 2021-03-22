@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.10"/>
-<title>0.9.9 API documenation: Core features</title>
+<title>0.9.9 API documentation: scalar_multiplication.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -24,7 +24,7 @@
  <tr style="height: 56px;">
   <td id="projectlogo"><img alt="Logo" src="logo-mini.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">0.9.9 API documenation
+   <div id="projectname">0.9.9 API documentation
    </div>
   </td>
  </tr>
@@ -40,7 +40,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
+      <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
         <span class="left">
@@ -59,7 +59,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
-</div><!-- top -->
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>File&#160;List</span></a></li>
+    </ul>
+  </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,59 +78,30 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_3a581ba30d25676e4b797b1f96d53b45.html">F:</a></li><li class="navelem"><a class="el" href="dir_9e5fe034a00e89334fd5186c3e7db156.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_d9496f0844b48bc7e53b5af8c99b9ab2.html">Source</a></li><li class="navelem"><a class="el" href="dir_a8bee7be44182a33f3820393ae0b105d.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_44e5e654415abd9ca6fdeaddaff8565e.html">glm</a></li><li class="navelem"><a class="el" href="dir_cef2d71d502cb69a9252bca2297d9549.html">glm</a></li><li class="navelem"><a class="el" href="dir_f35778ec600a1b9bbc4524e62e226aa2.html">gtx</a></li>  </ul>
+</div>
+</div><!-- top -->
 <div class="header">
-  <div class="summary">
-<a href="#groups">Modules</a>  </div>
   <div class="headertitle">
-<div class="title">Core features</div>  </div>
+<div class="title">scalar_multiplication.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>Features that implement in C++ the GLSL specification as closely as possible.  
+<p><a class="el" href="a00287.html">Experimental extensions</a>  
 <a href="#details">More...</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="groups"></a>
-Modules</h2></td></tr>
-<tr class="memitem:a00143"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00143.html">Common functions</a></td></tr>
-<tr class="memdesc:a00143"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00015.html" title="Core features ">glm/common.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00144"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00144.html">Exponential functions</a></td></tr>
-<tr class="memdesc:a00144"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00025.html" title="Core features ">glm/exponential.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00147"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00147.html">Geometric functions</a></td></tr>
-<tr class="memdesc:a00147"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00035.html" title="Core features ">glm/geometric.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00149"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00149.html">Types</a></td></tr>
-<tr class="memdesc:a00149"><td class="mdescLeft">&#160;</td><td class="mdescRight">The standard types defined by the specification. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00150"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00150.html">Precision types</a></td></tr>
-<tr class="memdesc:a00150"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-GLSL types that are used to define qualifier-based types. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00151"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00151.html">Template types</a></td></tr>
-<tr class="memdesc:a00151"><td class="mdescLeft">&#160;</td><td class="mdescRight">The generic template types used as the basis for the core types. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00237"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00237.html">Integer functions</a></td></tr>
-<tr class="memdesc:a00237"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00042.html" title="Core features ">glm/integer.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00238"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00238.html">Matrix functions</a></td></tr>
-<tr class="memdesc:a00238"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00056.html" title="Core features ">glm/matrix.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00239"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00239.html">Floating-Point Pack and Unpack Functions</a></td></tr>
-<tr class="memdesc:a00239"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00078.html" title="Core features ">glm/packing.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00240"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00240.html">Angle and Trigonometry Functions</a></td></tr>
-<tr class="memdesc:a00240"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00101.html" title="Core features ">glm/trigonometric.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00241"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00241.html">Vector Relational Functions</a></td></tr>
-<tr class="memdesc:a00241"><td class="mdescLeft">&#160;</td><td class="mdescRight">Include &lt;<a class="el" href="a00136.html" title="Core features ">glm/vector_relational.hpp</a>&gt; to use these core features. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table>
+
+<p><a href="a00148_source.html">Go to the source code of this file.</a></p>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>Features that implement in C++ the GLSL specification as closely as possible. </p>
-<p>The GLM core consists of <a class="el" href="a00149.html">C++ types that mirror GLSL types</a> and C++ functions that mirror the GLSL functions. It also includes <a class="el" href="a00150.html">a set of qualifier-based types</a> that can be used in the appropriate functions. The C++ types are all based on a basic set of <a class="el" href="a00151.html">template types</a>.</p>
-<p>The best documentation for GLM Core is the current GLSL specification, <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.clean.pdf">version 4.2 (pdf file)</a>.</p>
-<p>GLM core functionalities require &lt;<a class="el" href="a00036.html" title="Core features ">glm/glm.hpp</a>&gt; to be included to be used. </p>
-</div><!-- contents -->
+<div class="textblock"><p><a class="el" href="a00287.html">Experimental extensions</a> </p>
+<dl class="section author"><dt>Author</dt><dd>Joshua Moerman</dd></dl>
+<p>Include &lt;<a class="el" href="a00148.html" title="Experimental extensions ">glm/gtx/scalar_multiplication.hpp</a>&gt; to use the features of this extension.</p>
+<p>Enables scalar multiplication for all types</p>
+<p>Since GLSL is very strict about types, the following (often used) combinations do not work: double * vec4 int * vec4 vec4 / int So we'll fix that! Of course "float * vec4" should remain the same (hence the enable_if magic) </p>
+
+<p>Definition in file <a class="el" href="a00148_source.html">scalar_multiplication.hpp</a>.</p>
+</div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

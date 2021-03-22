@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.10"/>
-<title>0.9.9 API documenation: trigonometric.hpp Source File</title>
+<title>0.9.9 API documentation: matrix_interpolation.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -24,7 +24,7 @@
  <tr style="height: 56px;">
   <td id="projectlogo"><img alt="Logo" src="logo-mini.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">0.9.9 API documenation
+   <div id="projectname">0.9.9 API documentation
    </div>
   </td>
  </tr>
@@ -80,89 +80,55 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_934f46a345653ef2b3014a1b37a162c1.html">G:</a></li><li class="navelem"><a class="el" href="dir_98f7f9d41f9d3029bd68cf237526a774.html">Source</a></li><li class="navelem"><a class="el" href="dir_9344afb825aed5e2f5be1d2015dde43c.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_45973f864e07b2505003ae343b7c8af7.html">glm</a></li><li class="navelem"><a class="el" href="dir_304be5dfae1339a7705426c0b536faf2.html">glm</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_3a581ba30d25676e4b797b1f96d53b45.html">F:</a></li><li class="navelem"><a class="el" href="dir_9e5fe034a00e89334fd5186c3e7db156.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_d9496f0844b48bc7e53b5af8c99b9ab2.html">Source</a></li><li class="navelem"><a class="el" href="dir_a8bee7be44182a33f3820393ae0b105d.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_44e5e654415abd9ca6fdeaddaff8565e.html">glm</a></li><li class="navelem"><a class="el" href="dir_cef2d71d502cb69a9252bca2297d9549.html">glm</a></li><li class="navelem"><a class="el" href="dir_f35778ec600a1b9bbc4524e62e226aa2.html">gtx</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">trigonometric.hpp</div>  </div>
+<div class="title">matrix_interpolation.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
 <a href="a00101.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment">// Dependency:</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;../glm.hpp&quot;</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00094.html">detail/setup.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00082.html">detail/qualifier.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">namespace </span><a class="code" href="a00138.html">glm</a></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;{</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#if GLM_MESSAGES == GLM_ENABLE &amp;&amp; !defined(GLM_EXT_INCLUDED)</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#       ifndef GLM_ENABLE_EXPERIMENTAL</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#               pragma message(&quot;GLM: GLM_GTX_matrix_interpolation is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it.&quot;)</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#       else</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#               pragma message(&quot;GLM: GLM_GTX_matrix_interpolation extension included&quot;)</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#       endif</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        GLM_FUNC_DECL GLM_CONSTEXPR vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga6e1db4862c5e25afd553930e2fdd6a68">radians</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00240.html#ga8faec9e303538065911ba8b3caf7326b">degrees</a>);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="a00236.html">glm</a></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, qualifier Q&gt;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00337.html#gafefe32ce5a90a135287ba34fac3623bc">axisAngle</a>(</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                mat&lt;4, 4, T, Q&gt; <span class="keyword">const</span>&amp; Mat, vec&lt;3, T, Q&gt; &amp; Axis, T &amp; Angle);</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        GLM_FUNC_DECL GLM_CONSTEXPR vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga8faec9e303538065911ba8b3caf7326b">degrees</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00240.html#ga6e1db4862c5e25afd553930e2fdd6a68">radians</a>);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga29747fd108cb7292ae5a284f69691a69">sin</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00166.html#gaaee6c856cae3217d274a240238cb6373">angle</a>);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga6a41efc740e3b3c937447d3a6284130e">cos</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00166.html#gaaee6c856cae3217d274a240238cb6373">angle</a>);</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga293a34cfb9f0115cc606b4a97c84f11f">tan</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00166.html#gaaee6c856cae3217d274a240238cb6373">angle</a>);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga0552d2df4865fa8c3d7cfc3ec2caac73">asin</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; x);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#gacc9b092df8257c68f19c9053703e2563">acos</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; x);</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga5229f087eaccbc466f1c609ce3107b95">atan</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; y, vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; x);</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga5229f087eaccbc466f1c609ce3107b95">atan</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; y_over_x);</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#gac7c39ff21809e281552b4dbe46f4a39d">sinh</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00166.html#gaaee6c856cae3217d274a240238cb6373">angle</a>);</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga4e260e372742c5f517aca196cf1e62b3">cosh</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00166.html#gaaee6c856cae3217d274a240238cb6373">angle</a>);</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#gaa1bccbfdcbe40ed2ffcddc2aa8bfd0f1">tanh</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; <a class="code" href="a00166.html#gaaee6c856cae3217d274a240238cb6373">angle</a>);</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga3ef16b501ee859fddde88e22192a5950">asinh</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; x);</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#ga858f35dc66fd2688f20c52b5f25be76a">acosh</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; x);</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="keyword">template</span>&lt;length_t L, <span class="keyword">typename</span> T, qualifier Q&gt;</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        GLM_FUNC_DECL vec&lt;L, T, Q&gt; <a class="code" href="a00240.html#gabc925650e618357d07da255531658b87">atanh</a>(vec&lt;L, T, Q&gt; <span class="keyword">const</span>&amp; x);</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;}<span class="comment">//namespace glm</span></div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;<span class="preprocessor">#include &quot;detail/func_trigonometric.inl&quot;</span></div>
-<div class="ttc" id="a00166_html_gaaee6c856cae3217d274a240238cb6373"><div class="ttname"><a href="a00166.html#gaaee6c856cae3217d274a240238cb6373">glm::angle</a></div><div class="ttdeci">GLM_FUNC_DECL T angle(tquat&lt; T, Q &gt; const &amp;x)</div><div class="ttdoc">Returns the quaternion rotation angle. </div></div>
-<div class="ttc" id="a00240_html_ga6e1db4862c5e25afd553930e2fdd6a68"><div class="ttname"><a href="a00240.html#ga6e1db4862c5e25afd553930e2fdd6a68">glm::radians</a></div><div class="ttdeci">GLM_FUNC_DECL GLM_CONSTEXPR vec&lt; L, T, Q &gt; radians(vec&lt; L, T, Q &gt; const &amp;degrees)</div><div class="ttdoc">Converts degrees to radians and returns the result. </div></div>
-<div class="ttc" id="a00240_html_ga4e260e372742c5f517aca196cf1e62b3"><div class="ttname"><a href="a00240.html#ga4e260e372742c5f517aca196cf1e62b3">glm::cosh</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; cosh(vec&lt; L, T, Q &gt; const &amp;angle)</div><div class="ttdoc">Returns the hyperbolic cosine function, (exp(x) + exp(-x)) / 2. </div></div>
-<div class="ttc" id="a00240_html_gaa1bccbfdcbe40ed2ffcddc2aa8bfd0f1"><div class="ttname"><a href="a00240.html#gaa1bccbfdcbe40ed2ffcddc2aa8bfd0f1">glm::tanh</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; tanh(vec&lt; L, T, Q &gt; const &amp;angle)</div><div class="ttdoc">Returns the hyperbolic tangent function, sinh(angle) / cosh(angle) </div></div>
-<div class="ttc" id="a00240_html_ga858f35dc66fd2688f20c52b5f25be76a"><div class="ttname"><a href="a00240.html#ga858f35dc66fd2688f20c52b5f25be76a">glm::acosh</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; acosh(vec&lt; L, T, Q &gt; const &amp;x)</div><div class="ttdoc">Arc hyperbolic cosine; returns the non-negative inverse of cosh. </div></div>
-<div class="ttc" id="a00240_html_gac7c39ff21809e281552b4dbe46f4a39d"><div class="ttname"><a href="a00240.html#gac7c39ff21809e281552b4dbe46f4a39d">glm::sinh</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; sinh(vec&lt; L, T, Q &gt; const &amp;angle)</div><div class="ttdoc">Returns the hyperbolic sine function, (exp(x) - exp(-x)) / 2. </div></div>
-<div class="ttc" id="a00240_html_ga5229f087eaccbc466f1c609ce3107b95"><div class="ttname"><a href="a00240.html#ga5229f087eaccbc466f1c609ce3107b95">glm::atan</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; atan(vec&lt; L, T, Q &gt; const &amp;y_over_x)</div><div class="ttdoc">Arc tangent. </div></div>
-<div class="ttc" id="a00082_html"><div class="ttname"><a href="a00082.html">qualifier.hpp</a></div><div class="ttdoc">Core features </div></div>
-<div class="ttc" id="a00138_html"><div class="ttname"><a href="a00138.html">glm</a></div><div class="ttdef"><b>Definition:</b> <a href="a00015_source.html#l00020">common.hpp:20</a></div></div>
-<div class="ttc" id="a00240_html_gabc925650e618357d07da255531658b87"><div class="ttname"><a href="a00240.html#gabc925650e618357d07da255531658b87">glm::atanh</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; atanh(vec&lt; L, T, Q &gt; const &amp;x)</div><div class="ttdoc">Arc hyperbolic tangent; returns the inverse of tanh. </div></div>
-<div class="ttc" id="a00240_html_ga8faec9e303538065911ba8b3caf7326b"><div class="ttname"><a href="a00240.html#ga8faec9e303538065911ba8b3caf7326b">glm::degrees</a></div><div class="ttdeci">GLM_FUNC_DECL GLM_CONSTEXPR vec&lt; L, T, Q &gt; degrees(vec&lt; L, T, Q &gt; const &amp;radians)</div><div class="ttdoc">Converts radians to degrees and returns the result. </div></div>
-<div class="ttc" id="a00240_html_ga0552d2df4865fa8c3d7cfc3ec2caac73"><div class="ttname"><a href="a00240.html#ga0552d2df4865fa8c3d7cfc3ec2caac73">glm::asin</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; asin(vec&lt; L, T, Q &gt; const &amp;x)</div><div class="ttdoc">Arc sine. </div></div>
-<div class="ttc" id="a00094_html"><div class="ttname"><a href="a00094.html">setup.hpp</a></div><div class="ttdoc">Core features </div></div>
-<div class="ttc" id="a00240_html_ga293a34cfb9f0115cc606b4a97c84f11f"><div class="ttname"><a href="a00240.html#ga293a34cfb9f0115cc606b4a97c84f11f">glm::tan</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; tan(vec&lt; L, T, Q &gt; const &amp;angle)</div><div class="ttdoc">The standard trigonometric tangent function. </div></div>
-<div class="ttc" id="a00240_html_ga29747fd108cb7292ae5a284f69691a69"><div class="ttname"><a href="a00240.html#ga29747fd108cb7292ae5a284f69691a69">glm::sin</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; sin(vec&lt; L, T, Q &gt; const &amp;angle)</div><div class="ttdoc">The standard trigonometric sine function. </div></div>
-<div class="ttc" id="a00240_html_ga3ef16b501ee859fddde88e22192a5950"><div class="ttname"><a href="a00240.html#ga3ef16b501ee859fddde88e22192a5950">glm::asinh</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; asinh(vec&lt; L, T, Q &gt; const &amp;x)</div><div class="ttdoc">Arc hyperbolic sine; returns the inverse of sinh. </div></div>
-<div class="ttc" id="a00240_html_gacc9b092df8257c68f19c9053703e2563"><div class="ttname"><a href="a00240.html#gacc9b092df8257c68f19c9053703e2563">glm::acos</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; acos(vec&lt; L, T, Q &gt; const &amp;x)</div><div class="ttdoc">Arc cosine. </div></div>
-<div class="ttc" id="a00240_html_ga6a41efc740e3b3c937447d3a6284130e"><div class="ttname"><a href="a00240.html#ga6a41efc740e3b3c937447d3a6284130e">glm::cos</a></div><div class="ttdeci">GLM_FUNC_DECL vec&lt; L, T, Q &gt; cos(vec&lt; L, T, Q &gt; const &amp;angle)</div><div class="ttdoc">The standard trigonometric cosine function. </div></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, qualifier Q&gt;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, Q&gt; <a class="code" href="a00337.html#ga3a788e2f5223397df5c426413ecc2f6b">axisAngleMatrix</a>(</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                vec&lt;3, T, Q&gt; <span class="keyword">const</span>&amp; Axis, T <span class="keyword">const</span> Angle);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, qualifier Q&gt;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, Q&gt; <a class="code" href="a00337.html#gabbc1c7385a145f04b5c54228965df145">extractMatrixRotation</a>(</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                mat&lt;4, 4, T, Q&gt; <span class="keyword">const</span>&amp; Mat);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, qualifier Q&gt;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, Q&gt; <a class="code" href="a00337.html#ga4e67863d150724b10c1ac00972dc958c">interpolate</a>(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                mat&lt;4, 4, T, Q&gt; <span class="keyword">const</span>&amp; m1, mat&lt;4, 4, T, Q&gt; <span class="keyword">const</span>&amp; m2, T <span class="keyword">const</span> Delta);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}<span class="comment">//namespace glm</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#include &quot;matrix_interpolation.inl&quot;</span></div>
+<div class="ttc" id="a00337_html_gabbc1c7385a145f04b5c54228965df145"><div class="ttname"><a href="a00337.html#gabbc1c7385a145f04b5c54228965df145">glm::extractMatrixRotation</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, Q &gt; extractMatrixRotation(mat&lt; 4, 4, T, Q &gt; const &amp;Mat)</div><div class="ttdoc">Extracts the rotation part of a matrix. </div></div>
+<div class="ttc" id="a00337_html_ga4e67863d150724b10c1ac00972dc958c"><div class="ttname"><a href="a00337.html#ga4e67863d150724b10c1ac00972dc958c">glm::interpolate</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, Q &gt; interpolate(mat&lt; 4, 4, T, Q &gt; const &amp;m1, mat&lt; 4, 4, T, Q &gt; const &amp;m2, T const Delta)</div><div class="ttdoc">Build a interpolation of 4 * 4 matrixes. </div></div>
+<div class="ttc" id="a00337_html_gafefe32ce5a90a135287ba34fac3623bc"><div class="ttname"><a href="a00337.html#gafefe32ce5a90a135287ba34fac3623bc">glm::axisAngle</a></div><div class="ttdeci">GLM_FUNC_DECL void axisAngle(mat&lt; 4, 4, T, Q &gt; const &amp;Mat, vec&lt; 3, T, Q &gt; &amp;Axis, T &amp;Angle)</div><div class="ttdoc">Get the axis and angle of the rotation from a matrix. </div></div>
+<div class="ttc" id="a00337_html_ga3a788e2f5223397df5c426413ecc2f6b"><div class="ttname"><a href="a00337.html#ga3a788e2f5223397df5c426413ecc2f6b">glm::axisAngleMatrix</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, Q &gt; axisAngleMatrix(vec&lt; 3, T, Q &gt; const &amp;Axis, T const Angle)</div><div class="ttdoc">Build a matrix from axis and angle. </div></div>
+<div class="ttc" id="a00236_html"><div class="ttname"><a href="a00236.html">glm</a></div><div class="ttdef"><b>Definition:</b> <a href="a00015_source.html#l00020">common.hpp:20</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
