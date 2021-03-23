@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 
-SET(recast_navigation_sources
+SET(recastnavigation_sources
 	DebugUtils/Source/DebugDraw.cpp
 	DebugUtils/Source/DetourDebugDraw.cpp
 	DebugUtils/Source/RecastDebugDraw.cpp
@@ -33,7 +33,7 @@ SET(recast_navigation_sources
 	Recast/Source/RecastRegion.cpp
 )
 
-SET(recast_navigation_headers
+SET(recastnavigation_headers
 	DebugUtils/Include/DebugDraw.h
 	DebugUtils/Include/DetourDebugDraw.h
 	DebugUtils/Include/RecastDebugDraw.h
@@ -128,6 +128,6 @@ SOURCE_GROUP(DetourCrowd FILES
 	DetourCrowd/Include/DetourProximityGrid.h
 )
 
-ADD_LIBRARY(recastnavigation ${recast_navigation_sources} ${recast_navigation_headers})
+ADD_LIBRARY(recastnavigation ${recastnavigation_sources} ${recastnavigation_headers})
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
