@@ -128,6 +128,6 @@ SOURCE_GROUP(DetourCrowd FILES
 	DetourCrowd/Include/DetourProximityGrid.h
 )
 
-ADD_LIBRARY(recast_navigation ${recast_navigation_sources} ${recast_navigation_headers})
+ADD_LIBRARY(recastnavigation ${recast_navigation_sources} ${recast_navigation_headers})
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
