@@ -21,7 +21,7 @@
 #include "../exponential.hpp"
 #include <limits>
 
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
 #	pragma message("GLM: GLM_GTC_integer extension included")
 #endif
 
@@ -30,7 +30,7 @@ namespace glm
 	/// @addtogroup gtc_integer
 	/// @{
 
-	/// Returns the log2 of x for integer values. Can be reliably using to compute mipmap count from the texture size.
+	/// Returns the log2 of x for integer values. Usefull to compute mipmap count from the texture size.
 	/// @see gtc_integer
 	template<typename genIUType>
 	GLM_FUNC_DECL genIUType log2(genIUType x);

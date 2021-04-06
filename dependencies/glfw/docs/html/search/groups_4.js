@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['keyboard_20keys',['Keyboard keys',['../group__keys.html',1,'']]]
+  ['joystick_20hat_20states_766',['Joystick hat states',['../group__hat__state.html',1,'']]],
+  ['joysticks_767',['Joysticks',['../group__joysticks.html',1,'']]]
 ];
