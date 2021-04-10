@@ -179,7 +179,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive &archive, std::shared_p
 
 		for (uint32_t j = 0; j < quad_count; ++j) {
 			SafeVarAllocParse(uint8_t, flag);
-			tile->GetFlags()[j] = flag;
+			tile->GetFlags()[j] = 0;//flag;
 
 			if(flag & 0x01)
 				floats_all_the_same = false;
