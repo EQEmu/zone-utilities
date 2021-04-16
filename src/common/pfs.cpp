@@ -1,6 +1,6 @@
 #include "pfs.h"
 #include "pfs_crc.h"
-#include "compression.h"
+#include "core/compression.h"
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -375,7 +375,7 @@ bool EQEmu::PFS::Archive::InflateByFileOffset(uint32_t offset, uint32_t size, co
 		temp_buffer.resize(deflate_length + 1);
 		ReadFromBufferLength(&temp_buffer[0], deflate_length, in_buffer, position + 8);
 
-		EQEmu::InflateData(&temp_buffer[0], deflate_length, &out_buffer[inflate], inflate_length);
+		eqemu::core::inflate_data(&temp_buffer[0], deflate_length, &out_buffer[inflate], inflate_length);
 		inflate += inflate_length;
 		position += deflate_length + 8;
 	}
@@ -398,7 +398,7 @@ bool EQEmu::PFS::Archive::WriteDeflatedFileBlock(const std::vector<char> &file, 
 		}
 
 		uint32_t block_len = sz + 128;
-		uint32_t deflate_size = (uint32_t)EQEmu::DeflateData(&file[pos], sz, (char*)&block[0], block_len);
+		uint32_t deflate_size = (uint32_t)eqemu::core::deflate_data(&file[pos], sz, (char*)&block[0], block_len);
 		if(deflate_size == 0)
 			return false;
 

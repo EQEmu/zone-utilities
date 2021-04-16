@@ -8,40 +8,7 @@
 
 #include "zone_map.h"
 #include "config.h"
-
-uint32_t InflateData(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
-	z_stream zstream;
-	int zerror = 0;
-	int i;
-
-	zstream.next_in = const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(buffer));
-	zstream.avail_in = len;
-	zstream.next_out = reinterpret_cast<unsigned char*>(out_buffer);;
-	zstream.avail_out = out_len_max;
-	zstream.zalloc = Z_NULL;
-	zstream.zfree = Z_NULL;
-	zstream.opaque = Z_NULL;
-
-	i = inflateInit2(&zstream, 15);
-	if (i != Z_OK) {
-		return 0;
-	}
-
-	zerror = inflate(&zstream, Z_FINISH);
-	if (zerror == Z_STREAM_END) {
-		inflateEnd(&zstream);
-		return zstream.total_out;
-	}
-	else {
-		if (zerror == -4 && zstream.msg == 0)
-		{
-			return 0;
-		}
-
-		zerror = inflateEnd(&zstream);
-		return 0;
-	}
-}
+#include "core/compression.h"
 
 struct ZoneMap::impl
 {
@@ -224,7 +191,7 @@ bool ZoneMap::LoadV2(FILE *f) {
 
 	std::vector<char> buffer;
 	buffer.resize(buffer_size);
-	uint32_t v = InflateData(&data[0], data_size, &buffer[0], buffer_size);
+	uint32_t v = eqemu::core::inflate_data(&data[0], data_size, &buffer[0], buffer_size);
 
 	char *buf = &buffer[0];
 	uint32_t vert_count;

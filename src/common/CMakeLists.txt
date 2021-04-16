@@ -1,7 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(common_sources
-	compression.cpp
 	config.cpp
 	eq_math.cpp
 	eq_physics.cpp
@@ -18,13 +17,13 @@ SET(common_sources
 	water_map_v2.cpp
 	wld_fragment.cpp
 	zone_map.cpp
+	core/compression.cpp
 	event/event_loop.cpp
 )
 
 SET(common_headers
 	aligned_bounding_box.h
 	any.h
-	compression.h
 	config.h
 	eq_math.h
 	eq_physics.h
@@ -63,27 +62,16 @@ SET(common_headers
 	wld_fragment.h
 	wld_structs.h
 	zone_map.h
+	core/compression.h
 	event/background_task.h
 	event/event_loop.h
 	event/timer.h
 )
 
-IF(EQEMU_ENABLE_GL)
-	SET(common_sources
-		${common_sources}
-		graphics/imgui_glfw.cpp
-	)
-	
-	SET(common_headers
-		${common_headers}
-		graphics/imgui_glfw.h
-	)
-	
-	SOURCE_GROUP(graphics
-		graphics/imgui_glfw.cpp
-		graphics/imgui_glfw.h
-	)
-ENDIF()
+SOURCE_GROUP(core FILES
+	core/compression.cpp
+	core/compression.h
+)
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})
 

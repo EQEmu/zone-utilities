@@ -1,7 +1,7 @@
 #include "map.h"
 #include <sstream>
 #include <fstream>
-#include "compression.h"
+#include "core/compression.h"
 #include "log_macros.h"
 #include <gtc/matrix_transform.hpp>
 
@@ -346,7 +346,7 @@ bool Map::Write(std::string filename) {
 	uint32_t buffer_len = (uint32_t)(ss.str().length() + 128);
 	buffer.resize(buffer_len);
 
-	uint32_t out_size = EQEmu::DeflateData(ss.str().c_str(), (uint32_t)ss.str().length(), &buffer[0], buffer_len);
+	uint32_t out_size = eqemu::core::deflate_data(ss.str().c_str(), (uint32_t)ss.str().length(), &buffer[0], buffer_len);
 	if (fwrite(&out_size, sizeof(uint32_t), 1, f) != 1) {
 		eqLogMessage(LogError, "Failed to write %s because the compressed size header could not be written.", filename.c_str());
 		fclose(f);
