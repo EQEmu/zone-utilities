@@ -1,0 +1,6 @@
+[submodule "dependencies/bgfx"]
+	path = dependencies/bgfx
+	url = git@github.com:KimLS/bgfx.cmake.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg
