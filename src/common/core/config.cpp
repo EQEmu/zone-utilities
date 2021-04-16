@@ -4,27 +4,27 @@
 
 using json = nlohmann::json;
 
-struct Config::Implementation {
+struct eqemu::config::implementation {
 	json obj;
 };
 
-Config::Config() {
-	mImpl = new Implementation();
+eqemu::config::config() {
+	_impl = new implementation();
 	
 	std::ifstream ifs;
 	ifs.open("config.json", std::ifstream::in);
 
 	if (ifs.good()) {
-		ifs >> mImpl->obj;
+		ifs >> _impl->obj;
 	}
 }
 
-Config::~Config() {
-	delete mImpl;
+eqemu::config::~config() {
+	delete _impl;
 }
 
-const std::string Config::GetPath(const std::string &type, const std::string &defaultValue) {
-	auto paths = mImpl->obj["paths"];
+const std::string eqemu::config::get_path(const std::string &type, const std::string &defaultValue) {
+	auto paths = _impl->obj["paths"];
 	if (paths.is_object()) {
 		auto map_path = paths[type];
 		if (map_path.is_string()) {

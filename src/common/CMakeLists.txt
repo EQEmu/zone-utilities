@@ -1,7 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(common_sources
-	config.cpp
 	eq_math.cpp
 	eq_physics.cpp
 	eqg_loader.cpp
@@ -18,12 +17,12 @@ SET(common_sources
 	wld_fragment.cpp
 	zone_map.cpp
 	core/compression.cpp
+	core/config.cpp
 	event/event_loop.cpp
 )
 
 SET(common_headers
 	aligned_bounding_box.h
-	config.h
 	eq_math.h
 	eq_physics.h
 	eqemu_endian.h
@@ -62,6 +61,7 @@ SET(common_headers
 	wld_structs.h
 	zone_map.h
 	core/compression.h
+	core/config.h
 	event/background_task.h
 	event/event_loop.h
 	event/timer.h
@@ -70,6 +70,8 @@ SET(common_headers
 SOURCE_GROUP(core FILES
 	core/compression.cpp
 	core/compression.h
+	core/config.cpp
+	core/config.h
 )
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})
