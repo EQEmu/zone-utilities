@@ -47,9 +47,9 @@ EQEmu::S3D::WLDFragment04::WLDFragment04(std::vector<WLDFragment> &out, char *fr
 
 		WLDFragment &frag = out[ref->id - 1];
 		try {
-			std::shared_ptr<Texture> tex = EQEmu::any_cast<std::shared_ptr<Texture>>(frag.data);
+			std::shared_ptr<Texture> tex = std::any_cast<std::shared_ptr<Texture>>(frag.data);
 			brush->GetTextures().push_back(tex);
-		} catch (EQEmu::bad_any_cast&) {
+		} catch (std::bad_any_cast&) {
 			brush->GetTextures().push_back(std::shared_ptr<Texture>(new Texture()));
 		}
 	}
@@ -306,17 +306,17 @@ EQEmu::S3D::WLDFragment28::WLDFragment28(std::vector<WLDFragment> &out, char *fr
 	WLDFragment &frag = out[ref->id - 1];
 	uint32_t ref_id = 0;
 	try {
-		ref_id = EQEmu::any_cast<uint32_t>(frag.data);
+		ref_id = std::any_cast<uint32_t>(frag.data);
 	}
-	catch (EQEmu::bad_any_cast&) { }
+	catch (std::bad_any_cast&) { }
 
 	frag = out[ref_id];
 	try {
-		std::shared_ptr<Light> l = EQEmu::any_cast<std::shared_ptr<Light>>(frag.data);
+		std::shared_ptr<Light> l = std::any_cast<std::shared_ptr<Light>>(frag.data);
 		l->SetLocation(header->x, header->y, header->z);
 		l->SetRadius(header->rad);
 	}
-	catch (EQEmu::bad_any_cast&) {}
+	catch (std::bad_any_cast&) {}
 }
 
 EQEmu::S3D::WLDFragment29::WLDFragment29(std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
@@ -374,14 +374,14 @@ EQEmu::S3D::WLDFragment30::WLDFragment30(std::vector<WLDFragment> &out, char *fr
 	WLDFragment &frag = out[ref->id - 1];
 	uint32_t tex_ref = 0;
 	try {
-		tex_ref = EQEmu::any_cast<uint32_t>(frag.data);
+		tex_ref = std::any_cast<uint32_t>(frag.data);
 	}
-	catch (EQEmu::bad_any_cast&) { }
+	catch (std::bad_any_cast&) { }
 	
 	
 	frag = out[tex_ref];
 	try {
-		std::shared_ptr<TextureBrush> tb = EQEmu::any_cast<std::shared_ptr<TextureBrush>>(frag.data);
+		std::shared_ptr<TextureBrush> tb = std::any_cast<std::shared_ptr<TextureBrush>>(frag.data);
 		std::shared_ptr<TextureBrush> new_tb(new TextureBrush);
 
 		*new_tb = *tb;
@@ -393,7 +393,7 @@ EQEmu::S3D::WLDFragment30::WLDFragment30(std::vector<WLDFragment> &out, char *fr
 	
 		data = new_tb;
 	}
-	catch (EQEmu::bad_any_cast&) { }
+	catch (std::bad_any_cast&) { }
 }
 
 EQEmu::S3D::WLDFragment31::WLDFragment31(std::vector<WLDFragment> &out, char *frag_buffer, uint32_t frag_length, uint32_t frag_name, char *hash, bool old) {
@@ -409,10 +409,10 @@ EQEmu::S3D::WLDFragment31::WLDFragment31(std::vector<WLDFragment> &out, char *fr
 		frag_buffer += sizeof(uint32_t);
 		WLDFragment &frag = out[ref_id - 1];
 		try {
-			std::shared_ptr<TextureBrush> tb = EQEmu::any_cast<std::shared_ptr<TextureBrush>>(frag.data);
+			std::shared_ptr<TextureBrush> tb = std::any_cast<std::shared_ptr<TextureBrush>>(frag.data);
 			ts[i] = tb;
 		}
-		catch (EQEmu::bad_any_cast&) {}
+		catch (std::bad_any_cast&) {}
 	}
 
 	data = tbs;
@@ -430,10 +430,10 @@ EQEmu::S3D::WLDFragment36::WLDFragment36(std::vector<WLDFragment> &out, char *fr
 
 	WLDFragment &tex_frag = out[header->frag1 - 1];
 	try {
-		std::shared_ptr<TextureBrushSet> tbs = EQEmu::any_cast<std::shared_ptr<TextureBrushSet>>(tex_frag.data);
+		std::shared_ptr<TextureBrushSet> tbs = std::any_cast<std::shared_ptr<TextureBrushSet>>(tex_frag.data);
 		model->SetTextureBrushSet(tbs);
 	}
-	catch (EQEmu::bad_any_cast&) {}
+	catch (std::bad_any_cast&) {}
 
 	auto &verts = model->GetVertices();
 	verts.resize(header->vertex_count);

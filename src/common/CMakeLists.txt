@@ -23,7 +23,6 @@ SET(common_sources
 
 SET(common_headers
 	aligned_bounding_box.h
-	any.h
 	config.h
 	eq_math.h
 	eq_physics.h
