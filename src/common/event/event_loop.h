@@ -1,37 +1,31 @@
 #pragma once
+#include <cstring>
 #include <functional>
 #include <uv.h>
-#include <cstring>
 
-namespace EQ
-{
-	class EventLoop
-	{
-	public:
-		static EventLoop &Get() {
-			static EventLoop inst;
-			return inst;
-		}
+namespace EQ {
+    class EventLoop {
+    public:
+        static EventLoop& Get() {
+            static EventLoop inst;
+            return inst;
+        }
 
-		~EventLoop() {
-			uv_loop_close(&m_loop);
-		}
+        ~EventLoop() { uv_loop_close(&m_loop); }
 
-		void Process() {
-			uv_run(&m_loop, UV_RUN_NOWAIT);
-		}
+        void Process() { uv_run(&m_loop, UV_RUN_NOWAIT); }
 
-		uv_loop_t* Handle() { return &m_loop; }
+        uv_loop_t* Handle() { return &m_loop; }
 
-	private:
-		EventLoop() {
-			memset(&m_loop, 0, sizeof(uv_loop_t));
-			uv_loop_init(&m_loop);
-		}
-		
-		EventLoop(const EventLoop&);
-		EventLoop& operator=(const EventLoop&);
-	
-		uv_loop_t m_loop;
-	};
-}
+    private:
+        EventLoop() {
+            memset(&m_loop, 0, sizeof(uv_loop_t));
+            uv_loop_init(&m_loop);
+        }
+
+        EventLoop(const EventLoop&);
+        EventLoop& operator=(const EventLoop&);
+
+        uv_loop_t m_loop;
+    };
+}    // namespace EQ

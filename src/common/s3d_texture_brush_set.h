@@ -3,25 +3,23 @@
 
 #include "s3d_texture_brush.h"
 
-namespace EQEmu
-{
+namespace EQEmu {
 
-namespace S3D
-{
+    namespace S3D {
 
-class TextureBrushSet
-{
-public:
-	TextureBrushSet() { }
-	~TextureBrushSet() { }
+        class TextureBrushSet {
+        public:
+            TextureBrushSet() {}
+            ~TextureBrushSet() {}
 
-	std::vector<std::shared_ptr<TextureBrush>> &GetTextureSet() { return texture_sets; }
-private:
-	std::vector<std::shared_ptr<TextureBrush>> texture_sets;
-};
+            std::vector<std::shared_ptr<TextureBrush>>& GetTextureSet() { return texture_sets; }
 
-}
+        private:
+            std::vector<std::shared_ptr<TextureBrush>> texture_sets;
+        };
 
-}
+    }    // namespace S3D
+
+}    // namespace EQEmu
 
 #endif

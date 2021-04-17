@@ -4,50 +4,45 @@
 #include "wld_fragment.h"
 #include <vector>
 
-namespace EQEmu
-{
+namespace EQEmu {
 
-namespace S3D
-{
+    namespace S3D {
 
-class SkeletonTrack
-{
-public:
-	struct BoneOrientation
-	{
-		int16_t rotate_denom;
-		int16_t rotate_x_num;
-		int16_t rotate_y_num;
-		int16_t rotate_z_num;
-		int16_t shift_x_num;
-		int16_t shift_y_num;
-		int16_t shift_z_num;
-		int16_t shift_denom;
-		
-	};
+        class SkeletonTrack {
+        public:
+            struct BoneOrientation {
+                int16_t rotate_denom;
+                int16_t rotate_x_num;
+                int16_t rotate_y_num;
+                int16_t rotate_z_num;
+                int16_t shift_x_num;
+                int16_t shift_y_num;
+                int16_t shift_z_num;
+                int16_t shift_denom;
+            };
 
-	struct Bone
-	{
-		std::shared_ptr<BoneOrientation> orientation;
-		std::shared_ptr<Geometry> model;
-		std::vector<std::shared_ptr<Bone>> children;
-	};
+            struct Bone {
+                std::shared_ptr<BoneOrientation> orientation;
+                std::shared_ptr<Geometry> model;
+                std::vector<std::shared_ptr<Bone>> children;
+            };
 
-	SkeletonTrack() { }
-	~SkeletonTrack() { }
+            SkeletonTrack() {}
+            ~SkeletonTrack() {}
 
-	void SetName(std::string nname) { name = nname; }
-	
-	std::string &GetName() { return name; }
+            void SetName(std::string nname) { name = nname; }
 
-	std::vector<std::shared_ptr<Bone>> &GetBones() { return bones; }
-private:
-	std::string name;
-	std::vector<std::shared_ptr<Bone>> bones;
-};
+            std::string& GetName() { return name; }
 
-}
+            std::vector<std::shared_ptr<Bone>>& GetBones() { return bones; }
 
-}
+        private:
+            std::string name;
+            std::vector<std::shared_ptr<Bone>> bones;
+        };
+
+    }    // namespace S3D
+
+}    // namespace EQEmu
 
 #endif

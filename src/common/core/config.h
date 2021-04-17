@@ -1,29 +1,27 @@
-#ifndef EQEMU_COMMON_CONFIG_H
-#define EQEMU_COMMON_CONFIG_H
+#pragma once
 
 #include <string>
 
-namespace eqemu
-{
-	class config {
-	public:
-		~config();
+namespace eqemu {
+    namespace core {
+        class config {
+        public:
+            ~config();
 
-		static config& Instance() {
-			static config inst;
-			return inst;
-		}
+            static config& instance() {
+                static config inst;
+                return inst;
+            }
 
-		const std::string get_path(const std::string &type, const std::string &defaultValue);
+            const std::string get_path(const std::string& type, const std::string& default_value);
 
-	private:
-		config();
-		config(const config&);
-		config& operator=(const config&);
+        private:
+            config();
+            config(const config&);
+            config& operator=(const config&);
 
-		struct implementation;
-		implementation *_impl;
-	};
-}
-
-#endif
+            struct implementation;
+            implementation* _impl;
+        };
+    }    // namespace core
+}    // namespace eqemu
