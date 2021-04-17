@@ -1,100 +1,105 @@
 #pragma once
-#include <functional>
 #include <exception>
+#include <functional>
+
 #include "event_loop.h"
-#include "../any.h"
 
-namespace EQ {
-	class Task
-	{
-	public:
-		typedef std::function<void(const EQEmu::Any&)> ResolveFn;
-		typedef std::function<void(const std::exception&)> RejectFn;
-		typedef std::function<void()> FinallyFn;
-		typedef std::function<void(ResolveFn, RejectFn)> TaskFn;
-		struct TaskBaton
-		{
-			TaskFn fn;
-			ResolveFn on_then;
-			RejectFn on_catch;
-			FinallyFn on_finally;
-			bool has_result;
-			EQEmu::Any result;
-			bool has_error;
-			std::exception error;
-		};
+namespace eqemu {
+    namespace event {
+        struct task_void_error {};
 
-		Task(TaskFn fn) {
-			m_fn = fn;
-		}
+        template <typename Ty, typename ErrTy = task_void_error>
+        class task {
+        public:
+            typedef std::function<void(const Ty&)> then_fn;
+            typedef std::function<void(const ErrTy&)> error_fn;
+            typedef std::function<void()> finish_fn;
+            typedef std::function<void(then_fn, error_fn)> task_fn;
 
-		~Task() {
+            struct task_baton {
+                task_fn fn;
+                then_fn on_then;
+                error_fn on_catch;
+                finish_fn on_finish;
+                bool has_result;
+                Ty result;
+                bool has_error;
+                ErrTy error;
+            };
 
-		}
+            task(task_fn fn) { _fn = fn; }
 
-		Task& Then(ResolveFn fn) {
-			m_then = fn;
-			return *this;
-		}
+            ~task() {}
 
-		Task& Catch(RejectFn fn) {
-			m_catch = fn;
-			return *this;
-		}
+            task& then(then_fn fn) {
+                _then = fn;
+                return *this;
+            }
 
-		Task& Finally(FinallyFn fn) {
-			m_finally = fn;
-			return *this;
-		}
+            task& error(error_fn fn) {
+                _error = fn;
+                return *this;
+            }
 
-		void Run() {
-			uv_work_t *m_work = new uv_work_t;
-			memset(m_work, 0, sizeof(uv_work_t));
-			TaskBaton *baton = new TaskBaton();
-			baton->fn = m_fn;
-			baton->on_then = m_then;
-			baton->on_catch = m_catch;
-			baton->on_finally = m_finally;
-			baton->has_result = false;
-			baton->has_error = false;
+            task& finally(finish_fn fn) {
+                _finish = fn;
+                return *this;
+            }
 
-			m_work->data = baton;
+            void run() {
+                uv_work_t* m_work = new uv_work_t;
+                memset(m_work, 0, sizeof(uv_work_t));
+                task_baton* baton = new task_baton();
+                baton->fn = _fn;
+                baton->on_then = _then;
+                baton->on_catch = _error;
+                baton->on_finish = _finish;
+                baton->has_result = false;
+                baton->has_error = false;
 
-			uv_queue_work(EventLoop::Get().Handle(), m_work, [](uv_work_t* req) {
-				TaskBaton *baton = (TaskBaton*)req->data;
+                m_work->data = baton;
 
-				baton->fn([baton](const EQEmu::Any& result) {
-					baton->has_error = false;
-					baton->has_result = true;
-					baton->result = result;
-				}, [baton](const std::exception &err) {
-					baton->has_error = true;
-					baton->has_result = false;
-					baton->error = err;
-				});
-			}, [](uv_work_t* req, int status) {
-				TaskBaton *baton = (TaskBaton*)req->data;
+                uv_queue_work(
+                    event_loop::get().handle(),
+                    m_work,
+                    [](uv_work_t* req) {
+                        task_baton* baton = (task_baton*)req->data;
 
-				if (baton->has_error && baton->on_catch) {
-					baton->on_catch(baton->error);
-				}
-				else if (baton->has_result && baton->on_then) {
-					baton->on_then(baton->result);
-				}
+                        baton->fn(
+                            [baton](const Ty& result) {
+                                baton->has_error = false;
+                                baton->has_result = true;
+                                baton->result = result;
+                            },
+                            [baton](const ErrTy& err) {
+                                baton->has_error = true;
+                                baton->has_result = false;
+                                baton->error = err;
+                            });
+                    },
+                    [](uv_work_t* req, int status) {
+                        task_baton* baton = (task_baton*)req->data;
 
-				if (baton->on_finally) {
-					baton->on_finally();
-				}
+                        if(baton->has_error && baton->on_catch) {
+                            baton->on_catch(baton->error);
+                        } else if(baton->has_result && baton->on_then) {
+                            baton->on_then(baton->result);
+                        }
 
-				delete baton;
-				delete req;
-			});
-		}
+                        if(baton->on_finish) {
+                            baton->on_finish();
+                        }
 
-	private:
-		TaskFn m_fn;
-		ResolveFn m_then;
-		RejectFn m_catch;
-		FinallyFn m_finally;
-	};
-}
+                        delete baton;
+                        delete req;
+                    });
+            }
+
+        private:
+            task_fn _fn;
+            then_fn _then;
+            error_fn _error;
+            finish_fn _finish;
+        };
+    }    // namespace event
+}    // namespace eqemu

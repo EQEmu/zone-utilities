@@ -18,7 +18,6 @@ SET(common_sources
 	zone_map.cpp
 	core/compression.cpp
 	core/config.cpp
-	event/event_loop.cpp
 )
 
 SET(common_headers
@@ -64,6 +63,7 @@ SET(common_headers
 	core/config.h
 	event/background_task.h
 	event/event_loop.h
+	event/task.h
 	event/timer.h
 )
 
@@ -72,6 +72,13 @@ SOURCE_GROUP(core FILES
 	core/compression.h
 	core/config.cpp
 	core/config.h
+)
+
+SOURCE_GROUP(event FILES
+	event/background_task.h
+	event/event_loop.h
+	event/task.h
+	event/timer.h
 )
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})
