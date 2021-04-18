@@ -10,7 +10,7 @@ WaterRegionType WaterMapV2::ReturnRegionType(float y, float x, float z) const {
     size_t sz = regions.size();
     for(size_t i = 0; i < sz; ++i) {
         auto const& region = regions[i];
-        if(region.second.ContainsPoint(glm::vec3(x, y, z))) {
+        if(region.second.contains_point(glm::vec3(x, y, z))) {
             return region.first;
         }
     }
@@ -107,10 +107,10 @@ bool WaterMapV2::Load(FILE* fp) {
         }
 
         regions.push_back(std::make_pair((WaterRegionType)region_type,
-                                         OrientedBoundingBox(glm::vec3(x, y, z),
-                                                             glm::vec3(x_rot, y_rot, z_rot),
-                                                             glm::vec3(x_scale, y_scale, z_scale),
-                                                             glm::vec3(x_extent, y_extent, z_extent))));
+                                         eqemu::math::oriented_bounding_box(glm::vec3(x, y, z),
+                                                                            glm::vec3(x_rot, y_rot, z_rot),
+                                                                            glm::vec3(x_scale, y_scale, z_scale),
+                                                                            glm::vec3(x_extent, y_extent, z_extent))));
     }
 
     return true;
@@ -121,12 +121,12 @@ void WaterMapV2::CreateMeshFrom(std::vector<glm::vec3>& verts, std::vector<unsig
     inds.clear();
 
     for(auto& region : regions) {
-        float min_x = region.second.GetMinX();
-        float min_y = region.second.GetMinY();
-        float min_z = region.second.GetMinZ();
-        float max_x = region.second.GetMaxX();
-        float max_y = region.second.GetMaxY();
-        float max_z = region.second.GetMaxZ();
+        float min_x = region.second.get_min_x();
+        float min_y = region.second.get_min_y();
+        float min_z = region.second.get_min_z();
+        float max_x = region.second.get_max_x();
+        float max_y = region.second.get_max_y();
+        float max_z = region.second.get_max_z();
 
         glm::vec4 v1(min_x, max_y, min_z, 1.0f);
         glm::vec4 v2(min_x, max_y, max_z, 1.0f);
@@ -137,14 +137,14 @@ void WaterMapV2::CreateMeshFrom(std::vector<glm::vec3>& verts, std::vector<unsig
         glm::vec4 v7(max_x, min_y, max_z, 1.0f);
         glm::vec4 v8(max_x, min_y, min_z, 1.0f);
 
-        v1 = region.second.GetTransformation() * v1;
-        v2 = region.second.GetTransformation() * v2;
-        v3 = region.second.GetTransformation() * v3;
-        v4 = region.second.GetTransformation() * v4;
-        v5 = region.second.GetTransformation() * v5;
-        v6 = region.second.GetTransformation() * v6;
-        v7 = region.second.GetTransformation() * v7;
-        v8 = region.second.GetTransformation() * v8;
+        v1 = region.second.get_transformation() * v1;
+        v2 = region.second.get_transformation() * v2;
+        v3 = region.second.get_transformation() * v3;
+        v4 = region.second.get_transformation() * v4;
+        v5 = region.second.get_transformation() * v5;
+        v6 = region.second.get_transformation() * v6;
+        v7 = region.second.get_transformation() * v7;
+        v8 = region.second.get_transformation() * v8;
 
         uint32_t current_index = (uint32_t)verts.size();
         verts.push_back(glm::vec3(v1.y, v1.z, v1.x));
@@ -210,22 +210,22 @@ void WaterMapV2::GetRegionDetails(std::vector<RegionDetails>& details) {
     details.clear();
 
     for(auto& region : regions) {
-        float min_x = region.second.GetMinX();
-        float min_y = region.second.GetMinY();
-        float min_z = region.second.GetMinZ();
-        float max_x = region.second.GetMaxX();
-        float max_y = region.second.GetMaxY();
-        float max_z = region.second.GetMaxZ();
+        float min_x = region.second.get_min_x();
+        float min_y = region.second.get_min_y();
+        float min_z = region.second.get_min_z();
+        float max_x = region.second.get_max_x();
+        float max_y = region.second.get_max_y();
+        float max_z = region.second.get_max_z();
 
         glm::vec4 v2(min_x, max_y, max_z, 1.0f);
         glm::vec4 v3(max_x, max_y, max_z, 1.0f);
         glm::vec4 v5(min_x, min_y, min_z, 1.0f);
         glm::vec4 v8(max_x, min_y, min_z, 1.0f);
 
-        v2 = region.second.GetTransformation() * v2;
-        v3 = region.second.GetTransformation() * v3;
-        v5 = region.second.GetTransformation() * v5;
-        v8 = region.second.GetTransformation() * v8;
+        v2 = region.second.get_transformation() * v2;
+        v3 = region.second.get_transformation() * v3;
+        v5 = region.second.get_transformation() * v5;
+        v8 = region.second.get_transformation() * v8;
 
         RegionDetails detail;
         detail.verts[0] = glm::vec3(v5.y, v5.z, v5.x);

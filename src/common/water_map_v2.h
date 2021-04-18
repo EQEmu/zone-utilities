@@ -1,7 +1,7 @@
 #ifndef EQEMU_WATER_MAP_V2_H
 #define EQEMU_WATER_MAP_V2_H
 
-#include "oriented_bounding_box.h"
+#include "math/oriented_bounding_box.h"
 #include "water_map.h"
 #include <utility>
 #include <vector>
@@ -23,7 +23,7 @@ public:
 protected:
     virtual bool Load(FILE* fp);
 
-    std::vector<std::pair<WaterRegionType, OrientedBoundingBox>> regions;
+    std::vector<std::pair<WaterRegionType, eqemu::math::oriented_bounding_box>> regions;
     friend class WaterMap;
 };
 
