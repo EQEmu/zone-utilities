@@ -34,7 +34,7 @@
 namespace eqemu::format::detail {
     // todo: move this to a string utility thing
     std::string to_lower(const std::string& str) {
-        std::string ret;
+        std::string ret = str;
         std::transform(str.begin(), str.end(), ret.begin(), ::tolower);
         return ret;
     }
