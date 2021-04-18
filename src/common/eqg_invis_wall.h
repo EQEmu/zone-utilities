@@ -1,10 +1,9 @@
 #ifndef EQEMU_COMMON_EQG_INVIS_WALL_H
 #define EQEMU_COMMON_EQG_INVIS_WALL_H
 
+#include <glm.hpp>
 #include <string>
 #include <vector>
-#define GLM_FORCE_RADIANS
-#include <glm.hpp>
 
 namespace EQEmu {
 

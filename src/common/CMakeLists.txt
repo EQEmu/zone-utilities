@@ -1,7 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(common_sources
-	eq_math.cpp
 	eq_physics.cpp
 	eqg_loader.cpp
 	eqg_model_loader.cpp
@@ -18,11 +17,12 @@ SET(common_sources
 	zone_map.cpp
 	core/compression.cpp
 	core/config.cpp
+	math/distance.cpp
+	math/matrix_op.cpp
 )
 
 SET(common_headers
 	aligned_bounding_box.h
-	eq_math.h
 	eq_physics.h
 	eqemu_endian.h
 	eqg_geometry.h
@@ -65,6 +65,8 @@ SET(common_headers
 	event/event_loop.h
 	event/task.h
 	event/timer.h
+	math/distance.h
+	math/matrix_op.h
 )
 
 SOURCE_GROUP(core FILES
@@ -79,6 +81,13 @@ SOURCE_GROUP(event FILES
 	event/event_loop.h
 	event/task.h
 	event/timer.h
+)
+
+SOURCE_GROUP(math FILES
+	math/distance.cpp
+	math/distance.h
+	math/matrix_op.cpp
+	math/matrix_op.h
 )
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})

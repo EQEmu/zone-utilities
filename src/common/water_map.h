@@ -1,11 +1,10 @@
 #ifndef EQEMU_COMMON_WATER_MAP_H
 #define EQEMU_COMMON_WATER_MAP_H
 
+#include <glm.hpp>
 #include <stdint.h>
 #include <string>
 #include <vector>
-
-#include "eq_math.h"
 
 enum WaterRegionType {
     RegionTypeUnsupported = -2,
