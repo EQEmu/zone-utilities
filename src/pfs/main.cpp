@@ -135,14 +135,14 @@ int main(int argc, char** argv) {
         input_file = argv[argi++];
         input_file = input_dir + "/" + input_file;
 
-        EQEmu::PFS::pfs_archive archive;
-        if(!archive.Open(input_file)) {
+        eqemu::format::pfs_archive archive;
+        if(!archive.open(input_file)) {
             printf("Unable to open archive %s\n", input_file.c_str());
             return EXIT_FAILURE;
         }
 
         std::vector<std::string> files;
-        archive.GetFilenames(ext, files);
+        archive.get_filenames(ext, files);
 
         printf("Files with extension %s in %s:\n", ext.c_str(), input_file.c_str());
         for(uint32_t i = 0; i < files.size(); ++i) {
@@ -165,15 +165,15 @@ int main(int argc, char** argv) {
         }
     }
 
-    EQEmu::PFS::pfs_archive archive;
-    if(!archive.Open(input_file)) {
-        archive.Open();
+    eqemu::format::pfs_archive archive;
+    if(!archive.open(input_file)) {
+        archive.open();
     }
 
     if(current_command == CommandAdd) {
         std::vector<char> current_file;
         for(size_t i = 0; i < files.size(); ++i) {
-            if(archive.Exists(files[i])) {
+            if(archive.exists(files[i])) {
                 printf("Warning: Could not add %s to the archive, file with that name already exists.\n",
                        files[i].c_str());
                 continue;
@@ -183,25 +183,25 @@ int main(int argc, char** argv) {
                 printf("Warning: Could not find %s to add to archive.\n", files[i].c_str());
                 continue;
             } else {
-                archive.Set(files[i], current_file);
+                archive.set(files[i], current_file);
             }
         }
     } else if(current_command == CommandDelete) {
         for(size_t i = 0; i < files.size(); ++i) {
-            if(!archive.Delete(files[i])) {
+            if(!archive.remove(files[i])) {
                 printf("Warning: Could not delete %s from the archive.\n", files[i].c_str());
             }
         }
     } else if(current_command == CommandExtract) {
         std::vector<char> current_file;
         for(size_t i = 0; i < files.size(); ++i) {
-            if(!archive.Exists(files[i])) {
+            if(!archive.exists(files[i])) {
                 printf("Warning: Could not extract %s from the archive, file with that name does not exist.\n",
                        files[i].c_str());
                 continue;
             }
 
-            if(!archive.Get(files[i], current_file)) {
+            if(!archive.get(files[i], current_file)) {
                 printf("Warning: Could not extract %s from the archive, could not find file in archive.\n",
                        files[i].c_str());
                 continue;
@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
     } else if(current_command == CommandUpdate) {
         std::vector<char> current_file;
         for(size_t i = 0; i < files.size(); ++i) {
-            if(!archive.Exists(files[i])) {
+            if(!archive.exists(files[i])) {
                 printf("Warning: Could not update %s in the archive, file with that name does not exist.\n",
                        files[i].c_str());
                 continue;
@@ -230,12 +230,12 @@ int main(int argc, char** argv) {
                 printf("Warning: Could not find %s to update in archive.\n", files[i].c_str());
                 continue;
             } else {
-                archive.Set(files[i], current_file);
+                archive.set(files[i], current_file);
             }
         }
     }
 
-    if(!archive.Save(output_file)) {
+    if(!archive.save(output_file)) {
         printf("Error: Could not save archive to %s\n", output_file.c_str());
         return EXIT_FAILURE;
     }

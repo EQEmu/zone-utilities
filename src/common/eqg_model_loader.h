@@ -12,7 +12,7 @@ namespace EQEmu {
     public:
         EQGModelLoader();
         ~EQGModelLoader();
-        bool Load(EQEmu::PFS::pfs_archive& archive, std::string model, std::shared_ptr<EQG::Geometry> model_out);
+        bool Load(eqemu::format::pfs_archive& archive, std::string model, std::shared_ptr<EQG::Geometry> model_out);
     };
 
 }    // namespace EQEmu

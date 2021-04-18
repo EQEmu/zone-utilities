@@ -25,7 +25,7 @@ namespace EQEmu {
 
     private:
         bool GetZon(std::string file, std::vector<char>& buffer);
-        bool ParseZon(EQEmu::PFS::pfs_archive& archive,
+        bool ParseZon(eqemu::format::pfs_archive& archive,
                       std::vector<char>& buffer,
                       std::vector<std::shared_ptr<EQG::Geometry>>& models,
                       std::vector<std::shared_ptr<Placeable>>& placeables,

@@ -23,13 +23,13 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
     char* current_hash;
     bool old = false;
 
-    EQEmu::PFS::pfs_archive archive;
-    if(!archive.Open(file_name)) {
+    eqemu::format::pfs_archive archive;
+    if(!archive.open(file_name)) {
         eqLogMessage(LogDebug, "Unable to open file %s.", file_name.c_str());
         return false;
     }
 
-    if(!archive.Get(wld_name, buffer)) {
+    if(!archive.get(wld_name, buffer)) {
         eqLogMessage(LogDebug, "Unable to open wld file %s.", wld_name.c_str());
         return false;
     }

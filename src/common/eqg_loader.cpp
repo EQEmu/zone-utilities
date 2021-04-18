@@ -16,8 +16,8 @@ bool EQEmu::EQGLoader::Load(std::string file,
                             std::vector<std::shared_ptr<EQG::Region>>& regions,
                             std::vector<std::shared_ptr<Light>>& lights) {
     // find zon file
-    EQEmu::PFS::pfs_archive archive;
-    if(!archive.Open(file + ".eqg")) {
+    eqemu::format::pfs_archive archive;
+    if(!archive.open(file + ".eqg")) {
         eqLogMessage(
             LogTrace, "Failed to open %s.eqg as a standard eqg file because the file does not exist.", file.c_str());
         return false;
@@ -26,7 +26,7 @@ bool EQEmu::EQGLoader::Load(std::string file,
     std::vector<char> zon;
     bool zon_found = false;
     std::vector<std::string> files;
-    archive.GetFilenames("zon", files);
+    archive.get_filenames("zon", files);
 
     if(files.size() == 0) {
         if(GetZon(file + ".zon", zon)) {
@@ -34,7 +34,7 @@ bool EQEmu::EQGLoader::Load(std::string file,
         }
     } else {
         for(auto& f : files) {
-            if(archive.Get(f, zon)) {
+            if(archive.get(f, zon)) {
                 if(zon[0] == 'E' && zon[1] == 'Q' && zon[2] == 'T' && zon[3] == 'Z' && zon[4] == 'P') {
                     eqLogMessage(LogWarn, "Unable to parse the zone file, is a eqgv4.");
                     return false;
@@ -88,7 +88,7 @@ bool EQEmu::EQGLoader::GetZon(std::string file, std::vector<char>& buffer) {
     return false;
 }
 
-bool EQEmu::EQGLoader::ParseZon(EQEmu::PFS::pfs_archive& archive,
+bool EQEmu::EQGLoader::ParseZon(eqemu::format::pfs_archive& archive,
                                 std::vector<char>& buffer,
                                 std::vector<std::shared_ptr<EQG::Geometry>>& models,
                                 std::vector<std::shared_ptr<Placeable>>& placeables,

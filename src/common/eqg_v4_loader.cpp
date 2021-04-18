@@ -14,8 +14,8 @@ EQEmu::EQG4Loader::~EQG4Loader() {
 }
 
 bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain>& terrain) {
-    EQEmu::PFS::pfs_archive archive;
-    if(!archive.Open(file + ".eqg")) {
+    eqemu::format::pfs_archive archive;
+    if(!archive.open(file + ".eqg")) {
         eqLogMessage(LogTrace, "Failed to open %s.eqg as an eqgv4 file because the file does not exist.", file.c_str());
         return false;
     }
@@ -23,7 +23,7 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain>& te
     std::vector<char> zon;
     bool zon_found = false;
     std::vector<std::string> files;
-    archive.GetFilenames("zon", files);
+    archive.get_filenames("zon", files);
 
     if(files.size() == 0) {
         if(GetZon(file + ".zon", zon)) {
@@ -31,7 +31,7 @@ bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain>& te
         }
     } else {
         for(auto& f : files) {
-            if(archive.Get(f, zon)) {
+            if(archive.get(f, zon)) {
                 if(zon[0] == 'E' && zon[1] == 'Q' && zon[2] == 'T' && zon[3] == 'Z' && zon[4] == 'P') {
                     zon_found = true;
                     break;
@@ -107,10 +107,10 @@ float HeightWithinQuad(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, f
     return (((n.x) * (x - a.x) + (n.y) * (y - a.y)) / -n.z) + a.z;
 }
 
-bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
+bool EQEmu::EQG4Loader::ParseZoneDat(eqemu::format::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
     std::string filename = terrain->GetOpts().name + ".dat";
     std::vector<char> buffer;
-    if(!archive.Get(filename, buffer)) {
+    if(!archive.get(filename, buffer)) {
         eqLogMessage(LogError, "Failed to open %s.", filename.c_str());
         return false;
     }
@@ -460,7 +460,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::pfs_archive& archive, std::shar
             SafeVarAllocParse(float, z_adjust);
 
             std::vector<char> tog_buffer;
-            if(!archive.Get(tog_name + ".tog", tog_buffer)) {
+            if(!archive.get(tog_name + ".tog", tog_buffer)) {
                 eqLogMessage(LogWarn, "Failed to load tog file %s.tog.", tog_name.c_str());
                 continue;
             } else {
@@ -547,9 +547,9 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::pfs_archive& archive, std::shar
     return true;
 }
 
-bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
+bool EQEmu::EQG4Loader::ParseWaterDat(eqemu::format::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
     std::vector<char> wat;
-    if(!archive.Get("water.dat", wat)) {
+    if(!archive.get("water.dat", wat)) {
         return false;
     }
 
@@ -645,9 +645,9 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::pfs_archive& archive, std::sha
     return true;
 }
 
-bool EQEmu::EQG4Loader::ParseInvwDat(EQEmu::PFS::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
+bool EQEmu::EQG4Loader::ParseInvwDat(eqemu::format::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
     std::vector<char> invw;
-    if(!archive.Get("invw.dat", invw)) {
+    if(!archive.get("invw.dat", invw)) {
         return false;
     }
 
