@@ -5,8 +5,6 @@ SET(common_sources
 	eqg_loader.cpp
 	eqg_model_loader.cpp
 	eqg_v4_loader.cpp
-	pfs.cpp
-	pfs_crc.cpp
 	s3d_loader.cpp
 	string_util.cpp
 	water_map.cpp
@@ -16,6 +14,8 @@ SET(common_sources
 	zone_map.cpp
 	core/compression.cpp
 	core/config.cpp
+	core/crc.cpp
+	format/pfs.cpp
 	math/distance.cpp
 	math/matrix_op.cpp
 )
@@ -36,8 +36,6 @@ SET(common_headers
 	eqg_water_sheet.h
 	light.h
 	octree.h
-	pfs.h
-	pfs_crc.h
 	placeable.h
 	placeable_group.h
 	safe_alloc.h
@@ -58,10 +56,12 @@ SET(common_headers
 	zone_map.h
 	core/compression.h
 	core/config.h
+	core/crc.h
 	event/background_task.h
 	event/event_loop.h
 	event/task.h
 	event/timer.h
+	format/pfs.h
 	math/aligned_bounding_box.h
 	math/distance.h
 	math/matrix_op.h
@@ -73,6 +73,8 @@ SOURCE_GROUP(core FILES
 	core/compression.h
 	core/config.cpp
 	core/config.h
+	core/crc.cpp
+	core/crc.h
 )
 
 SOURCE_GROUP(event FILES
@@ -80,6 +82,11 @@ SOURCE_GROUP(event FILES
 	event/event_loop.h
 	event/task.h
 	event/timer.h
+)
+
+SOURCE_GROUP(format FILES 
+	format/pfs.cpp
+	format/pfs.h
 )
 
 SOURCE_GROUP(math FILES

@@ -16,7 +16,7 @@ bool EQEmu::EQGLoader::Load(std::string file,
                             std::vector<std::shared_ptr<EQG::Region>>& regions,
                             std::vector<std::shared_ptr<Light>>& lights) {
     // find zon file
-    EQEmu::PFS::Archive archive;
+    EQEmu::PFS::pfs_archive archive;
     if(!archive.Open(file + ".eqg")) {
         eqLogMessage(
             LogTrace, "Failed to open %s.eqg as a standard eqg file because the file does not exist.", file.c_str());
@@ -88,7 +88,7 @@ bool EQEmu::EQGLoader::GetZon(std::string file, std::vector<char>& buffer) {
     return false;
 }
 
-bool EQEmu::EQGLoader::ParseZon(EQEmu::PFS::Archive& archive,
+bool EQEmu::EQGLoader::ParseZon(EQEmu::PFS::pfs_archive& archive,
                                 std::vector<char>& buffer,
                                 std::vector<std::shared_ptr<EQG::Geometry>>& models,
                                 std::vector<std::shared_ptr<Placeable>>& placeables,

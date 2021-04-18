@@ -1,8 +1,9 @@
 #ifndef EQEMU_WATER_MAP_V2_H
 #define EQEMU_WATER_MAP_V2_H
 
-#include "math/oriented_bounding_box.h"
 #include "water_map.h"
+
+#include <math/oriented_bounding_box.h>
 #include <utility>
 #include <vector>
 

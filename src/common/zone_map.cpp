@@ -6,8 +6,8 @@
 
 #include "zone_map.h"
 
-#include "core/compression.h"
-#include "core/config.h"
+#include <core/compression.h>
+#include <core/config.h>
 
 struct ZoneMap::impl {
     std::vector<glm::vec3> verts;

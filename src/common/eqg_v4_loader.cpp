@@ -14,7 +14,7 @@ EQEmu::EQG4Loader::~EQG4Loader() {
 }
 
 bool EQEmu::EQG4Loader::Load(std::string file, std::shared_ptr<EQG::Terrain>& terrain) {
-    EQEmu::PFS::Archive archive;
+    EQEmu::PFS::pfs_archive archive;
     if(!archive.Open(file + ".eqg")) {
         eqLogMessage(LogTrace, "Failed to open %s.eqg as an eqgv4 file because the file does not exist.", file.c_str());
         return false;
@@ -107,7 +107,7 @@ float HeightWithinQuad(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, f
     return (((n.x) * (x - a.x) + (n.y) * (y - a.y)) / -n.z) + a.z;
 }
 
-bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
+bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
     std::string filename = terrain->GetOpts().name + ".dat";
     std::vector<char> buffer;
     if(!archive.Get(filename, buffer)) {
@@ -547,7 +547,7 @@ bool EQEmu::EQG4Loader::ParseZoneDat(EQEmu::PFS::Archive& archive, std::shared_p
     return true;
 }
 
-bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
+bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
     std::vector<char> wat;
     if(!archive.Get("water.dat", wat)) {
         return false;
@@ -645,7 +645,7 @@ bool EQEmu::EQG4Loader::ParseWaterDat(EQEmu::PFS::Archive& archive, std::shared_
     return true;
 }
 
-bool EQEmu::EQG4Loader::ParseInvwDat(EQEmu::PFS::Archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
+bool EQEmu::EQG4Loader::ParseInvwDat(EQEmu::PFS::pfs_archive& archive, std::shared_ptr<EQG::Terrain>& terrain) {
     std::vector<char> invw;
     if(!archive.Get("invw.dat", invw)) {
         return false;

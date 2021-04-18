@@ -3,7 +3,8 @@
 
 #include <vector>
 
-#include "oriented_bounding_box.h"
+#include <math/oriented_bounding_box.h>
+
 #include "water_map.h"
 
 enum EQPhysicsFlags {

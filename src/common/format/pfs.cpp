@@ -1,6 +1,7 @@
-#include "pfs.h"
-#include "core/compression.h"
-#include "pfs_crc.h"
+#include <core/compression.h>
+#include <core/crc.h>
+#include <format/pfs.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -30,19 +31,19 @@
     }                                                                                                                  \
     memcpy(&buffer[idx], var, len);
 
-bool EQEmu::PFS::Archive::Open() {
+bool EQEmu::PFS::pfs_archive::Open() {
     Close();
     return true;
 }
 
-bool EQEmu::PFS::Archive::Open(uint32_t date) {
+bool EQEmu::PFS::pfs_archive::Open(uint32_t date) {
     Close();
     footer = true;
     footer_date = date;
     return true;
 }
 
-bool EQEmu::PFS::Archive::Open(std::string filename) {
+bool EQEmu::PFS::pfs_archive::Open(std::string filename) {
     Close();
 
     std::vector<char> buffer;
@@ -85,6 +86,7 @@ bool EQEmu::PFS::Archive::Open(std::string filename) {
                 return false;
             }
 
+            eqemu::core::crc crc_provider;
             uint32_t filename_pos = 0;
             ReadFromBuffer(uint32_t, filename_count, filename_buffer, filename_pos);
             filename_pos += 4;
@@ -98,7 +100,7 @@ bool EQEmu::PFS::Archive::Open(std::string filename) {
                 filename_pos += filename_length;
 
                 std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
-                int32_t crc = EQEmu::PFS::CRC::Instance().Get(filename);
+                int32_t crc = crc_provider.get(filename);
                 filename_entries.push_back(std::make_tuple(crc, filename));
             }
         } else {
@@ -144,7 +146,7 @@ bool EQEmu::PFS::Archive::Open(std::string filename) {
     return true;
 }
 
-bool EQEmu::PFS::Archive::Save(std::string filename) {
+bool EQEmu::PFS::pfs_archive::Save(std::string filename) {
     std::vector<char> buffer;
 
     // Write Header
@@ -166,9 +168,10 @@ bool EQEmu::PFS::Archive::Save(std::string filename) {
     WriteToBuffer(uint32_t, file_count, files_list, file_pos);
     file_pos += 4;
 
+    eqemu::core::crc crc_provider;
     auto iter = files.begin();
     while(iter != files.end()) {
-        int32_t crc = EQEmu::PFS::CRC::Instance().Get(iter->first);
+        int32_t crc = crc_provider.get(iter->first);
         uint32_t offset = (uint32_t)buffer.size();
         uint32_t sz = files_uncompressed_size[iter->first];
 
@@ -245,14 +248,14 @@ bool EQEmu::PFS::Archive::Save(std::string filename) {
     return true;
 }
 
-void EQEmu::PFS::Archive::Close() {
+void EQEmu::PFS::pfs_archive::Close() {
     footer = false;
     footer_date = 0;
     files.clear();
     files_uncompressed_size.clear();
 }
 
-bool EQEmu::PFS::Archive::Get(std::string filename, std::vector<char>& buf) {
+bool EQEmu::PFS::pfs_archive::Get(std::string filename, std::vector<char>& buf) {
     std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
 
     auto iter = files.find(filename);
@@ -270,7 +273,7 @@ bool EQEmu::PFS::Archive::Get(std::string filename, std::vector<char>& buf) {
     return false;
 }
 
-bool EQEmu::PFS::Archive::Set(std::string filename, const std::vector<char>& buf) {
+bool EQEmu::PFS::pfs_archive::Set(std::string filename, const std::vector<char>& buf) {
     std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
 
     std::vector<char> vec;
@@ -285,7 +288,7 @@ bool EQEmu::PFS::Archive::Set(std::string filename, const std::vector<char>& buf
     return true;
 }
 
-bool EQEmu::PFS::Archive::Delete(std::string filename) {
+bool EQEmu::PFS::pfs_archive::Delete(std::string filename) {
     std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
 
     files.erase(filename);
@@ -294,7 +297,7 @@ bool EQEmu::PFS::Archive::Delete(std::string filename) {
     return true;
 }
 
-bool EQEmu::PFS::Archive::Rename(std::string filename, std::string filename_new) {
+bool EQEmu::PFS::pfs_archive::Rename(std::string filename, std::string filename_new) {
     std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
     std::transform(filename_new.begin(), filename_new.end(), filename_new.begin(), ::tolower);
 
@@ -316,13 +319,13 @@ bool EQEmu::PFS::Archive::Rename(std::string filename, std::string filename_new)
     return false;
 }
 
-bool EQEmu::PFS::Archive::Exists(std::string filename) {
+bool EQEmu::PFS::pfs_archive::Exists(std::string filename) {
     std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
 
     return files.count(filename) != 0;
 }
 
-bool EQEmu::PFS::Archive::GetFilenames(std::string ext, std::vector<std::string>& out_files) {
+bool EQEmu::PFS::pfs_archive::GetFilenames(std::string ext, std::vector<std::string>& out_files) {
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
     out_files.clear();
 
@@ -351,10 +354,10 @@ bool EQEmu::PFS::Archive::GetFilenames(std::string ext, std::vector<std::string>
     return out_files.size() > 0;
 }
 
-bool EQEmu::PFS::Archive::StoreBlocksByFileOffset(uint32_t offset,
-                                                  uint32_t size,
-                                                  const std::vector<char>& in_buffer,
-                                                  std::string filename) {
+bool EQEmu::PFS::pfs_archive::StoreBlocksByFileOffset(uint32_t offset,
+                                                      uint32_t size,
+                                                      const std::vector<char>& in_buffer,
+                                                      std::string filename) {
     uint32_t position = offset;
     uint32_t block_size = 0;
     uint32_t inflate = 0;
@@ -377,10 +380,10 @@ bool EQEmu::PFS::Archive::StoreBlocksByFileOffset(uint32_t offset,
     return true;
 }
 
-bool EQEmu::PFS::Archive::InflateByFileOffset(uint32_t offset,
-                                              uint32_t size,
-                                              const std::vector<char>& in_buffer,
-                                              std::vector<char>& out_buffer) {
+bool EQEmu::PFS::pfs_archive::InflateByFileOffset(uint32_t offset,
+                                                  uint32_t size,
+                                                  const std::vector<char>& in_buffer,
+                                                  std::vector<char>& out_buffer) {
     out_buffer.resize(size);
     memset(&out_buffer[0], 0, size);
 
@@ -402,7 +405,7 @@ bool EQEmu::PFS::Archive::InflateByFileOffset(uint32_t offset,
     return true;
 }
 
-bool EQEmu::PFS::Archive::WriteDeflatedFileBlock(const std::vector<char>& file, std::vector<char>& out_buffer) {
+bool EQEmu::PFS::pfs_archive::WriteDeflatedFileBlock(const std::vector<char>& file, std::vector<char>& out_buffer) {
     uint32_t pos = 0;
     uint32_t remain = (uint32_t)file.size();
     uint8_t block[MAX_BLOCK_SIZE + 128];

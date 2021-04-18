@@ -1,8 +1,8 @@
 #include "s3d_loader.h"
 #include "log_macros.h"
-#include "pfs.h"
 #include "safe_alloc.h"
 #include "wld_structs.h"
+#include <format/pfs.h>
 
 void decode_string_hash(char* str, size_t len) {
     uint8_t encarr[] = {0x95, 0x3A, 0xC5, 0x2A, 0x95, 0x7A, 0x95, 0x6A};
@@ -23,7 +23,7 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
     char* current_hash;
     bool old = false;
 
-    EQEmu::PFS::Archive archive;
+    EQEmu::PFS::pfs_archive archive;
     if(!archive.Open(file_name)) {
         eqLogMessage(LogDebug, "Unable to open file %s.", file_name.c_str());
         return false;

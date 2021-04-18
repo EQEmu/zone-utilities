@@ -4,8 +4,8 @@
 #include "eqg_geometry.h"
 #include "eqg_region.h"
 #include "light.h"
-#include "pfs.h"
 #include "placeable.h"
+#include <format/pfs.h>
 #include <memory>
 #include <stdint.h>
 #include <string>
@@ -25,7 +25,7 @@ namespace EQEmu {
 
     private:
         bool GetZon(std::string file, std::vector<char>& buffer);
-        bool ParseZon(EQEmu::PFS::Archive& archive,
+        bool ParseZon(EQEmu::PFS::pfs_archive& archive,
                       std::vector<char>& buffer,
                       std::vector<std::shared_ptr<EQG::Geometry>>& models,
                       std::vector<std::shared_ptr<Placeable>>& placeables,

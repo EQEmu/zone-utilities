@@ -10,10 +10,10 @@ namespace EQEmu {
 
     namespace PFS {
 
-        class Archive {
+        class pfs_archive {
         public:
-            Archive() {}
-            ~Archive() {}
+            pfs_archive() {}
+            ~pfs_archive() {}
 
             bool Open();
             bool Open(uint32_t date);
