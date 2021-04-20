@@ -15,7 +15,7 @@ bool EQEmu::EQGModelLoader::Load(eqemu::format::pfs_archive& archive,
                                  std::string model,
                                  std::shared_ptr<EQG::Geometry> model_out) {
     eqLogMessage(LogTrace, "Loading model %s.", model.c_str());
-    std::vector<char> buffer;
+    std::vector<std::byte> buffer;
     if(!archive.get(model, buffer)) {
         eqLogMessage(LogError, "Unable to load %s, file was not found.", model.c_str());
         return false;
@@ -47,19 +47,19 @@ bool EQEmu::EQGModelLoader::Load(eqemu::format::pfs_archive& archive,
     for(uint32_t i = 0; i < header->material_count; ++i) {
         SafeStructAllocParse(mod_material, mat);
         auto& m = mats[i];
-        m.SetName(&buffer[list_loc + mat->name_offset]);
-        m.SetShader(&buffer[list_loc + mat->shader_offset]);
+        m.SetName((char*)&buffer[list_loc + mat->name_offset]);
+        m.SetShader((char*)&buffer[list_loc + mat->shader_offset]);
 
         auto& props = m.GetProperties();
         props.resize(mat->property_count);
         for(uint32_t j = 0; j < mat->property_count; ++j) {
             SafeStructAllocParse(mod_material_property, prop);
             auto& p = props[j];
-            p.name = &buffer[list_loc + prop->name_offset];
+            p.name = (char*)&buffer[list_loc + prop->name_offset];
             p.type = prop->type;
 
             if(prop->type == 2) {
-                p.value_s = &buffer[list_loc + prop->i_value];
+                p.value_s = (char*)&buffer[list_loc + prop->i_value];
                 p.value_f = 0.0f;
                 p.value_i = 0;
             } else if(prop->type == 0) {

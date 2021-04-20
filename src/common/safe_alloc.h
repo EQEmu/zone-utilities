@@ -23,7 +23,7 @@
     idx += length;
 
 #define SafeStringAllocParse(var_name)                                                                                 \
-    std::string var_name = &buffer[idx];                                                                               \
+    std::string var_name = (char*)&buffer[idx];                                                                        \
     if((idx + (uint32_t)var_name.length() + 1) > (uint32_t)buffer.size()) {                                            \
         return false;                                                                                                  \
     }                                                                                                                  \

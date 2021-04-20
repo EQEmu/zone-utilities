@@ -20,7 +20,7 @@ void PrintUsage() {
            " u: Update files of the archive\n");
 }
 
-bool ReadFile(std::string filename, std::vector<char>& buffer) {
+bool ReadFile(std::string filename, std::vector<std::byte>& buffer) {
     FILE* f = fopen(filename.c_str(), "rb");
     if(f) {
         fseek(f, 0, SEEK_END);
@@ -40,7 +40,7 @@ bool ReadFile(std::string filename, std::vector<char>& buffer) {
     return false;
 }
 
-bool WriteFile(std::string filename, const std::vector<char>& buffer) {
+bool WriteFile(std::string filename, const std::vector<std::byte>& buffer) {
     FILE* f = fopen(filename.c_str(), "wb");
     if(f) {
         size_t res = fwrite(&buffer[0], buffer.size(), 1, f);
@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
     }
 
     if(current_command == CommandAdd) {
-        std::vector<char> current_file;
+        std::vector<std::byte> current_file;
         for(size_t i = 0; i < files.size(); ++i) {
             if(archive.exists(files[i])) {
                 printf("Warning: Could not add %s to the archive, file with that name already exists.\n",
@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
             }
         }
     } else if(current_command == CommandExtract) {
-        std::vector<char> current_file;
+        std::vector<std::byte> current_file;
         for(size_t i = 0; i < files.size(); ++i) {
             if(!archive.exists(files[i])) {
                 printf("Warning: Could not extract %s from the archive, file with that name does not exist.\n",
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
 
         return EXIT_SUCCESS;
     } else if(current_command == CommandUpdate) {
-        std::vector<char> current_file;
+        std::vector<std::byte> current_file;
         for(size_t i = 0; i < files.size(); ++i) {
             if(!archive.exists(files[i])) {
                 printf("Warning: Could not update %s in the archive, file with that name does not exist.\n",

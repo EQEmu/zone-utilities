@@ -19,7 +19,7 @@ EQEmu::S3DLoader::~S3DLoader() {
 
 bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name, std::vector<S3D::WLDFragment>& out) {
     out.clear();
-    std::vector<char> buffer;
+    std::vector<std::byte> buffer;
     char* current_hash;
     bool old = false;
 
@@ -59,133 +59,152 @@ bool EQEmu::S3DLoader::ParseWLDFile(std::string file_name, std::string wld_name,
         eqLogMessage(LogTrace, "Dispatching WLD fragment of type %x", frag_header->id);
         switch(frag_header->id) {
             case 0x03: {
-                S3D::WLDFragment03 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment03 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x04: {
-                S3D::WLDFragment04 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment04 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x05: {
-                S3D::WLDFragment05 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment05 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x10: {
-                S3D::WLDFragment10 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment10 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x11: {
-                S3D::WLDFragment11 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment11 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x12: {
-                S3D::WLDFragment12 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment12 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x13: {
-                S3D::WLDFragment13 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment13 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x14: {
-                S3D::WLDFragment14 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment14 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x15: {
-                S3D::WLDFragment15 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment15 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x1B: {
-                S3D::WLDFragment1B f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment1B f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x1C: {
-                S3D::WLDFragment1C f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment1C f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x21: {
-                S3D::WLDFragment21 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment21 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x22: {
-                S3D::WLDFragment22 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment22 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x28: {
-                S3D::WLDFragment28 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment28 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x29: {
-                S3D::WLDFragment29 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment29 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x2D: {
-                S3D::WLDFragment2D f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment2D f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x30: {
-                S3D::WLDFragment30 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment30 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x31: {
-                S3D::WLDFragment31 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment31 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
                 out.push_back(f);
                 break;
             }
             case 0x36: {
-                S3D::WLDFragment36 f(out, &buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
+                S3D::WLDFragment36 f(
+                    out, (char*)&buffer[idx], frag_header->size, frag_header->name_ref, current_hash, old);
                 f.type = frag_header->id;
                 f.name = frag_header->name_ref;
 

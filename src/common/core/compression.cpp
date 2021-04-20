@@ -1,9 +1,9 @@
 #include "compression.h"
 
-#include <string.h>
+#include <cstring>
 #include <zlib.h>
 
-uint32_t eqemu::core::deflate_data(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
+uint32_t eqemu::core::deflate_data(const std::byte* buffer, uint32_t len, std::byte* out_buffer, uint32_t out_len_max) {
     z_stream zstream;
     memset(&zstream, 0, sizeof(zstream));
     int zerror;
@@ -28,7 +28,7 @@ uint32_t eqemu::core::deflate_data(const char* buffer, uint32_t len, char* out_b
     }
 }
 
-uint32_t eqemu::core::inflate_data(const char* buffer, uint32_t len, char* out_buffer, uint32_t out_len_max) {
+uint32_t eqemu::core::inflate_data(const std::byte* buffer, uint32_t len, std::byte* out_buffer, uint32_t out_len_max) {
     z_stream zstream;
     int zerror = 0;
     int i;

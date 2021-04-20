@@ -18,6 +18,7 @@ SET(common_sources
 	format/pfs.cpp
 	math/distance.cpp
 	math/matrix_op.cpp
+	string/transform.cpp
 )
 
 SET(common_headers
@@ -66,6 +67,7 @@ SET(common_headers
 	math/distance.h
 	math/matrix_op.h
 	math/oriented_bounding_box.h
+	string/transform.h
 )
 
 SOURCE_GROUP(core FILES
@@ -96,6 +98,11 @@ SOURCE_GROUP(math FILES
 	math/matrix_op.cpp
 	math/matrix_op.h
 	math/oriented_bounding_box.h
+)
+
+SOURCE_GROUP(srtring FILES
+	string/transform.cpp
+	string/transform.h
 )
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})

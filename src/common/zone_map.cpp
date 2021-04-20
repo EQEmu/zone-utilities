@@ -187,7 +187,7 @@ bool ZoneMap::LoadV2(FILE* f) {
 
     std::vector<char> buffer;
     buffer.resize(buffer_size);
-    uint32_t v = eqemu::core::inflate_data(&data[0], data_size, &buffer[0], buffer_size);
+    uint32_t v = eqemu::core::inflate_data((std::byte*)&data[0], data_size, (std::byte*)&buffer[0], buffer_size);
 
     char* buf = &buffer[0];
     uint32_t vert_count;
