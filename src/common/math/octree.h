@@ -1,12 +1,39 @@
-#ifndef EQEMU_COMMON_OCTREE_H
-#define EQEMU_COMMON_OCTREE_H
+#pragma once
 
-#include "vec3.hpp"
-#include <functional>
-#include <map>
-#include <unordered_map>
+#include <math/aligned_bounding_box.h>
+#include <math/constant.h>
 
-template <typename T, int elem_t = 4, int max_depth = 7>
+#include <cmath>
+#include <memory>
+
+namespace eqemu {
+    namespace math {
+        namespace detail {
+            constexpr size_t calc_octree_nodes(size_t depth) {
+                if(depth == 0) {
+                    return 1;
+                } else {
+                    return 8 * calc_octree_nodes(depth - 1);
+                }
+            }
+
+            class octree_node {};
+        }    // namespace detail
+
+        template <typename Ty, size_t max_depth = 7>
+        class octree {
+        public:
+            octree() : _nodes(new detail::octree_node[calc_octree_nodes(depth)]) {}
+
+            ~octree() = default;
+
+        private:
+            std::unique_ptr<detail::octree_node[]> _nodes;
+        };
+    }    // namespace math
+}    // namespace eqemu
+
+/*template <typename T, int elem_t = 4, int max_depth = 7>
 class Octree {
 public:
     typedef std::function<void(const glm::vec3&, T*)> TraverseCallback;
@@ -345,5 +372,4 @@ private:
     AABB bounds_;
     std::unordered_map<T*, OctreeNode*> data_node_lookup_;
 };
-
-#endif
+*/

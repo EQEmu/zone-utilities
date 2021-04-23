@@ -36,7 +36,6 @@ SET(common_headers
 	eqg_v4_loader.h
 	eqg_water_sheet.h
 	light.h
-	octree.h
 	placeable.h
 	placeable_group.h
 	safe_alloc.h
@@ -64,8 +63,10 @@ SET(common_headers
 	event/timer.h
 	format/pfs.h
 	math/aligned_bounding_box.h
+	math/constant.h
 	math/distance.h
 	math/matrix_op.h
+	math/octree.h
 	math/oriented_bounding_box.h
 	string/transform.h
 )
@@ -93,10 +94,12 @@ SOURCE_GROUP(format FILES
 
 SOURCE_GROUP(math FILES
 	math/aligned_bounding_box.h
+	math/constant.h
 	math/distance.cpp
 	math/distance.h
 	math/matrix_op.cpp
 	math/matrix_op.h
+	math/octree.h
 	math/oriented_bounding_box.h
 )
 

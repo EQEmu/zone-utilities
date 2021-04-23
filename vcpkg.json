@@ -5,5 +5,15 @@
 		"boost-crc",
 		"bullet3",
 		"zlib"
-	]
+	],
+	"features": {
+		"tests": {
+			"description": "Build Tests",
+			"dependencies": [ "catch2" ]
+		},
+		"opengl": {
+			"description": "Build OpenGL Related Programs",
+			"dependencies": [ "glew" ]
+		}
+	}
 }
