@@ -1,7 +1,8 @@
 #include "scene.h"
+
 #include <core/config.h>
+#include <fmt/format.h>
 #include <gtc/matrix_transform.hpp>
-#include <string_util.h>
 
 #include "imgui_glfw.h"
 #include "static_geometry.h"
@@ -855,5 +856,5 @@ void Scene::Resize(int width, int height) {
 
 void Scene::GetEntityName(Entity* ent, std::string& name) {
     name.clear();
-    name = EQEmu::StringFormat("entity_%p", ent);
+    name = fmt::format("entity_{0:p}", (void*)ent);
 }

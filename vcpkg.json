@@ -4,6 +4,7 @@
 	"dependencies": [
 		"boost-crc",
 		"bullet3",
+		"fmt",
 		"zlib"
 	],
 	"features": {

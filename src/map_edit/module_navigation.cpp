@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "log_macros.h"
 #include "module_navigation_build_tile.h"
-#include "string_util.h"
+
 #include <algorithm>
 #include <sstream>
 
@@ -12,6 +12,7 @@
 #include <core/config.h>
 #include <event/background_task.h>
 #include <event/task.h>
+#include <fmt/format.h>
 
 const uint32_t nav_file_version = 3;
 const uint32_t nav_mesh_file_version = 2;
@@ -414,7 +415,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI() {
     ImGui::SliderFloat("Cell Height", &m_cell_height, 0.1f, 2.0f, "%.1f");
 
     rcCalcGridSize(bmin, bmax, m_cell_size, &gw, &gh);
-    ImGui::Text(EQEmu::StringFormat("Voxels  %d x %d", gw, gh).c_str());
+    ImGui::Text(fmt::format("Voxels  {0} x {1}", gw, gh).c_str());
 
     ImGui::Separator();
     ImGui::Text("Agent");
@@ -459,7 +460,7 @@ void ModuleNavigation::DrawNavMeshGenerationUI() {
     const int tw = (gw + ts - 1) / ts;
     const int th = (gh + ts - 1) / ts;
 
-    ImGui::Text(EQEmu::StringFormat("Tiles  %d x %d", tw, th).c_str());
+    ImGui::Text(fmt::format("Tiles  {0} x {1}", tw, th).c_str());
     int tile_bits = rcMin((int)ilog2(nextPow2(tw * th)), 14);
 
     if(tile_bits > 14)
@@ -467,18 +468,18 @@ void ModuleNavigation::DrawNavMeshGenerationUI() {
     int poly_bits = 22 - tile_bits;
     m_max_tiles = 1 << tile_bits;
     m_max_polys_per_tile = 1 << poly_bits;
-    ImGui::Text(EQEmu::StringFormat("Max Tiles  %d", m_max_tiles).c_str());
-    ImGui::Text(EQEmu::StringFormat("Max Polys  %d", m_max_polys_per_tile).c_str());
+    ImGui::Text(fmt::format("Max Tiles  {0}", m_max_tiles).c_str());
+    ImGui::Text(fmt::format("Max Polys  {0}", m_max_polys_per_tile).c_str());
 
     if(m_nav_mesh_renderable) {
-        ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", (int)m_nav_mesh_renderable->GetTrianglesInds().size() / 3)
-                        .c_str());
+        ImGui::Text(
+            fmt::format("Current Nodes: {0}", (int)m_nav_mesh_renderable->GetTrianglesInds().size() / 3).c_str());
     } else {
-        ImGui::Text(EQEmu::StringFormat("Current Nodes: %u", 0).c_str());
+        ImGui::Text(fmt::format("Current Nodes: {0}", 0).c_str());
     }
 
     if(HasWork()) {
-        ImGui::Text(EQEmu::StringFormat("%u tasks remaining...", m_work_pending).c_str());
+        ImGui::Text(fmt::format("{0} tasks remaining...", m_work_pending).c_str());
     } else {
         if(ImGui::Button("Build All NavMesh Tiles")) {
             BuildNavigationMesh();

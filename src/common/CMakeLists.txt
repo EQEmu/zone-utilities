@@ -6,7 +6,6 @@ SET(common_sources
 	eqg_model_loader.cpp
 	eqg_v4_loader.cpp
 	s3d_loader.cpp
-	string_util.cpp
 	water_map.cpp
 	water_map_v1.cpp
 	water_map_v2.cpp
@@ -23,7 +22,6 @@ SET(common_sources
 
 SET(common_headers
 	eq_physics.h
-	eqemu_endian.h
 	eqg_geometry.h
 	eqg_invis_wall.h
 	eqg_loader.h
@@ -46,7 +44,6 @@ SET(common_headers
 	s3d_texture.h
 	s3d_texture_brush.h
 	s3d_texture_brush_set.h
-	string_util.h
 	water_map.h
 	water_map_v1.h
 	water_map_v2.h

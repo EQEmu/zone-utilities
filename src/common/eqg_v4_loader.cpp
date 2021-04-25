@@ -3,7 +3,6 @@
 #include "eqg_structs.h"
 #include "log_macros.h"
 #include "safe_alloc.h"
-#include "string_util.h"
 #include <algorithm>
 #include <cctype>
 
