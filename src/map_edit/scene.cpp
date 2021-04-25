@@ -2,7 +2,7 @@
 
 #include <core/config.h>
 #include <fmt/format.h>
-#include <gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "imgui_glfw.h"
 #include "static_geometry.h"
@@ -272,6 +272,7 @@ void Scene::Render() {
     }
 
     ImGui::Render();
+    ImGui_ImplGlfwGL3_RenderDrawLists(ImGui::GetDrawData());
     glfwSwapBuffers(m_window);
 }
 
@@ -417,8 +418,8 @@ void Scene::RenderUI() {
                 ImGui::CloseCurrentPopup();
             }
 
-            if(ImGui::IsItemHovered() ||
-               (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+            if(ImGui::IsItemHovered() || (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+                                          !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
                 ImGui::SetKeyboardFocusHere(-1);
 
             if(ImGui::Button("OK", ImVec2(120, 0))) {

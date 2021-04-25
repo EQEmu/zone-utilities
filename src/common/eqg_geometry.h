@@ -3,7 +3,7 @@
 
 #include "eqg_material.h"
 
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include <vector>
 
 namespace EQEmu {

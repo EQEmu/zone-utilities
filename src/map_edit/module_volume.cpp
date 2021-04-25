@@ -4,7 +4,7 @@
 
 #include <core/config.h>
 #include <event/background_task.h>
-#include <gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 const int HotkeyDel = 58;
 

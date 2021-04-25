@@ -5,6 +5,7 @@
 // https://github.com/ocornut/imgui
 
 struct GLFWwindow;
+struct ImDrawData;
 
 bool ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks);
 void ImGui_ImplGlfwGL3_Shutdown();
@@ -21,5 +22,7 @@ void ImGui_ImplGlfwGL3_MouseButtonCallback(GLFWwindow* window, int button, int a
 void ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void ImGui_ImplGlfwGL3_CharCallback(GLFWwindow* window, unsigned int c);
+
+void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data);
 
 #endif

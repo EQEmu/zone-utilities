@@ -2,7 +2,7 @@
 #define EQEMU_COMMON_S3D_GEOMETRY_H
 
 #include "s3d_texture_brush_set.h"
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include <vector>
 
 namespace EQEmu {

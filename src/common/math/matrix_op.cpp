@@ -1,6 +1,6 @@
 #include "matrix_op.h"
 
-#include <gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 glm::mat4 eqemu::math::create_rotate_matrix(float rx, float ry, float rz) {
     glm::mat4 rot_x(1.0f);

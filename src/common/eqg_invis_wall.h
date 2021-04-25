@@ -1,7 +1,7 @@
 #ifndef EQEMU_COMMON_EQG_INVIS_WALL_H
 #define EQEMU_COMMON_EQG_INVIS_WALL_H
 
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include <string>
 #include <vector>
 

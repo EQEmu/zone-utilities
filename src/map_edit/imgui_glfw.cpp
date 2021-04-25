@@ -30,7 +30,7 @@ static ImGuiContext* g_context = NULL;
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up
 // 'RenderDrawListsFn' in the ImGuiIO structure) If text or lines are blurry when integrating ImGui in your engine:
 // - in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
-static void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data) {
+void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data) {
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled
     GLint last_program, last_texture;
     GLint last_blend_src, last_blend_dst, last_blend_eq;
@@ -260,7 +260,6 @@ bool ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks) {
     io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
     io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 
-    io.RenderDrawListsFn = ImGui_ImplGlfwGL3_RenderDrawLists;
     io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
     io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
 #ifdef _MSC_VER

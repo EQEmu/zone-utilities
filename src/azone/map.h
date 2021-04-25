@@ -7,7 +7,7 @@
 #include <tuple>
 #include <vector>
 
-#include <glm.hpp>
+#include <glm/glm.hpp>
 
 #include "eqg_loader.h"
 #include "eqg_v4_loader.h"

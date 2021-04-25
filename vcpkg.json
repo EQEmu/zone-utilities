@@ -5,6 +5,8 @@
 		"boost-crc",
 		"bullet3",
 		"fmt",
+		"libuv",
+		"nlohmann-json",
 		"zlib"
 	],
 	"features": {
@@ -14,7 +16,7 @@
 		},
 		"opengl": {
 			"description": "Build OpenGL Related Programs",
-			"dependencies": [ "glew" ]
+			"dependencies": [ "glew", "glfw3", "glm", "imgui" ]
 		}
 	}
 }
