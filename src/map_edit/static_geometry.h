@@ -8,37 +8,37 @@
 
 #include "entity.h"
 
-class StaticGeometry : public Entity
-{
+class StaticGeometry : public Entity {
 public:
-	StaticGeometry();
-	virtual ~StaticGeometry();
+    StaticGeometry();
+    virtual ~StaticGeometry();
 
-	virtual void Draw();
-	void Compile();
+    virtual void Draw();
+    void Compile();
 
-	std::vector<glm::vec3>& GetVerts() { return m_verts; }
-	std::vector<glm::vec3>& GetVertColors() { return m_vert_colors; }
-	std::vector<unsigned int>& GetInds() { return m_inds; }
+    std::vector<glm::vec3>& GetVerts() { return m_verts; }
+    std::vector<glm::vec3>& GetVertColors() { return m_vert_colors; }
+    std::vector<unsigned int>& GetInds() { return m_inds; }
 
-	const glm::vec3& GetAABBMin() { return m_min; }
-	const glm::vec3& GetAABBMax() { return m_max; }
+    const glm::vec3& GetAABBMin() { return m_min; }
+    const glm::vec3& GetAABBMax() { return m_max; }
 
-	void SetDrawType(GLenum dt) { m_draw_type = dt; }
+    void SetDrawType(GLenum dt) { m_draw_type = dt; }
+
 private:
-	GLuint m_vao;
-	GLuint m_vbo;
-	GLuint m_vbco;
-	GLuint m_ib;
+    GLuint m_vao;
+    GLuint m_vbo;
+    GLuint m_vbco;
+    GLuint m_ib;
 
-	std::vector<glm::vec3> m_verts;
-	std::vector<glm::vec3> m_vert_colors;
-	std::vector<unsigned int> m_inds;
+    std::vector<glm::vec3> m_verts;
+    std::vector<glm::vec3> m_vert_colors;
+    std::vector<unsigned int> m_inds;
 
-	glm::vec3 m_min;
-	glm::vec3 m_max;
+    glm::vec3 m_min;
+    glm::vec3 m_max;
 
-	GLenum m_draw_type;
+    GLenum m_draw_type;
 };
 
 #endif

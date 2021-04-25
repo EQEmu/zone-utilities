@@ -1,11 +1,10 @@
 #ifndef EQEMU_MAP_EDIT_SCENE_MODULE_H
 #define EQEMU_MAP_EDIT_SCENE_MODULE_H
 
-class SceneModule
-{
+class SceneModule {
 public:
-	SceneModule() { }
-	virtual SceneModule() { }
+    SceneModule() {}
+    virtual SceneModule() {}
 };
 
 #endif
