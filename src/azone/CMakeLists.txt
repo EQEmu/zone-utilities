@@ -2,18 +2,20 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 
 SET(azone_sources
 	azone.cpp
-	map.cpp
+	azone_map.cpp
 )
 
 SET(azone_headers
-	map.h
+	azone_map.h
 )
 
 ADD_EXECUTABLE(azone ${azone_sources} ${azone_headers})
 
 INSTALL(TARGETS azone RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
 
+TARGET_LINK_LIBRARIES(azone PRIVATE ${Boost_LIBRARIES})
 TARGET_LINK_LIBRARIES(azone PRIVATE common)
+TARGET_LINK_LIBRARIES(azone PRIVATE fmt::fmt)
 TARGET_LINK_LIBRARIES(azone PRIVATE log)
 TARGET_LINK_LIBRARIES(azone PRIVATE ZLIB::ZLIB)
 

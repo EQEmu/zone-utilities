@@ -1,4 +1,4 @@
-#include "map.h"
+#include "azone_map.h"
 
 #include <fstream>
 #include <sstream>
@@ -8,14 +8,14 @@
 
 #include "log_macros.h"
 
-Map::Map() {
+eqemu::azone::map::map() {
 }
 
-Map::~Map() {
+eqemu::azone::map::~map() {
 }
 
-bool Map::Build(std::string zone_name, bool ignore_collide_tex) {
-    LoadIgnore(zone_name);
+bool eqemu::azone::map::build(const std::string& zone_name, bool ignore_collide_tex) {
+    load_ignore(zone_name);
 
     eqLogMessage(LogTrace, "Attempting to load %s.eqg as a standard eqg.", zone_name.c_str());
 
@@ -25,13 +25,13 @@ bool Map::Build(std::string zone_name, bool ignore_collide_tex) {
     std::vector<std::shared_ptr<EQEmu::EQG::Region>> eqg_regions;
     std::vector<std::shared_ptr<EQEmu::Light>> eqg_lights;
     if(eqg.Load(zone_name, eqg_models, eqg_placables, eqg_regions, eqg_lights)) {
-        return CompileEQG(eqg_models, eqg_placables, eqg_regions, eqg_lights);
+        return compile_eqg(eqg_models, eqg_placables, eqg_regions, eqg_lights);
     }
 
     eqLogMessage(LogTrace, "Attempting to load %s.eqg as a v4 eqg.", zone_name.c_str());
     EQEmu::EQG4Loader eqg4;
-    if(eqg4.Load(zone_name, terrain)) {
-        return CompileEQGv4();
+    if(eqg4.Load(zone_name, _terrain)) {
+        return compile_eqgv4();
     }
 
     eqLogMessage(LogTrace, "Attempting to load %s.s3d as a standard s3d.", zone_name.c_str());
@@ -51,14 +51,14 @@ bool Map::Build(std::string zone_name, bool ignore_collide_tex) {
         return false;
     }
 
-    return CompileS3D(zone_frags, zone_object_frags, object_frags, ignore_collide_tex);
+    return compile_s3d(zone_frags, zone_object_frags, object_frags, ignore_collide_tex);
 }
 
-bool Map::Write(std::string filename) {
+bool eqemu::azone::map::write(const std::string& filename) {
     // if there are no verts and no terrain
-    if((collide_verts.size() == 0 && collide_indices.size() == 0 && non_collide_verts.size() == 0 &&
-        non_collide_indices.size() == 0) &&
-       !terrain) {
+    if((_collide_verts.size() == 0 && _collide_indices.size() == 0 && _non_collide_verts.size() == 0 &&
+        _non_collide_indices.size() == 0) &&
+       !_terrain) {
         eqLogMessage(
             LogError, "Failed to write %s because the map to build has no information to write.", filename.c_str());
         return false;
@@ -79,16 +79,16 @@ bool Map::Write(std::string filename) {
     }
 
     std::stringstream ss(std::stringstream::in | std::stringstream::out | std::stringstream::binary);
-    uint32_t collide_vert_count = (uint32_t)collide_verts.size();
-    uint32_t collide_ind_count = (uint32_t)collide_indices.size();
-    uint32_t non_collide_vert_count = (uint32_t)non_collide_verts.size();
-    uint32_t non_collide_ind_count = (uint32_t)non_collide_indices.size();
-    uint32_t model_count = (uint32_t)(map_models.size() + map_eqg_models.size());
-    uint32_t plac_count = (uint32_t)map_placeables.size();
-    uint32_t plac_group_count = (uint32_t)map_group_placeables.size();
-    uint32_t tile_count = terrain ? (uint32_t)terrain->GetTiles().size() : 0;
-    uint32_t quads_per_tile = terrain ? terrain->GetQuadsPerTile() : 0;
-    float units_per_vertex = terrain ? terrain->GetUnitsPerVertex() : 0.0f;
+    uint32_t collide_vert_count = (uint32_t)_collide_verts.size();
+    uint32_t collide_ind_count = (uint32_t)_collide_indices.size();
+    uint32_t non_collide_vert_count = (uint32_t)_non_collide_verts.size();
+    uint32_t non_collide_ind_count = (uint32_t)_non_collide_indices.size();
+    uint32_t model_count = (uint32_t)(_map_models.size() + _map_eqg_models.size());
+    uint32_t plac_count = (uint32_t)_map_placeables.size();
+    uint32_t plac_group_count = (uint32_t)_map_group_placeables.size();
+    uint32_t tile_count = _terrain ? (uint32_t)_terrain->GetTiles().size() : 0;
+    uint32_t quads_per_tile = _terrain ? _terrain->GetQuadsPerTile() : 0;
+    float units_per_vertex = _terrain ? _terrain->GetUnitsPerVertex() : 0.0f;
 
     ss.write((const char*)&collide_vert_count, sizeof(uint32_t));
     ss.write((const char*)&collide_ind_count, sizeof(uint32_t));
@@ -102,7 +102,7 @@ bool Map::Write(std::string filename) {
     ss.write((const char*)&units_per_vertex, sizeof(float));
 
     for(uint32_t i = 0; i < collide_vert_count; ++i) {
-        auto vert = collide_verts[i];
+        auto vert = _collide_verts[i];
 
         ss.write((const char*)&vert.x, sizeof(float));
         ss.write((const char*)&vert.y, sizeof(float));
@@ -110,13 +110,13 @@ bool Map::Write(std::string filename) {
     }
 
     for(uint32_t i = 0; i < collide_ind_count; ++i) {
-        uint32_t ind = collide_indices[i];
+        uint32_t ind = _collide_indices[i];
 
         ss.write((const char*)&ind, sizeof(uint32_t));
     }
 
     for(uint32_t i = 0; i < non_collide_vert_count; ++i) {
-        auto vert = non_collide_verts[i];
+        auto vert = _non_collide_verts[i];
 
         ss.write((const char*)&vert.x, sizeof(float));
         ss.write((const char*)&vert.y, sizeof(float));
@@ -124,13 +124,13 @@ bool Map::Write(std::string filename) {
     }
 
     for(uint32_t i = 0; i < non_collide_ind_count; ++i) {
-        uint32_t ind = non_collide_indices[i];
+        uint32_t ind = _non_collide_indices[i];
 
         ss.write((const char*)&ind, sizeof(uint32_t));
     }
 
-    auto model_iter = map_models.begin();
-    while(model_iter != map_models.end()) {
+    auto model_iter = _map_models.begin();
+    while(model_iter != _map_models.end()) {
         uint8_t null = 0;
 
         ss.write(model_iter->second->GetName().c_str(), model_iter->second->GetName().length());
@@ -186,8 +186,8 @@ bool Map::Write(std::string filename) {
         ++model_iter;
     }
 
-    auto eqg_model_iter = map_eqg_models.begin();
-    while(eqg_model_iter != map_eqg_models.end()) {
+    auto eqg_model_iter = _map_eqg_models.begin();
+    while(eqg_model_iter != _map_eqg_models.end()) {
         uint8_t null = 0;
 
         ss.write(eqg_model_iter->second->GetName().c_str(), eqg_model_iter->second->GetName().length());
@@ -230,7 +230,7 @@ bool Map::Write(std::string filename) {
     }
 
     for(uint32_t i = 0; i < plac_count; ++i) {
-        auto& plac = map_placeables[i];
+        auto& plac = _map_placeables[i];
         uint8_t null = 0;
         float x = plac->GetX();
         float y = plac->GetY();
@@ -256,7 +256,7 @@ bool Map::Write(std::string filename) {
     }
 
     for(uint32_t i = 0; i < plac_group_count; ++i) {
-        auto& gp = map_group_placeables[i];
+        auto& gp = _map_group_placeables[i];
         uint8_t null = 0;
         float x = gp->GetX();
         float y = gp->GetY();
@@ -314,10 +314,10 @@ bool Map::Write(std::string filename) {
         }
     }
 
-    if(terrain) {
+    if(_terrain) {
         uint32_t quad_count = (quads_per_tile * quads_per_tile);
         uint32_t vert_count = ((quads_per_tile + 1) * (quads_per_tile + 1));
-        auto& tiles = terrain->GetTiles();
+        auto& tiles = _terrain->GetTiles();
         for(uint32_t i = 0; i < tile_count; ++i) {
             if(tiles[i]->IsFlat()) {
                 bool flat = true;
@@ -384,10 +384,10 @@ bool Map::Write(std::string filename) {
     return true;
 }
 
-void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone,
-                       glm::vec3 parent_trans,
-                       glm::vec3 parent_rot,
-                       glm::vec3 parent_scale) {
+void eqemu::azone::map::traverse_bone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone,
+                                      glm::vec3 parent_trans,
+                                      glm::vec3 parent_rot,
+                                      glm::vec3 parent_scale) {
     float offset_x = 0.0f;
     float offset_y = 0.0f;
     float offset_z = 0.0f;
@@ -421,7 +421,7 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone,
     glm::vec3 pos(offset_x, offset_y, offset_z);
     glm::vec3 rot(rot_x, rot_y, rot_z);
 
-    RotateVertex(pos, parent_rot.x, parent_rot.y, parent_rot.z);
+    rotate_vertex(pos, parent_rot.x, parent_rot.y, parent_rot.z);
     pos += parent_trans;
 
     rot += parent_rot;
@@ -430,8 +430,8 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone,
         auto& mod_polys = bone->model->GetPolygons();
         auto& mod_verts = bone->model->GetVertices();
 
-        if(map_models.count(bone->model->GetName()) == 0) {
-            map_models[bone->model->GetName()] = bone->model;
+        if(_map_models.count(bone->model->GetName()) == 0) {
+            _map_models[bone->model->GetName()] = bone->model;
         }
 
         std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
@@ -439,32 +439,32 @@ void Map::TraverseBone(std::shared_ptr<EQEmu::S3D::SkeletonTrack::Bone> bone,
         gen_plac->SetLocation(pos.x, pos.y, pos.z);
         gen_plac->SetRotation(rot.x, rot.y, rot.z);
         gen_plac->SetScale(scale_x, scale_y, scale_z);
-        map_placeables.push_back(gen_plac);
+        _map_placeables.push_back(gen_plac);
 
         eqLogMessage(
             LogTrace, "Adding placeable %s at (%f, %f, %f)", bone->model->GetName().c_str(), pos.x, pos.y, pos.z);
     }
 
     for(size_t i = 0; i < bone->children.size(); ++i) {
-        TraverseBone(bone->children[i], pos, rot, parent_scale);
+        traverse_bone(bone->children[i], pos, rot, parent_scale);
     }
 }
 
-bool Map::CompileS3D(std::vector<EQEmu::S3D::WLDFragment>& zone_frags,
-                     std::vector<EQEmu::S3D::WLDFragment>& zone_object_frags,
-                     std::vector<EQEmu::S3D::WLDFragment>& object_frags,
-                     bool ignore_collide_tex) {
-    collide_verts.clear();
-    collide_indices.clear();
-    non_collide_verts.clear();
-    non_collide_indices.clear();
-    current_collide_index = 0;
-    current_non_collide_index = 0;
-    collide_vert_to_index.clear();
-    non_collide_vert_to_index.clear();
-    map_models.clear();
-    map_eqg_models.clear();
-    map_placeables.clear();
+bool eqemu::azone::map::compile_s3d(std::vector<EQEmu::S3D::WLDFragment>& zone_frags,
+                                    std::vector<EQEmu::S3D::WLDFragment>& zone_object_frags,
+                                    std::vector<EQEmu::S3D::WLDFragment>& object_frags,
+                                    bool ignore_collide_tex) {
+    _collide_verts.clear();
+    _collide_indices.clear();
+    _non_collide_verts.clear();
+    _non_collide_indices.clear();
+    _current_collide_index = 0;
+    _current_non_collide_index = 0;
+    _collide_vert_to_index.clear();
+    _non_collide_vert_to_index.clear();
+    _map_models.clear();
+    _map_eqg_models.clear();
+    _map_placeables.clear();
 
     eqLogMessage(LogTrace, "Processing s3d zone geometry fragments.");
     for(uint32_t i = 0; i < zone_frags.size(); ++i) {
@@ -513,10 +513,10 @@ bool Map::CompileS3D(std::vector<EQEmu::S3D::WLDFragment>& zone_frags,
                 v3.pos.y = t;
 
                 if(current_poly.flags == 0x10)
-                    AddFace(v1.pos, v2.pos, v3.pos, false);
+                    add_face(v1.pos, v2.pos, v3.pos, false);
                 else {
                     if(!collide_tex || !ignore_collide_tex) {
-                        AddFace(v1.pos, v2.pos, v3.pos, true);
+                        add_face(v1.pos, v2.pos, v3.pos, true);
                     }
                 }
             }
@@ -537,7 +537,7 @@ bool Map::CompileS3D(std::vector<EQEmu::S3D::WLDFragment>& zone_frags,
                 continue;
             }
 
-            if(ignore_placs.count(plac->GetName()) > 0) {
+            if(_ignore_placs.count(plac->GetName()) > 0) {
                 continue;
             }
 
@@ -607,8 +607,8 @@ bool Map::CompileS3D(std::vector<EQEmu::S3D::WLDFragment>& zone_frags,
         float scale_y = plac->GetScaleY();
         float scale_z = plac->GetScaleZ();
 
-        if(map_models.count(model->GetName()) == 0) {
-            map_models[model->GetName()] = model;
+        if(_map_models.count(model->GetName()) == 0) {
+            _map_models[model->GetName()] = model;
         }
         std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
         gen_plac->SetFileName(model->GetName());
@@ -617,7 +617,7 @@ bool Map::CompileS3D(std::vector<EQEmu::S3D::WLDFragment>& zone_frags,
         // x rotation might be too but there are literally 0 x rotated placeables in all the s3ds so who knows
         gen_plac->SetRotation(rot_x, -rot_y, rot_z);
         gen_plac->SetScale(scale_x, scale_y, scale_z);
-        map_placeables.push_back(gen_plac);
+        _map_placeables.push_back(gen_plac);
 
         eqLogMessage(
             LogTrace, "Adding placeable %s at (%f, %f, %f)", model->GetName().c_str(), offset_x, offset_y, offset_z);
@@ -642,31 +642,31 @@ bool Map::CompileS3D(std::vector<EQEmu::S3D::WLDFragment>& zone_frags,
             float scale_x = plac->GetScaleX();
             float scale_y = plac->GetScaleY();
             float scale_z = plac->GetScaleZ();
-            TraverseBone(bones[0],
-                         glm::vec3(offset_x, offset_y, offset_z),
-                         glm::vec3(rot_x, rot_y, rot_z),
-                         glm::vec3(scale_x, scale_y, scale_z));
+            traverse_bone(bones[0],
+                          glm::vec3(offset_x, offset_y, offset_z),
+                          glm::vec3(rot_x, rot_y, rot_z),
+                          glm::vec3(scale_x, scale_y, scale_z));
         }
     }
 
     return true;
 }
 
-bool Map::CompileEQG(std::vector<std::shared_ptr<EQEmu::EQG::Geometry>>& models,
-                     std::vector<std::shared_ptr<EQEmu::Placeable>>& placeables,
-                     std::vector<std::shared_ptr<EQEmu::EQG::Region>>& regions,
-                     std::vector<std::shared_ptr<EQEmu::Light>>& lights) {
-    collide_verts.clear();
-    collide_indices.clear();
-    non_collide_verts.clear();
-    non_collide_indices.clear();
-    current_collide_index = 0;
-    current_non_collide_index = 0;
-    collide_vert_to_index.clear();
-    non_collide_vert_to_index.clear();
-    map_models.clear();
-    map_eqg_models.clear();
-    map_placeables.clear();
+bool eqemu::azone::map::compile_eqg(std::vector<std::shared_ptr<EQEmu::EQG::Geometry>>& models,
+                                    std::vector<std::shared_ptr<EQEmu::Placeable>>& placeables,
+                                    std::vector<std::shared_ptr<EQEmu::EQG::Region>>& regions,
+                                    std::vector<std::shared_ptr<EQEmu::Light>>& lights) {
+    _collide_verts.clear();
+    _collide_indices.clear();
+    _non_collide_verts.clear();
+    _non_collide_indices.clear();
+    _current_collide_index = 0;
+    _current_non_collide_index = 0;
+    _collide_vert_to_index.clear();
+    _non_collide_vert_to_index.clear();
+    _map_models.clear();
+    _map_eqg_models.clear();
+    _map_placeables.clear();
 
     for(uint32_t i = 0; i < placeables.size(); ++i) {
         std::shared_ptr<EQEmu::Placeable>& plac = placeables[i];
@@ -702,12 +702,12 @@ bool Map::CompileEQG(std::vector<std::shared_ptr<EQEmu::EQG::Geometry>>& models,
         float scale_z = plac->GetScaleZ();
 
         if(!is_ter) {
-            if(ignore_placs.count(model->GetName()) > 0) {
+            if(_ignore_placs.count(model->GetName()) > 0) {
                 continue;
             }
 
-            if(map_eqg_models.count(model->GetName()) == 0) {
-                map_eqg_models[model->GetName()] = model;
+            if(_map_eqg_models.count(model->GetName()) == 0) {
+                _map_eqg_models[model->GetName()] = model;
             }
 
             std::shared_ptr<EQEmu::Placeable> gen_plac(new EQEmu::Placeable());
@@ -715,7 +715,7 @@ bool Map::CompileEQG(std::vector<std::shared_ptr<EQEmu::EQG::Geometry>>& models,
             gen_plac->SetLocation(offset_x, offset_y, offset_z);
             gen_plac->SetRotation(rot_x, rot_y, rot_z);
             gen_plac->SetScale(scale_x, scale_y, scale_z);
-            map_placeables.push_back(gen_plac);
+            _map_placeables.push_back(gen_plac);
 
             eqLogMessage(LogTrace,
                          "Adding placeable %s at (%f, %f, %f)",
@@ -748,37 +748,37 @@ bool Map::CompileEQG(std::vector<std::shared_ptr<EQEmu::EQG::Geometry>>& models,
             v3.pos.y = t;
 
             if(current_poly.flags & 0x01)
-                AddFace(v1.pos, v2.pos, v3.pos, false);
+                add_face(v1.pos, v2.pos, v3.pos, false);
             else
-                AddFace(v1.pos, v2.pos, v3.pos, true);
+                add_face(v1.pos, v2.pos, v3.pos, true);
         }
     }
 
     return true;
 }
 
-bool Map::CompileEQGv4() {
-    collide_verts.clear();
-    collide_indices.clear();
-    non_collide_verts.clear();
-    non_collide_indices.clear();
-    current_collide_index = 0;
-    current_non_collide_index = 0;
-    collide_vert_to_index.clear();
-    non_collide_vert_to_index.clear();
-    map_models.clear();
-    map_eqg_models.clear();
-    map_placeables.clear();
+bool eqemu::azone::map::compile_eqgv4() {
+    _collide_verts.clear();
+    _collide_indices.clear();
+    _non_collide_verts.clear();
+    _non_collide_indices.clear();
+    _current_collide_index = 0;
+    _current_non_collide_index = 0;
+    _collide_vert_to_index.clear();
+    _non_collide_vert_to_index.clear();
+    _map_models.clear();
+    _map_eqg_models.clear();
+    _map_placeables.clear();
 
-    if(!terrain)
+    if(!_terrain)
         return false;
 
-    auto& water_sheets = terrain->GetWaterSheets();
+    auto& water_sheets = _terrain->GetWaterSheets();
     for(size_t i = 0; i < water_sheets.size(); ++i) {
         auto& sheet = water_sheets[i];
 
         if(sheet->GetTile()) {
-            auto& tiles = terrain->GetTiles();
+            auto& tiles = _terrain->GetTiles();
             for(size_t j = 0; j < tiles.size(); ++j) {
                 float x = tiles[j]->GetX();
                 float y = tiles[j]->GetY();
@@ -789,52 +789,52 @@ bool Map::CompileEQGv4() {
                 float QuadVertex1Z = z;
 
                 float QuadVertex2X =
-                    QuadVertex1X + (terrain->GetOpts().quads_per_tile * terrain->GetOpts().units_per_vert);
+                    QuadVertex1X + (_terrain->GetOpts().quads_per_tile * _terrain->GetOpts().units_per_vert);
                 float QuadVertex2Y = QuadVertex1Y;
                 float QuadVertex2Z = QuadVertex1Z;
 
                 float QuadVertex3X = QuadVertex2X;
                 float QuadVertex3Y =
-                    QuadVertex1Y + (terrain->GetOpts().quads_per_tile * terrain->GetOpts().units_per_vert);
+                    QuadVertex1Y + (_terrain->GetOpts().quads_per_tile * _terrain->GetOpts().units_per_vert);
                 float QuadVertex3Z = QuadVertex1Z;
 
                 float QuadVertex4X = QuadVertex1X;
                 float QuadVertex4Y = QuadVertex3Y;
                 float QuadVertex4Z = QuadVertex1Z;
 
-                uint32_t current_vert = (uint32_t)non_collide_verts.size() + 3;
-                non_collide_verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
-                non_collide_verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
-                non_collide_verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
-                non_collide_verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
+                uint32_t current_vert = (uint32_t)_non_collide_verts.size() + 3;
+                _non_collide_verts.push_back(glm::vec3(QuadVertex1X, QuadVertex1Y, QuadVertex1Z));
+                _non_collide_verts.push_back(glm::vec3(QuadVertex2X, QuadVertex2Y, QuadVertex2Z));
+                _non_collide_verts.push_back(glm::vec3(QuadVertex3X, QuadVertex3Y, QuadVertex3Z));
+                _non_collide_verts.push_back(glm::vec3(QuadVertex4X, QuadVertex4Y, QuadVertex4Z));
 
-                non_collide_indices.push_back(current_vert);
-                non_collide_indices.push_back(current_vert - 2);
-                non_collide_indices.push_back(current_vert - 1);
+                _non_collide_indices.push_back(current_vert);
+                _non_collide_indices.push_back(current_vert - 2);
+                _non_collide_indices.push_back(current_vert - 1);
 
-                non_collide_indices.push_back(current_vert);
-                non_collide_indices.push_back(current_vert - 3);
-                non_collide_indices.push_back(current_vert - 2);
+                _non_collide_indices.push_back(current_vert);
+                _non_collide_indices.push_back(current_vert - 3);
+                _non_collide_indices.push_back(current_vert - 2);
             }
         } else {
-            uint32_t id = (uint32_t)non_collide_verts.size();
+            uint32_t id = (uint32_t)_non_collide_verts.size();
 
-            non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMinX(), sheet->GetZHeight()));
-            non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMaxX(), sheet->GetZHeight()));
-            non_collide_verts.push_back(glm::vec3(sheet->GetMaxY(), sheet->GetMinX(), sheet->GetZHeight()));
-            non_collide_verts.push_back(glm::vec3(sheet->GetMaxY(), sheet->GetMaxX(), sheet->GetZHeight()));
+            _non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMinX(), sheet->GetZHeight()));
+            _non_collide_verts.push_back(glm::vec3(sheet->GetMinY(), sheet->GetMaxX(), sheet->GetZHeight()));
+            _non_collide_verts.push_back(glm::vec3(sheet->GetMaxY(), sheet->GetMinX(), sheet->GetZHeight()));
+            _non_collide_verts.push_back(glm::vec3(sheet->GetMaxY(), sheet->GetMaxX(), sheet->GetZHeight()));
 
-            non_collide_indices.push_back(id);
-            non_collide_indices.push_back(id + 1);
-            non_collide_indices.push_back(id + 2);
+            _non_collide_indices.push_back(id);
+            _non_collide_indices.push_back(id + 1);
+            _non_collide_indices.push_back(id + 2);
 
-            non_collide_indices.push_back(id + 1);
-            non_collide_indices.push_back(id + 3);
-            non_collide_indices.push_back(id + 2);
+            _non_collide_indices.push_back(id + 1);
+            _non_collide_indices.push_back(id + 3);
+            _non_collide_indices.push_back(id + 2);
         }
     }
 
-    auto& invis_walls = terrain->GetInvisWalls();
+    auto& invis_walls = _terrain->GetInvisWalls();
     for(size_t i = 0; i < invis_walls.size(); ++i) {
         auto& wall = invis_walls[i];
         auto& verts = wall->GetVerts();
@@ -861,130 +861,130 @@ bool Map::CompileEQGv4() {
             glm::vec3 v4 = v2;
             v4.z += 1000.0;
 
-            AddFace(v2, v1, v3, true);
-            AddFace(v3, v4, v2, true);
+            add_face(v2, v1, v3, true);
+            add_face(v3, v4, v2, true);
 
-            AddFace(v3, v1, v2, true);
-            AddFace(v2, v4, v3, true);
+            add_face(v3, v1, v2, true);
+            add_face(v2, v4, v3, true);
         }
     }
 
     // map_eqg_models
-    auto& models = terrain->GetModels();
+    auto& models = _terrain->GetModels();
     auto model_iter = models.begin();
     while(model_iter != models.end()) {
         auto& model = model_iter->second;
-        if(map_eqg_models.count(model->GetName()) == 0) {
-            map_eqg_models[model->GetName()] = model;
+        if(_map_eqg_models.count(model->GetName()) == 0) {
+            _map_eqg_models[model->GetName()] = model;
         }
         ++model_iter;
     }
 
     // map_placeables
-    auto& pgs = terrain->GetPlaceableGroups();
+    auto& pgs = _terrain->GetPlaceableGroups();
     for(size_t i = 0; i < pgs.size(); ++i) {
-        map_group_placeables.push_back(pgs[i]);
+        _map_group_placeables.push_back(pgs[i]);
     }
 
     return true;
 }
 
-void Map::LoadIgnore(std::string zone_name) {
-    ignore_placs.clear();
+void eqemu::azone::map::load_ignore(const std::string& zone_name) {
+    _ignore_placs.clear();
     std::string filename = zone_name + ".ignore";
 
     std::ifstream f(filename, std::ifstream::in);
     char buffer[128];
     while(f.good()) {
         f.getline(buffer, 128);
-        ignore_placs[buffer] = true;
+        _ignore_placs[buffer] = true;
     }
     f.close();
 }
 
-void Map::AddFace(glm::vec3& v1, glm::vec3& v2, glm::vec3& v3, bool collidable) {
+void eqemu::azone::map::add_face(glm::vec3& v1, glm::vec3& v2, glm::vec3& v3, bool collidable) {
     if(!collidable) {
         std::tuple<float, float, float> tt = std::make_tuple(v1.x, v1.y, v1.z);
-        auto iter = non_collide_vert_to_index.find(tt);
-        if(iter == non_collide_vert_to_index.end()) {
-            non_collide_vert_to_index[tt] = current_non_collide_index;
-            non_collide_verts.push_back(v1);
-            non_collide_indices.push_back(current_non_collide_index);
+        auto iter = _non_collide_vert_to_index.find(tt);
+        if(iter == _non_collide_vert_to_index.end()) {
+            _non_collide_vert_to_index[tt] = _current_non_collide_index;
+            _non_collide_verts.push_back(v1);
+            _non_collide_indices.push_back(_current_non_collide_index);
 
-            ++current_non_collide_index;
+            ++_current_non_collide_index;
         } else {
             uint32_t t_idx = iter->second;
-            non_collide_indices.push_back(t_idx);
+            _non_collide_indices.push_back(t_idx);
         }
 
         tt = std::make_tuple(v2.x, v2.y, v2.z);
-        iter = non_collide_vert_to_index.find(tt);
-        if(iter == non_collide_vert_to_index.end()) {
-            non_collide_vert_to_index[tt] = current_non_collide_index;
-            non_collide_verts.push_back(v2);
-            non_collide_indices.push_back(current_non_collide_index);
+        iter = _non_collide_vert_to_index.find(tt);
+        if(iter == _non_collide_vert_to_index.end()) {
+            _non_collide_vert_to_index[tt] = _current_non_collide_index;
+            _non_collide_verts.push_back(v2);
+            _non_collide_indices.push_back(_current_non_collide_index);
 
-            ++current_non_collide_index;
+            ++_current_non_collide_index;
         } else {
             uint32_t t_idx = iter->second;
-            non_collide_indices.push_back(t_idx);
+            _non_collide_indices.push_back(t_idx);
         }
 
         tt = std::make_tuple(v3.x, v3.y, v3.z);
-        iter = non_collide_vert_to_index.find(tt);
-        if(iter == non_collide_vert_to_index.end()) {
-            non_collide_vert_to_index[tt] = current_non_collide_index;
-            non_collide_verts.push_back(v3);
-            non_collide_indices.push_back(current_non_collide_index);
+        iter = _non_collide_vert_to_index.find(tt);
+        if(iter == _non_collide_vert_to_index.end()) {
+            _non_collide_vert_to_index[tt] = _current_non_collide_index;
+            _non_collide_verts.push_back(v3);
+            _non_collide_indices.push_back(_current_non_collide_index);
 
-            ++current_non_collide_index;
+            ++_current_non_collide_index;
         } else {
             uint32_t t_idx = iter->second;
-            non_collide_indices.push_back(t_idx);
+            _non_collide_indices.push_back(t_idx);
         }
     } else {
         std::tuple<float, float, float> tt = std::make_tuple(v1.x, v1.y, v1.z);
-        auto iter = collide_vert_to_index.find(tt);
-        if(iter == collide_vert_to_index.end()) {
-            collide_vert_to_index[tt] = current_collide_index;
-            collide_verts.push_back(v1);
-            collide_indices.push_back(current_collide_index);
+        auto iter = _collide_vert_to_index.find(tt);
+        if(iter == _collide_vert_to_index.end()) {
+            _collide_vert_to_index[tt] = _current_collide_index;
+            _collide_verts.push_back(v1);
+            _collide_indices.push_back(_current_collide_index);
 
-            ++current_collide_index;
+            ++_current_collide_index;
         } else {
             uint32_t t_idx = iter->second;
-            collide_indices.push_back(t_idx);
+            _collide_indices.push_back(t_idx);
         }
 
         tt = std::make_tuple(v2.x, v2.y, v2.z);
-        iter = collide_vert_to_index.find(tt);
-        if(iter == collide_vert_to_index.end()) {
-            collide_vert_to_index[tt] = current_collide_index;
-            collide_verts.push_back(v2);
-            collide_indices.push_back(current_collide_index);
+        iter = _collide_vert_to_index.find(tt);
+        if(iter == _collide_vert_to_index.end()) {
+            _collide_vert_to_index[tt] = _current_collide_index;
+            _collide_verts.push_back(v2);
+            _collide_indices.push_back(_current_collide_index);
 
-            ++current_collide_index;
+            ++_current_collide_index;
         } else {
             uint32_t t_idx = iter->second;
-            collide_indices.push_back(t_idx);
+            _collide_indices.push_back(t_idx);
         }
 
         tt = std::make_tuple(v3.x, v3.y, v3.z);
-        iter = collide_vert_to_index.find(tt);
-        if(iter == collide_vert_to_index.end()) {
-            collide_vert_to_index[tt] = current_collide_index;
-            collide_verts.push_back(v3);
-            collide_indices.push_back(current_collide_index);
+        iter = _collide_vert_to_index.find(tt);
+        if(iter == _collide_vert_to_index.end()) {
+            _collide_vert_to_index[tt] = _current_collide_index;
+            _collide_verts.push_back(v3);
+            _collide_indices.push_back(_current_collide_index);
 
-            ++current_collide_index;
+            ++_current_collide_index;
         } else {
             uint32_t t_idx = iter->second;
-            collide_indices.push_back(t_idx);
+            _collide_indices.push_back(t_idx);
         }
     }
 }
 
-void Map::RotateVertex(glm::vec3& v, float rx, float ry, float rz) {
+void eqemu::azone::map::rotate_vertex(glm::vec3& v, float rx, float ry, float rz) {
     glm::vec3 nv = v;
 
     nv.y = (cos(rx) * v.y) - (sin(rx) * v.z);
@@ -1003,13 +1003,13 @@ void Map::RotateVertex(glm::vec3& v, float rx, float ry, float rz) {
     v = nv;
 }
 
-void Map::ScaleVertex(glm::vec3& v, float sx, float sy, float sz) {
+void eqemu::azone::map::scale_vertex(glm::vec3& v, float sx, float sy, float sz) {
     v.x = v.x * sx;
     v.y = v.y * sy;
     v.z = v.z * sz;
 }
 
-void Map::TranslateVertex(glm::vec3& v, float tx, float ty, float tz) {
+void eqemu::azone::map::translate_vertex(glm::vec3& v, float tx, float ty, float tz) {
     v.x = v.x + tx;
     v.y = v.y + ty;
     v.z = v.z + tz;

@@ -6,13 +6,15 @@
 #include <string>
 #include <vector>
 
+#include <spdlog/spdlog.h>
+
 namespace eqemu {
 
     namespace format {
 
         class pfs_archive {
         public:
-            pfs_archive() = default;
+            pfs_archive();
             ~pfs_archive() = default;
 
             bool open();
@@ -37,14 +39,15 @@ namespace eqemu {
                                         const std::vector<std::byte>& in_buffer,
                                         std::vector<std::byte>& out_buffer);
             bool write_deflated_file_block(const std::vector<std::byte>& file, std::vector<std::byte>& out_buffer);
+
             std::map<std::string, std::vector<std::byte>> _files;
             std::map<std::string, uint32_t> _files_uncompressed_size;
             bool _footer;
             uint32_t _footer_date;
+            std::shared_ptr<spdlog::logger> _logger;
         };
 
     }    // namespace format
-
 }    // namespace eqemu
 
 #endif
