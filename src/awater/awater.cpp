@@ -1,23 +1,90 @@
-#include <stdio.h>
 #include "water_map.h"
-#include "log_macros.h"
-#include "log_stdout.h"
-#include "log_file.h"
 
-int main(int argc, char **argv) {
-	eqLogInit(EQEMU_LOG_LEVEL);
-	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogStdOut()));
-	eqLogRegister(std::shared_ptr<EQEmu::Log::LogBase>(new EQEmu::Log::LogFile("awater.log")));
+#include <boost/program_options.hpp>
+#include <entt/entt.hpp>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
-	for(int i = 1; i < argc; ++i) {
-		WaterMap m;
-		eqLogMessage(LogInfo, "Building water map for zone %s", argv[i]);
-		if(!m.BuildAndWrite(argv[i])) {
-			eqLogMessage(LogError, "Failed to build and write water map for zone: %s", argv[i]);
-		} else {
-			eqLogMessage(LogInfo, "Built and wrote water map for zone %s", argv[i]);
-		}
-	}
+#include <string/transform.h>
 
-	return 0;
+#include <cstdlib>
+#include <iostream>
+
+namespace prog = boost::program_options;
+
+void setup_logger(bool verbose) {
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("azone.log", true);
+    auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("azone", {console_sink, file_sink}));
+
+    if(verbose) {
+        logger->set_level(spdlog::level::trace);
+    }
+
+    entt::service_locator<spdlog::logger>::set(logger);
+}
+
+void print_usage(const prog::options_description& desc) {
+    std::cout << "Usage: awater [options] zone...\n";
+    std::cout << desc << "\n";
+}
+
+int main(int argc, char** argv) {
+    prog::options_description desc("options");
+    auto options = desc.add_options();
+    options("help,H", "display help message");
+    options("verbose,V", "use verbose logging");
+    options("zones,Z", prog::value<std::vector<std::string>>(), "zones to process");
+
+    prog::positional_options_description pos;
+    pos.add("zones", -1);
+    std::shared_ptr<spdlog::logger> logger;
+
+    try {
+        prog::variables_map vm;
+        prog::store(prog::command_line_parser(argc, argv).options(desc).positional(pos).run(), vm);
+        prog::notify(vm);
+
+        if(vm.count("help")) {
+            print_usage(desc);
+            return EXIT_FAILURE;
+        }
+
+        if(vm.count("verbose")) {
+            setup_logger(true);
+        } else {
+            setup_logger(false);
+        }
+
+        logger = entt::service_locator<spdlog::logger>::get().lock();
+
+        std::vector<std::string> zones;
+        if(vm.count("zones")) {
+            zones = vm["zones"].as<std::vector<std::string>>();
+        }
+
+        if(zones.empty()) {
+            logger->critical("no input zones");
+            return EXIT_FAILURE;
+        }
+
+        for(auto& zone : zones) {
+            WaterMap m;
+            logger->info("building water map for {0}", zone);
+            if(!m.BuildAndWrite(zone)) {
+                logger->error("failed to build and write water map for zone: {0}", zone);
+            } else {
+                logger->error("built and wrote water map for zone: {0}", zone);
+            }
+        }
+    } catch(std::exception& ex) {
+        if(logger) {
+            logger->critical("error running awater: {0}", ex.what());
+        }
+
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

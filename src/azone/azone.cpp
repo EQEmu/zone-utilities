@@ -16,16 +16,11 @@ namespace prog = boost::program_options;
 void setup_logger(bool verbose) {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("azone.log", true);
+    auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("azone", {console_sink, file_sink}));
 
     if(verbose) {
-        console_sink->set_level(spdlog::level::trace);
-        file_sink->set_level(spdlog::level::trace);
-    } else {
-        console_sink->set_level(spdlog::level::debug);
-        file_sink->set_level(spdlog::level::debug);
+        logger->set_level(spdlog::level::trace);
     }
-
-    auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("azone", {console_sink, file_sink}));
 
     entt::service_locator<spdlog::logger>::set(logger);
 }
@@ -57,7 +52,7 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
 
-        if(vm.count("help")) {
+        if(vm.count("verbose")) {
             setup_logger(true);
         } else {
             setup_logger(false);
