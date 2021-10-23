@@ -15,5 +15,6 @@ TARGET_LINK_LIBRARIES(resource_mapper PRIVATE common)
 TARGET_LINK_LIBRARIES(resource_mapper PRIVATE fmt::fmt)
 TARGET_LINK_LIBRARIES(resource_mapper PRIVATE log)
 TARGET_LINK_LIBRARIES(resource_mapper PRIVATE ZLIB::ZLIB)
+TARGET_LINK_LIBRARIES(resource_mapper PRIVATE Boost::boost Boost::program_options Boost::filesystem)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)

@@ -3,9 +3,11 @@
     "version-string": "0.1.0-dev",
 	"dependencies": [
 		"boost-crc",
+		"boost-filesystem",
 		"boost-program-options",
 		"bullet3",
 		"entt",
+		"fast-cpp-csv-parser",
 		"fmt",
 		"libuv",
 		"nlohmann-json",
