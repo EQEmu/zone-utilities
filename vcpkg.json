@@ -1,0 +1,14 @@
+{
+    "name": "zu", 
+    "version-string": "0.1.0",
+	"dependencies": [
+		"zlib",
+		"bullet3"
+	],
+	"features": {
+		"graphics": {
+			"description": "Build graphical programs",
+			"dependencies": [ "glew" ]
+		}
+	}
+}
