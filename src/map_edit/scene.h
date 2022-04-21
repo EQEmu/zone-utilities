@@ -10,7 +10,7 @@
 #include <log_macros.h>
 #include <log_stdout.h>
 #include <imgui.h>
-#include <glm.hpp>
+#include <glm/glm.hpp>
 
 #include "module.h"
 #include "eq_physics.h"

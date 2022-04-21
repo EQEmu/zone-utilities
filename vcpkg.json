@@ -3,7 +3,9 @@
     "version-string": "0.1.0",
 	"dependencies": [
 		"zlib",
-		"bullet3"
+		"bullet3",
+		"glm",
+		"libuv"
 	],
 	"features": {
 		"graphics": {

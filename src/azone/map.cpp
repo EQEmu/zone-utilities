@@ -3,7 +3,7 @@
 #include <fstream>
 #include "compression.h"
 #include "log_macros.h"
-#include <gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 Map::Map() {
 }

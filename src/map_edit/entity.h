@@ -2,7 +2,7 @@
 #define EQEMU_MAP_EDIT_ENTITY_H
 
 #define GLM_FORCE_RADIANS
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include <vector>
 
 class Entity

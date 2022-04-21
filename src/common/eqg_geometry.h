@@ -2,7 +2,7 @@
 #define EQEMU_EQG_GEOMETRY_H
 
 #define GLM_FORCE_RADIANS
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include <vector>
 #include "eqg_material.h"
 

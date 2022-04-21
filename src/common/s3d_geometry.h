@@ -2,7 +2,7 @@
 #define EQEMU_COMMON_S3D_GEOMETRY_H
 
 #define GLM_FORCE_RADIANS
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include <vector>
 #include "s3d_texture_brush_set.h"
 

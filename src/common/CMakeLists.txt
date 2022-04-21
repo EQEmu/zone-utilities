@@ -87,5 +87,14 @@ ENDIF()
 
 ADD_LIBRARY(common ${common_sources} ${common_headers})
 
+TARGET_LINK_LIBRARIES(common PUBLIC glm::glm)
+TARGET_LINK_LIBRARIES(common PUBLIC unofficial::libuv::libuv)
+TARGET_LINK_LIBRARIES(common PUBLIC ZLIB::ZLIB)
+TARGET_LINK_LIBRARIES(common PUBLIC ${OPENGL_gl_LIBRARY})
+target_link_libraries(common PUBLIC LinearMath Bullet3Common BulletDynamics BulletCollision)
+
+IF(EQEMU_ENABLE_GL)
+	TARGET_LINK_LIBRARIES(common PUBLIC GLEW::GLEW)
+ENDIF()
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)

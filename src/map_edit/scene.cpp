@@ -1,7 +1,7 @@
 #include "scene.h"
 #include <graphics/imgui_glfw.h>
 #include <string_util.h>
-#include <gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "static_geometry.h"
 #include "config.h"

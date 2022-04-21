@@ -1,7 +1,7 @@
 #ifndef EQEMU_MAP_VIEW_MODULE_H
 #define EQEMU_MAP_VIEW_MODULE_H
 
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include "entity.h"
 
 class Scene;
