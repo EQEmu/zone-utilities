@@ -12,9 +12,11 @@ environment:
 
 clone_folder: c:\projects\zone-utilities
 
-matrix:
-  only:
-    - image: Ubuntu
+for:
+-
+  matrix:
+    only:
+      - image: Ubuntu
   clone_folder: /home/appveyor/projects/zone-utilities
 
 install:
