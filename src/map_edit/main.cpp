@@ -3,6 +3,7 @@
 
 //local
 #include <graphics/imgui_glfw.h>
+#include <graphics/imgui_opengl3.h>
 #include <log_file.h>
 #include <event/event_loop.h>
 #include "scene.h"
@@ -62,7 +63,13 @@ int main(int argc, char **argv)
 		scene->Resize(width, height);
 	});
 
-	ImGui_ImplGlfwGL3_Init(win, true);
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(win, true);
+	ImGui_ImplOpenGL3_Init("#version 150");
+
 	while(!glfwWindowShouldClose(win)) {
 		scene->Tick();
 		scene->Render();
@@ -71,7 +78,9 @@ int main(int argc, char **argv)
 
 	scene->UnregisterAllModules();
 
-	ImGui_ImplGlfwGL3_Shutdown();
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	glfwTerminate();
 	return 0;
 }

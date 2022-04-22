@@ -72,16 +72,20 @@ IF(EQEMU_ENABLE_GL)
 	SET(common_sources
 		${common_sources}
 		graphics/imgui_glfw.cpp
+		graphics/imgui_opengl3.cpp
 	)
 	
 	SET(common_headers
 		${common_headers}
 		graphics/imgui_glfw.h
+		graphics/imgui_opengl3.h
 	)
 	
 	SOURCE_GROUP(graphics
 		graphics/imgui_glfw.cpp
 		graphics/imgui_glfw.h
+		graphics/imgui_opengl3.cpp
+		graphics/imgui_opengl3.h
 	)
 ENDIF()
 
@@ -95,6 +99,8 @@ target_link_libraries(common PUBLIC LinearMath Bullet3Common BulletDynamics Bull
 
 IF(EQEMU_ENABLE_GL)
 	TARGET_LINK_LIBRARIES(common PUBLIC GLEW::GLEW)
+	TARGET_LINK_LIBRARIES(common PUBLIC imgui::imgui)
+	target_link_libraries(common PUBLIC glfw)
 ENDIF()
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)

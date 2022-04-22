@@ -5,12 +5,15 @@
 		"zlib",
 		"bullet3",
 		"glm",
-		"libuv"
+		"libuv",
+		"nlohmann-json",
+		"glfw3",
+		"imgui"
 	],
 	"features": {
 		"graphics": {
 			"description": "Build graphical programs",
-			"dependencies": [ "glew" ]
+			"dependencies": [ "glew", "glfw3", "imgui" ]
 		}
 	}
 }

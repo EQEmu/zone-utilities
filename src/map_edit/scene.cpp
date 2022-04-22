@@ -1,5 +1,6 @@
 #include "scene.h"
 #include <graphics/imgui_glfw.h>
+#include <graphics/imgui_opengl3.h>
 #include <string_util.h>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -191,7 +192,9 @@ void Scene::LoadScene(const char *zone_name) {
 
 void Scene::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	ImGui_ImplGlfwGL3_NewFrame();
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
 
 	if (m_backface_cull) {
 		glEnable(GL_CULL_FACE);
@@ -278,6 +281,7 @@ void Scene::Render() {
 	}
 
 	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	glfwSwapBuffers(m_window);
 }
 
@@ -399,7 +403,7 @@ void Scene::RenderUI() {
 				ImGui::CloseCurrentPopup();
 			}
 
-			if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+			if (ImGui::IsItemHovered() || (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
 				ImGui::SetKeyboardFocusHere(-1);
 
 			if (ImGui::Button("OK", ImVec2(120, 0))) {

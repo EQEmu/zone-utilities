@@ -1,6 +1,7 @@
 #include <memory>
 
 #include <graphics/imgui_glfw.h>
+#include <graphics/imgui_opengl3.h>
 #include <event/event_loop.h>
 #include <log_macros.h>
 #include <log_stdout.h>
@@ -50,12 +51,20 @@ int main(int argc, char **argv)
 	glfwSetFramebufferSizeCallback(win, [](GLFWwindow *win, int width, int height) {
 	});
 
-	ImGui_ImplGlfwGL3_Init(win, true);
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(win, true);
+	ImGui_ImplOpenGL3_Init("#version 150");
+
 	while (!glfwWindowShouldClose(win)) {
 		EQ::EventLoop::Get().Process();
 	}
 
-	ImGui_ImplGlfwGL3_Shutdown();
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	glfwTerminate();
 	return 0;
 }
