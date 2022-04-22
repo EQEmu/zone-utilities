@@ -22,6 +22,7 @@ for:
 install:
 - git submodule update --init
 - cmd: set PATH=C:\ninja;%PATH%
+- sh: sudo apt install -y libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev
 
 build_script:
 - cmd: mkdir build_windows
