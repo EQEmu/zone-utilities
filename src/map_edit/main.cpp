@@ -24,6 +24,15 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+
+	char* zone = nullptr;
+	for (int i = 0; i < argc; i++) {
+		if (i > 0) {
+			zone = argv[i];
+			eqLogMessage(LogInfo, "loading %s\n", zone);
+		}
+	}
+
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -58,6 +67,9 @@ int main(int argc, char **argv)
 	scene->RegisterModule(new ModuleVolume());
 	scene->RegisterModule(new ModuleWP());
 	scene->Init(win);
+	if (zone != nullptr) {
+		scene->LoadScene(zone);
+	}
 
 	glfwSetFramebufferSizeCallback(win, [](GLFWwindow *win, int width, int height) {
 		scene->Resize(width, height);
