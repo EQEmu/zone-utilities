@@ -30,6 +30,7 @@ int main(int argc, char **argv)
 		if (i > 0) {
 			zone = argv[i];
 			eqLogMessage(LogInfo, "loading %s\n", zone);
+			break;
 		}
 	}
 
