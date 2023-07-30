@@ -92,7 +92,7 @@ ENDIF()
 ADD_LIBRARY(common ${common_sources} ${common_headers})
 
 TARGET_LINK_LIBRARIES(common PUBLIC glm::glm)
-TARGET_LINK_LIBRARIES(common PUBLIC unofficial::libuv::libuv)
+TARGET_LINK_LIBRARIES(common PUBLIC $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>)
 TARGET_LINK_LIBRARIES(common PUBLIC ZLIB::ZLIB)
 TARGET_LINK_LIBRARIES(common PUBLIC ${OPENGL_gl_LIBRARY})
 TARGET_LINK_LIBRARIES(common PUBLIC BulletSoftBody BulletDynamics BulletCollision Bullet3Common LinearMath)
