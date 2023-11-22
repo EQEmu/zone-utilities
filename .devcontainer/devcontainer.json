@@ -1,0 +1,59 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+	"name": "zone-utilies",
+	"build": {
+		"dockerfile": "../utils/dev-dockerfile/Dockerfile",
+		"args": {
+			"VARIANT": "focal"
+		}
+	},
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [
+		3306,
+		5998,
+		7000,
+		7001,
+		7002,
+		7003,
+		7004,
+		7005,
+		7006,
+		7007,
+		7008,
+		7009,
+		7778,
+		9000,
+		9001
+	],
+	"remoteEnv": {
+		"LOCALWSF": "${localWorkspaceFolder}",
+		"CONTAINERWSF": "${containerWorkspaceFolder}"
+	},
+	// add ptrace
+	"runArgs": [
+		"--cap-add=SYS_PTRACE",
+		"--security-opt",
+		"seccomp=unconfined"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack",
+				"vilicvane.sensitive-replace",
+				"maattdd.gitless",
+				"bibhasdn.unique-lines",
+				"GitHub.copilot",
+				"xackery.make-magic",
+				"Gruntfuggly.todo-tree",
+				"ms-vscode.cmake-tools",
+				"webfreak.debug"
+			]
+		}
+	},
+	"workspaceFolder": "/src",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/src,type=bind,consistency=cached"
+}
