@@ -17,6 +17,13 @@
 const uint32_t nav_file_version = 3;
 const uint32_t nav_mesh_file_version = 2;
 
+float generate_rng() {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	static std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+	return dis(gen);
+}
+
 inline unsigned int nextPow2(unsigned int v)
 {
 	v--;
@@ -111,6 +118,8 @@ ModuleNavigation::ModuleNavigation()
 
 	m_step_size = 10.0f;
 	m_complex_path = false;
+
+	m_search_radius = 100.0f;
 }
 
 ModuleNavigation::~ModuleNavigation()
@@ -566,6 +575,14 @@ void ModuleNavigation::DrawTestUI()
 	status = status || ImGui::Checkbox("Smooth Path", &m_complex_path);
 	if (m_complex_path) {
 		status = status || ImGui::SliderFloat("Step Size", &m_step_size, 0.5f, 256.0f);
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Area Search");
+	ImGui::SliderFloat("Search Radius", &m_search_radius, 1.0f, 500.0f);
+	if (ImGui::Button("Search In Area")) {
+		SearchRadius();
+		status = true;
 	}
 
 	if (status) {
@@ -1039,8 +1056,6 @@ void ModuleNavigation::CalcPath()
 
 			m_path_renderable->Update();
 		}
-		
-		dtFreeNavMeshQuery(query);
 	}
 	else {
 		if (npolys) {
@@ -1066,10 +1081,91 @@ void ModuleNavigation::CalcPath()
 				m_path_renderable->Update();
 			}
 		}
-		else {
-			dtFreeNavMeshQuery(query);
-		}
 	}
+
+	dtFreeNavMeshQuery(query);
+}
+
+void ModuleNavigation::SearchRadius() {
+	glm::vec3 ext(15.0f, 100.0f, 15.0f);
+	dtQueryFilter filter;
+
+	unsigned short flags = 0;
+	if (m_flag_enabled[NavigationAreaFlagNormal]) {
+		flags |= NavigationPolyFlagNormal;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagWater]) {
+		flags |= NavigationPolyFlagWater;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagLava]) {
+		flags |= NavigationPolyFlagLava;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagZoneLine]) {
+		flags |= NavigationPolyFlagZoneLine;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagPvP]) {
+		flags |= NavigationPolyFlagPvP;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagSlime]) {
+		flags |= NavigationPolyFlagSlime;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagIce]) {
+		flags |= NavigationPolyFlagIce;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagVWater]) {
+		flags |= NavigationPolyFlagVWater;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagGeneralArea]) {
+		flags |= NavigationPolyFlagGeneralArea;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagPortal]) {
+		flags |= NavigationPolyFlagPortal;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagPrefer]) {
+		flags |= NavigationPolyFlagPrefer;
+	}
+
+	if (m_flag_enabled[NavigationAreaFlagDisabled]) {
+		flags |= NavigationPolyFlagDisabled;
+	}
+
+	filter.setIncludeFlags(flags);
+	filter.setAreaCost(NavigationAreaFlagNormal, m_path_costs[NavigationAreaFlagNormal]);
+	filter.setAreaCost(NavigationAreaFlagWater, m_path_costs[NavigationAreaFlagWater]);
+	filter.setAreaCost(NavigationAreaFlagLava, m_path_costs[NavigationAreaFlagLava]);
+	filter.setAreaCost(NavigationAreaFlagPvP, m_path_costs[NavigationAreaFlagPvP]);
+	filter.setAreaCost(NavigationAreaFlagSlime, m_path_costs[NavigationAreaFlagSlime]);
+	filter.setAreaCost(NavigationAreaFlagIce, m_path_costs[NavigationAreaFlagIce]);
+	filter.setAreaCost(NavigationAreaFlagVWater, m_path_costs[NavigationAreaFlagVWater]);
+	filter.setAreaCost(NavigationAreaFlagGeneralArea, m_path_costs[NavigationAreaFlagGeneralArea]);
+	filter.setAreaCost(NavigationAreaFlagPortal, m_path_costs[NavigationAreaFlagPortal]);
+	filter.setAreaCost(NavigationAreaFlagPrefer, m_path_costs[NavigationAreaFlagPrefer]);
+
+	dtNavMeshQuery* query = dtAllocNavMeshQuery();
+	query->init(m_nav_mesh, 32768);
+	dtPolyRef start_ref;
+	query->findNearestPoly(&m_path_start[0], &ext[0], &filter, &start_ref, 0);
+
+	if (!start_ref) {
+		dtFreeNavMeshQuery(query);
+		return;
+	}
+
+	dtPolyRef end_ref;
+	glm::vec3 end_pos = { 0.0f, 0.0f, 0.0f };
+	query->findRandomPointAroundCircle(start_ref, &m_path_start[0], m_search_radius, &filter, generate_rng, &end_ref, &end_pos[0]);
+	SetNavigationTestNodeEnd(end_pos);
+	dtFreeNavMeshQuery(query);
 }
 
 void ModuleNavigation::SaveNavSettings()
@@ -1804,4 +1900,3 @@ void NavigationDebugDraw::CreatePrimitive() {
 
 	verts_in_use = 0;
 }
-

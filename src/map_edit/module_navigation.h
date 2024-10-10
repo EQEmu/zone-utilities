@@ -2,6 +2,7 @@
 #define EQEMU_MAP_VIEW_MODULE_NAVIGATION_H
 
 #include <vector>
+#include <random>
 #include <Recast.h>
 #include <DetourNavMesh.h>
 #include <DebugDraw.h>
@@ -139,6 +140,7 @@ private:
 	void DeleteMeshConnection(unsigned int i);
 	void ClearConnections();
 	void UpdateConnectionsModel();
+	void SearchRadius();
 
 	Scene *m_scene;
 	std::shared_ptr<rcChunkyTriMesh> m_chunky_mesh;
@@ -202,6 +204,7 @@ private:
 	bool m_flag_enabled[NavigationAreaFlagMax];
 	bool m_complex_path;
 	float m_step_size;
+	float m_search_radius;
 
 	std::vector<RegionVolume> m_volumes;
 
